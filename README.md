@@ -1,6 +1,6 @@
 # ⛓️ CNCT ⛓️
 
-![Demo Animation](assets/linkChain.gif)
+![Demo Animation](./src/assets/linkChain.gif)
 
 **CNCT** shorter for connect is a website where FIU students can easily create and join plans — from volleyball or running to sparring and study groups. Each plan has a messaging thread for quick coordination and a “Who’s Going” list so everyone knows who’s in.
 
