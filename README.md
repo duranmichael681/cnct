@@ -32,7 +32,7 @@ This is what we will use for this project
   cd cnct
   ```
 
-  ##Frontend
+  ## Frontend
 
   ```bash
   cd cnct
