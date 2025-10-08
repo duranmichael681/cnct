@@ -1,1 +1,4 @@
 @import 'tailwindcss';
+body {
+  @apply bg-[#CAC7C3] text-black; /* Example: dark mode look */
+}
