@@ -21,11 +21,11 @@ This is what we will use for this project
   ## Features 📲
 
   - User Stores Data and being able to Log In to save changes, add friends and message others
-  - OverView of all the events that will be available
-  - Being able to see who is going or who is CNCT'D
+  - OverView of all the events that will be available (Explore Page or Home Page)
+  - Being able to see who is going or who is CNCT'D (Under user post it will show 3 people that are going and users will be able to click on an additional "bubble" that will say a number ( 3 - the people actually going) and when they do it will expand and show the rest of the people who are going.)
   - Resposive Designs that will be powered by Framer
   - Using Profile Pictures under users post or "events" to see whos going
-  - Might incorporate a Messaging system so users can message each other privaely as well as of course needing to be able to comment under peoples post. We will have to find a way to make sure the users
+  - We plan to incorporate a messaging system that allows users to communicate privately, in addition to commenting under public posts. To maintain a safe and positive environment, we’ll implement moderation tools and safeguards that allow us to oversee user interactions and prevent misuse.
 
   ## Setup
 
