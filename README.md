@@ -24,6 +24,8 @@ This is what we will use for this project
   - OverView of all the events that will be available
   - Being able to see who is going or who is CNCT'D
   - Resposive Designs that will be powered by Framer
+  - Using Profile Pictures under users post or "events" to see whos going
+  - Might incorporate a Messaging system so users can message each other privaely as well as of course needing to be able to comment under peoples post. We will have to find a way to make sure the users
 
   ## Setup
 
