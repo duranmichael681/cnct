@@ -26,17 +26,18 @@ This is what we will use for this project
   - Resposive Designs that will be powered by Framer
   - Using Profile Pictures under users post or "events" to see whos going
   - We plan to incorporate a messaging system that allows users to communicate privately, in addition to commenting under public posts. To maintain a safe and positive environment, we’ll implement moderation tools and safeguards that allow us to oversee user interactions and prevent misuse.
+ # Setup
 
-  ## Setup
 
-## Cloning
+ 
+### Cloning
 
 ```bash
   git clone https://github.com/duranmichael681/cnct.git
   cd cnct
 ```
 
-## Pulling
+### Pulling
 
 If You’ve Already Cloned the Repository:
 
@@ -132,7 +133,7 @@ Co-leads (Jose or Jorge) will provide the anon key privately.
 
   Follow this guide on the [Tailwind](https://tailwindcss.com/docs/installation/using-vite) website or you can watch this [Youtube Video](https://youtu.be/sHnG8tIYMB4?si=TJn38DnurywPlN7t)
 
-## Framer Motion
+### Framer Motion
 
 Framer Motion is a React library for animations, making it easy to create smooth, interactive UI effects.
 
