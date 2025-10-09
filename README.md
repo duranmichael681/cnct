@@ -60,7 +60,7 @@ git commit -m "Brief description of what you changed"
 - git commit → saves a snapshot of your work with a short message.
 
 ```bash
-git push -u origin <branch name>>
+git push -u origin <branch name>
 ```
 - Uploads your branch to GitHub so your lead can review and merge it.
 
