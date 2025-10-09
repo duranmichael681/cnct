@@ -29,23 +29,53 @@ This is what we will use for this project
 
   ## Setup
 
-  ```bash
+## Cloning
+
+```bash
   git clone https://github.com/duranmichael681/cnct.git
   cd cnct
-  ```
+```
 
-  ## Frontend
+## Pulling
 
-  ```bash
-  cd cnct
-  npm i
-  ```
+If You’ve Already Cloned the Repository:
 
-  ### TailWind CSS
+Save or commit your current work!
+**ONLY do this if you've made local changes that aren’t already pushed to GitHub!!**
+This ensures you can restore your work if anything changes after pulling.
 
-  Follow this guide on the [Tailwind](https://tailwindcss.com/docs/installation/using-vite) website or you can watch this [Youtube Video](https://youtu.be/sHnG8tIYMB4?si=TJn38DnurywPlN7t)
+```bash
+git add .
+git commit -m "WIP: saving my current work"
+```
+  - WIP is short for “Work In Progress” — just something to save any work you’ve done so far.
 
-## Node.js
+Pull the latest updates from GitHub:
+
+```bash
+git pull origin main
+```
+
+This merges the newest updates (For example: the backend setup, Supabase integration, and README changes) into your local project.
+
+If you see any conflicts:
+Open VS Code’s Source Control panel (if using vscode) or terminal and review the conflicts carefully — keep your work and merge new updates when needed.
+
+After pulling successfully
+Reinstall dependencies to make sure everything is up to date:
+
+```bash
+npm install
+```
+
+NOTES:
+  - **Do not delete or overwrite your .env or .env.local files.**
+    These contain your private keys and should remain local only.
+  - **Frequently push important work and pull before starting new work**
+    to ensure you’re using the latest version of the project.
+  - If you’re unsure or run into merge conflicts reach out to our lead, co-leads, or anyone in the group
+
+  ## Node.js
 
 ### Install
 
@@ -53,12 +83,41 @@ This project requires **Node.js** to run. You can download it from the official 
 
 - [Node.js Downloads](https://nodejs.org/en/download)
 
-Make sure you have Node.js installed by running:
+To verify that Node.js is installed make sure to run:
 
 ```bash
 node -v
 npm -v
 ```
+
+  ## Frontend
+
+```bash
+  cd cnct
+  npm i
+```
+
+After installing dependencies, follow these steps:
+1. In the root folder, create a file named .env.local
+2. Paste the following inside:
+
+```bash
+VITE_SUPABASE_URL=https://dzfnvmwepmukenpsdfsy.supabase.co
+VITE_SUPABASE_ANON_KEY=<anon-key>
+```
+
+3. Save the file — this is used by the React (Vite) frontend to connect to Supabase.
+4. This file should already be included in .gitignore, so it won’t be uploaded to GitHub.
+    - Double-check your .gitignore to make sure .env.local is listed.
+
+NOTE:
+Co-leads (Jose or Jorge) will provide the anon key privately.
+**DO NOT share this key publicly or commit it to the repository.**
+
+
+  ### TailWind CSS
+
+  Follow this guide on the [Tailwind](https://tailwindcss.com/docs/installation/using-vite) website or you can watch this [Youtube Video](https://youtu.be/sHnG8tIYMB4?si=TJn38DnurywPlN7t)
 
 ## Framer Motion
 
@@ -73,8 +132,71 @@ npm install framer-motion
 # or
 yarn add framer-motion
 ```
-## Backend
-For the backends to fill up
+
+## Backend (Backend Devs Only)
+
+If you’re working on backend tasks or need access to server logic, follow these steps:
+1. Inside the /server folder, create a file named .env
+2. Add the following lines:
+
+```bash
+SUPABASE_URL=https://dzfnvmwepmukenpsdfsy.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
+```
+
+3. Save the file — this connects the Express backend to Supabase.
+4. Ensure your .env file is included in .gitignore so it’s never uploaded to GitHub.
+
+NOTE:
+  - Co-leads (Jose or Jorge) will provide SERVICE_ROLE_KEY to backend devs!!
+  - Frontend-only devs don’t need this file. Your .env.local is enough.
+  - **The backend .env is used only for server routes and secure operations.**
+  - **DO NOT share this key publicly or commit it to the repository.**
+
+
+  ## Supabase Command Lines (CLI)
+
+  **OPTIONAL**
+
+  - not needed but if you wanted to install for supabase commandlines
+  - if installed, vscode code terminal can do commands that get sent directly to supabase
+
+  install for mac:
+
+  1. might have to install homebrew before
+
+  ```bash
+  brew install supabase/tap/supabase
+  ```
+
+  install for windows:
+
+  1. command for install, reach out to co-leads if it doesn't work
+
+  ```bash
+  iwr https://supabase.com/cli/install/windows | iex
+  ```
+
+  Example commands:
+
+```bash
+supabase login
+supabase init
+supabase db push
+supabase start
+supabase functions deploy
+```
+
+can be used to:
+Manage Supabase projects locally
+Run a local Supabase instance with Postgres
+Apply and generate SQL migrations
+Push/pull database schema
+Manage environment variables
+Deploy functions
+Handle secrets
+
+
 ## Running the Project
 
 After you have done all the steps above now for the fun part
