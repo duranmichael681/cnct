@@ -1,5 +1,6 @@
 import './index.css'
+import SignUp from './auth/Signup'
 
 export default function App() {
-  return <h1>Welcome To CNCT</h1>
+  return <SignUp />
 }
