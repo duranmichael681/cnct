@@ -1,4 +1,15 @@
 @import "tailwindcss";
+:root {
+  --primary: #b8862c;
+  --primary-hover: #976c1b;
+  --secondary: #081e3f;
+  --secondary-hover: #0c2b63;
+  --danger: #d64545;
+  --success: #48a957;
+  --menucard: #d6d2cd;
+  --background: #fffbeb;
+}
+
 body {
-  @apply bg-[#FFFBEB] text-black; /* Example: dark mode look */
+  @apply bg-[var(--background)] text-black;
 }
