@@ -1,6 +1,10 @@
 import './index.css'
-import SignUp from './auth/Signup'
+import { Route, Routes, Navigate } from 'react-router-dom'
+import Home from './pages/Home/home.tsx'
 
 export default function App() {
-  return <SignUp />
+  ;<Routes>
+    {/* Route for /home */}
+    <Route path='/home' element={<Home />} />
+  </Routes>
 }
