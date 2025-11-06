@@ -1,5 +1,7 @@
-import './index.css'
+import "./index.css";
+
+import Home from "./pages/Home/home.tsx";
 
 export default function App() {
-  return <h1>Welcome To CNCT</h1>
+  return <Home />;
 }

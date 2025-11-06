@@ -26,17 +26,18 @@ This is what we will use for this project
   - Resposive Designs that will be powered by Framer
   - Using Profile Pictures under users post or "events" to see whos going
   - We plan to incorporate a messaging system that allows users to communicate privately, in addition to commenting under public posts. To maintain a safe and positive environment, we’ll implement moderation tools and safeguards that allow us to oversee user interactions and prevent misuse.
+ # Setup
 
-  ## Setup
 
-## Cloning
+ 
+### Cloning
 
 ```bash
   git clone https://github.com/duranmichael681/cnct.git
   cd cnct
 ```
 
-## Pulling
+### Pulling
 
 If You’ve Already Cloned the Repository:
 
@@ -44,19 +45,32 @@ Save or commit your current work!
 **ONLY do this if you've made local changes that aren’t already pushed to GitHub!!**
 This ensures you can restore your work if anything changes after pulling.
 
+1. first you'll create and switch to a new branch, our lead will merge on github and delete the branch
+
+```bash
+git switch -c <branch name>
+```
+- "git switch -c" creates a new branch and switches to it immediately.
+- Use a descriptive name (for example: feature/auth-setup, fix/readme-update, or setup/supabase).
+
 ```bash
 git add .
-git commit -m "WIP: saving my current work"
+git commit -m "Brief description of what you changed"
 ```
-  - WIP is short for “Work In Progress” — just something to save any work you’ve done so far.
+- git add . → tells Git which files to include in the next commit.
+- git commit → saves a snapshot of your work with a short message.
+
+```bash
+git push -u origin <branch name>
+```
+- Uploads your branch to GitHub so your lead can review and merge it.
 
 Pull the latest updates from GitHub:
 
 ```bash
 git pull origin main
 ```
-
-This merges the newest updates (For example: the backend setup, Supabase integration, and README changes) into your local project.
+Downloads and merges any new changes (like backend setup or README updates) from the main branch into your local project.
 
 If you see any conflicts:
 Open VS Code’s Source Control panel (if using vscode) or terminal and review the conflicts carefully — keep your work and merge new updates when needed.
@@ -70,7 +84,7 @@ npm install
 
 NOTES:
   - **Do not delete or overwrite your .env or .env.local files.**
-    These contain your private keys and should remain local only.
+    These contain your private keys and should remain local **ONLY.**
   - **Frequently push important work and pull before starting new work**
     to ensure you’re using the latest version of the project.
   - If you’re unsure or run into merge conflicts reach out to our lead, co-leads, or anyone in the group
@@ -119,7 +133,7 @@ Co-leads (Jose or Jorge) will provide the anon key privately.
 
   Follow this guide on the [Tailwind](https://tailwindcss.com/docs/installation/using-vite) website or you can watch this [Youtube Video](https://youtu.be/sHnG8tIYMB4?si=TJn38DnurywPlN7t)
 
-## Framer Motion
+### Framer Motion
 
 Framer Motion is a React library for animations, making it easy to create smooth, interactive UI effects.
 
@@ -255,8 +269,16 @@ Handle secrets
 ## Running the Project
 
 After you have done all the steps above now for the fun part
-
+[Some Documentation could be found here](https://www.youtube.com/watch?v=oTIJunBa6MA)
 ```bash
 cd cnct
 npm run dev
+```
+## React Router
+
+We are going to need this to route all the pages later on so install this 
+```bash 
+cd cnct
+npm install react-router-dom
+
 ```
