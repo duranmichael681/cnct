@@ -1,4 +1,5 @@
 import { Request, Response, Router } from 'express';
+import { supabase } from '../server';
 //TODO: import other necessary middlewares and controllrs here
 
 const eventsRouter = Router();

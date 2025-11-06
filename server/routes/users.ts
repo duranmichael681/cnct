@@ -1,4 +1,5 @@
 import { Router, Request, Response } from 'express';
+import { supabase } from '../server.js';
 //import other necessary middlewares and controllrs here
 
 const userRouter = Router();
