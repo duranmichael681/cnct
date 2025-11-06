@@ -6,13 +6,35 @@ const userRouter = Router();
 //TODO: add middlewares and controllers later
 userRouter.get('/users/:id', function(request: Request, response: Response) {
     try {
-        Response.send(request.params.id);
+        // Middleware Service
+        response.send(request.params.id);
     } catch (error: any) {
         Response.send("User not found");
     }
 })
-userRouter.put('/users/:id', /*middleware, controller*/)
-userRouter.get('/users/:id/events', /*middleware, controller*/)
-userRouter.get('/users/:id/friends', /*middleware, controller*/)
+userRouter.put('/users/:id', function(request: Request, response: Response) {
+    try {
+        // Middleware Service
+        response.send(request.params.id);
+    } catch (error: any) {
+        response.send("User not found");
+    }
+})
+userRouter.get('/users/:id/events', /*middleware, controller*/ function(request: Request, response: Response) {
+    try {
+        // Middleware Services
+        response.send(request.params.id);
+    } catch (error: any) {
+        response.send("User not found");
+    }
+})
+userRouter.get('/users/:id/friends', /*middleware, controller*/ function(request: Request, response: Response) {
+    try {
+        // Middleware Services
+        response.send(request.params.id);
+    } catch (error: any) {
+        response.send("User not found");
+    }
+})
 
 export default userRouter
