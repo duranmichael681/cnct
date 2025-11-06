@@ -5,69 +5,69 @@ import { supabase } from '../server';
 const eventsRouter = Router();
 
 //TODO: add middlewares and controllers later
-eventsRouter.get('/events', /*middleware, controller*/ function(response: Response, request: Request) {
+eventsRouter.get('/events', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
-        response.send("Events");
+        res.send("Events");
     } catch (error: any) {
-        response.send("Error");
+        res.send("Error");
     }
 })
-eventsRouter.get('/events/:id', /*middleware, controller*/ function(response: Response, request: Request) {
+eventsRouter.get('/events/:id', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
-        response.send(request.params.id);
+        res.send(req.params.id);
     } catch (error: any) {
-        response.send("Error");
+        res.send("Error");
     }
 }
 )
-eventsRouter.post('/events', /*middleware, controller*/ function(response: Response, request: Request) {
+eventsRouter.post('/events', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
-        response.send("Events");
+        res.send("Events");
     } catch (error: any) {
-        response.send("Error");
+        res.send("Error");
     }
 })
-eventsRouter.put('/events/:id', /*middleware, controller*/ function(response: Response, request: Request) {
+eventsRouter.put('/events/:id', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
-        response.send(request.params.id);
+        res.send(req.params.id);
     } catch (error: any) {
-        response.send("Error");
+        res.send("Error");
     }
 })
-eventsRouter.delete('/events/:id', /*middleware, controller*/ function(response: Response, request: Request) {
+eventsRouter.delete('/events/:id', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
-        response.send(request.params.id);
+        res.send(req.params.id);
     } catch (error: any) {
-        response.send("Error");
+        res.send("Error");
     }
 })
-eventsRouter.post('/events/:id/join', /*middleware, controller*/ function(response: Response, request: Request) {
+eventsRouter.post('/events/:id/join', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
-        response.send(request.params.id);
+        res.send(req.params.id);
     } catch (error: any) {
-        response.send("Error");
+        res.send("Error");
     }
 })
-eventsRouter.post('/events/:id/leave', /*middleware, controller*/ function(response: Response, request: Request) {
+eventsRouter.post('/events/:id/leave', /*middleware, controller*/ function(req: Request, res: Request) {
     try {
         // Add Middleware
-        response.send(request.params.id);
+        res.send(req.params.id);
     } catch (error: any) {
-        response.send("Error");
+        res.send("Error");
     }
 })
-eventsRouter.get('/events/:id/attendees', /*middleware, controller*/ function(response: Response, request: Request) {
+eventsRouter.get('/events/:id/attendees', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
-        response.send(request.params.id);
+        res.send(req.params.id);
     } catch (error: any) {
-        response.send("Error");
+        res.send("Error");
     }
 })
 

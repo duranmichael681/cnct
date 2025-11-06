@@ -1,4 +1,4 @@
-import { Router } from "express";
+import { Request, Response, Router } from "express";
 
 
 //this router will handle
@@ -13,6 +13,12 @@ import { Router } from "express";
 
 export const webpagesRouter = Router();
 
-webpagesRouter.get('/', /*Middleware, Controller*/)
+webpagesRouter.get('/', /*Middleware, Controller*/ function(req: Request, res: Response) {
+    try {
+        res.send("Webpage");
+    } catch (error: any) {
+        res.send("Error");
+    }
+})
 
 export default webpagesRouter;

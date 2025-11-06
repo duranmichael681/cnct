@@ -7,36 +7,36 @@ import { supabase } from '../server';
 const messageRouter = Router();
 
 //TODO: add middlewares and controllers later
-messageRouter.get('/messages/threads/:eventId', /*middleware, controller*/ function(request: Request, response: Response) {
+messageRouter.get('/messages/threads/:eventId', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware
-        response.send(request.params.eventId);
+        res.send(req.params.eventId);
     } catch (error: any) {
-        response.send("Message not found.");
+        res.send("Message not found.");
     }
 })
-messageRouter.post('/messages', function(response: Response, request: Request) {
+messageRouter.post('/messages', function(req: Request, res: Response) {
     try {
         // Middleware
-        response.send("Messages");
+        res.send("Messages");
     } catch(error: any) {
-        response.send("Error");
+        res.send("Error");
     }
 })
-messageRouter.put('/messages/:id', function(response: Response, request: Request) {
+messageRouter.put('/messages/:id', function(req: Request, res: Response) {
     try {
         // Middleware
-        response.send(request.params.id);
+        res.send(req.params.id);
     } catch (error: any) {
-        response.send("Message not found.");
+        res.send("Message not found.");
     }
 })
-messageRouter.delete('/messages/:id', function(response: Response, request: Request) {
+messageRouter.delete('/messages/:id', function(req: Request, res: Response) {
     try {
         // Middleware
-        response.send(request.params.id);
+        res.send(req.params.id);
     } catch (error: any) {
-        response.send("Message not found.");
+        res.send("Message not found.");
     }
 })
 

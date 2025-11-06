@@ -2,6 +2,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+import { mainRouter } from "./routes/index.ts";
 
 //TEST SERVER.JS TO CHECK IF BACKEND IS CONNECTED TO SUPABASE
 
@@ -32,6 +33,9 @@ app.get("/test-db", async (req, res) => {
         res.status(500).json({ error: err.message });
     }
 });
+
+// Connect main router to the app.
+app.use(mainRouter);
 
 app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
