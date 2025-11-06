@@ -1,23 +1,25 @@
-interface GroupListProps {
-  groups?: string[];
-}
+const mockGroups = [
+  { name: "Volleyball Events" },
+  { name: "Art Club" },
+  { name: "Tech Talks" },
+];
 
-const GroupList: React.FC<GroupListProps> = ({ groups = [] }) => {
+export default function GroupList() {
   return (
-    <div className="group-list absolute top-8 right-8 w-60">
-      <h2 className="text-white text-5xl font-bold mb-6">Groups</h2>
-      <ul className="space-y-4">
-        {groups.map((group, index) => (
-          <li
-            key={index}
-            className="text-white text-2xl font-bold text-center bg-sky-950 rounded-lg py-2"
+    <div className="p-4 bg-[var(--menucard)] rounded-lg">
+      <h2 className="text-2xl font-bold text-[var(--primary-text)] mb-4">
+        Groups
+      </h2>
+      <div className="flex flex-col gap-3">
+        {mockGroups.map((g) => (
+          <div
+            key={g.name}
+            className="p-3 rounded-lg bg-[var(--primary)] text-[var(--background)] font-semibold"
           >
-            {group}
-          </li>
+            {g.name}
+          </div>
         ))}
-      </ul>
+      </div>
     </div>
   );
-};
-
-export default GroupList;
+}
