@@ -1,7 +1,12 @@
-import "./index.css";
-
-import Home from "./pages/Home/home.tsx";
+import { Routes, Route, Navigate } from 'react-router-dom'
+import Home from './pages/Home/home'
+import SignUp from './auth/Signup'
 
 export default function App() {
-  return <Home />;
+  return (
+    <Routes>
+      <Route path='/SignUp' element={<SignUp />} />
+      <Route path='/Home' element={<Home />} />
+    </Routes>
+  )
 }
