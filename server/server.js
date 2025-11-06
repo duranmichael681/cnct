@@ -6,6 +6,13 @@ import { mainRouter } from "./routes/index.ts";
 
 //TEST SERVER.JS TO CHECK IF BACKEND IS CONNECTED TO SUPABASE
 
+/*
+    To run this server:
+
+    Install tsc (npm install --run-dev tsx)
+    Run this file using the command "npx tsc server.js"
+*/
+
 dotenv.config();
 
 export const app = express();
