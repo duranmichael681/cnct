@@ -54,7 +54,7 @@ eventsRouter.post('/events/:id/join', /*middleware, controller*/ function(req: R
         res.send("Error");
     }
 })
-eventsRouter.post('/events/:id/leave', /*middleware, controller*/ function(req: Request, res: Request) {
+eventsRouter.post('/events/:id/leave', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
         res.send(req.params.id);
