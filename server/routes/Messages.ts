@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { supabase } from '../server';
-import dotenv from 'dotenv';
+
 
 //TODO: import other necessary middlewares and controllrs here
 
