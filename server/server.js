@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Initialize Supabase client
@@ -15,10 +15,6 @@ export const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY
 );
-
-// Set-up Module Exports
-
-
 
 // Simple route to verify backend is running
 app.get("/", (req, res) => {

@@ -3,6 +3,7 @@ import userRouter from "./users";
 import messageRouter from "./Messages";
 import webpagesRouter from "./webpages";
 import { Router } from "express";
+import { app } from "../server.js"
 
 
 export const router = Router();
@@ -15,6 +16,8 @@ router.use('/api', eventsRouter)
 router.use('/api', userRouter)
 router.use('/api', messageRouter)
 router.use('/', webpagesRouter) //webpages will be served from root
+
+app.use(router);
 
 export default router;
 
