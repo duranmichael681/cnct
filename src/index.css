@@ -1,9 +1,13 @@
 @import "tailwindcss";
 :root {
+  --font-sans: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto,
+    "Helvetica Neue", Arial;
   --primary: #b8862c;
   --primary-hover: #976c1b;
+  --primary-text: #071d3e;
   --secondary: #081e3f;
   --secondary-hover: #0c2b63;
+  --tertiary: #c8a35c;
   --danger: #d64545;
   --success: #48a957;
   --menucard: #d6d2cd;
@@ -11,5 +15,10 @@
 }
 
 body {
-  @apply bg-[var(--background)] text-black;
+  @apply bg-[var(--background)] text-[var(--secondary)];
+  font-family: var(--font-sans);
+}
+
+img {
+  width: 100%;
 }
