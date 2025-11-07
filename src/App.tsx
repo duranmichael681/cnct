@@ -1,25 +1,17 @@
-import ProfileHeader from "./components/ProfileHeader";
-import PostCard from "./components/PostCard";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import ProfilePage from "./pages/ProfilePage";
 
-export default function ProfilePage() {
+export default function App() {
   return (
-    <div className="min-h-screen bg-amber-50 text-[var(--background)] transition-colors">
-      {/* Navbar placeholder */}
-      <div className="w-20 h-full fixed left-0 top-0 bg-sky-950" />
+    <Router>
+      <Routes>
+        {/* Default route */}
+        <Route path="/" element={<Navigate to="/profile" />} />
 
-      <main className="ml-20 p-6">
-        {/* Profile Header now includes GroupList */}
-        <ProfileHeader />
-
-        {/* Post feed */}
-        <section className="mt-6">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {[1, 2, 3, 4].map((id) => (
-              <PostCard key={id} />
-            ))}
-          </div>
-        </section>
-      </main>
-    </div>
+        {/* Profile by username */}
+        <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/profile/:username" element={<ProfilePage />} />
+      </Routes>
+    </Router>
   );
 }
