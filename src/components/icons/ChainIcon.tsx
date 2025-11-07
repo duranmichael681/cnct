@@ -4,6 +4,7 @@ const SvgComponent = (props: SVGProps<SVGSVGElement>) => (
     xmlns="http://www.w3.org/2000/svg"
     width={37}
     height={37}
+    viewBox="0 0 40 40"
     fill="none"
     {...props}
   >
