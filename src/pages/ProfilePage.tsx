@@ -1,17 +1,14 @@
 import ProfileHeader from "../components/ProfileHeader";
 import PostCard from "../components/PostCard";
+import SideBar from "../components/SideBar";
 
-interface ProfilePageProps {
-  username?: string; // Placeholder, can be fetched later
-}
-
-export default function ProfilePage({ username }: ProfilePageProps) {
+export default function ProfilePage() {
   return (
-    <div className="min-h-screen bg-amber-50 text-[var(--background)] transition-colors">
-      {/* Navbar placeholder */}
-      <div className="w-20 h-full fixed left-0 top-0 bg-sky-950" />
+    <div className="flex min-h-screen bg-[var(--background)] text-[var(--text)] transition-colors">
+      {/* Sidebar */}
+      <SideBar />
 
-      <main className="ml-20 p-6">
+      <main className="flex-1 p-6">
         {/* Profile Header */}
         <ProfileHeader />
 
