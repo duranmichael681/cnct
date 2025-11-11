@@ -1,13 +1,13 @@
-import React, { useEffect, useState } from 'react'
 import { motion } from 'framer-motion'
-import CollageImg1 from '../assets/Screenshot 2025-11-07 at 1.35.08 PM.png'
-import CollageImg2 from '../assets/Screenshot 2025-11-07 at 1.35.19 PM.png'
-import CollageImg3 from '../assets/Screenshot 2025-11-07 at 1.35.35 PM.png'
-import CollageImg4 from '../assets/Screenshot 2025-11-07 at 1.43.52 PM.png'
-import CollageImg5 from '../assets/Screenshot 2025-11-07 at 1.44.34 PM.png'
-import CollageImg6 from '../assets/Screenshot 2025-11-07 at 1.49.00 PM.png'
-import CollageImg7 from '../assets/Screenshot 2025-11-07 at 1.49.38 PM.png'
-import CollageImg8 from '../assets/Screenshot 2025-11-07 at 1.50.07 PM.png'
+import { Mail, Lock } from 'lucide-react'
+import CollageImg1 from '../assets/placeholder_event_1.png'
+import CollageImg2 from '../assets/placeholder_event_2.png'
+import CollageImg3 from '../assets/placeholder_event_3.png'
+import CollageImg4 from '../assets/placeholder_event_4.png'
+import CollageImg5 from '../assets/placeholder_event_5.png'
+import CollageImg6 from '../assets/placeholder_event_6.png'
+import CollageImg7 from '../assets/placeholder_event_7.png'
+import CollageImg8 from '../assets/placeholder_event_8.png'
 import { Link } from 'react-router-dom'
 
 export default function SignIn() {
@@ -29,7 +29,7 @@ export default function SignIn() {
     transition: {
       repeat: Infinity,
       duration: 90,
-      ease: ['linear'], // ✅ FIXED
+      ease: 'linear' as const,
     },
   }
 
@@ -38,7 +38,7 @@ export default function SignIn() {
     transition: {
       repeat: Infinity,
       duration: 90,
-      ease: ['linear'], // ✅ FIXED
+      ease: 'linear' as const,
     },
   }
 
@@ -52,29 +52,34 @@ export default function SignIn() {
       <div className='w-full md:w-1/3 h-auto md:h-screen flex justify-center items-center'>
         {/* 3. FORM CONTENT CONTAINER: Constrains the form's width and adds padding for mobile. */}
         {/* REMOVED: The problematic 'absolute top-[15vh] ml-15' for fluid layout. */}
-        <div className='w-full max-w-sm mx-auto px-6 md:px-0'>
+        <div className='w-full max-w-sm mx-auto px-6 md:px-0 mt-8 md:mt-0'>
           <h1 className='font-bold text-2xl'>Welcome To CNCT</h1>
 
           {/* Input fields now use w-full to fill the max-w-sm container gracefully */}
           <div className='mt-10'>
             <h1 className='text-lg'>Email Address</h1>
-            <input
-              placeholder='Enter your email'
-              // Replaced w-[clamp(...)] with w-full
-              className='pl-2 border-2 rounded-xl border-[#8f8b86] w-full p-2 text-sm'
-            />
+            <div className='relative'>
+              <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300' size={18} />
+              <input
+                placeholder='Enter your email'
+                className='pl-10 border-2 rounded-xl border-[#8f8b86] w-full p-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-300'
+              />
+            </div>
           </div>
 
           <div className='mt-10'>
             <h1 className='text-lg'>Password</h1>
-            <input
-              placeholder='Enter your password'
-              // Replaced w-[clamp(...)] with w-full
-              className='pl-2 border-2 rounded-xl border-[#8f8b86] w-full p-2 text-sm'
-            />
+            <div className='relative'>
+              <Lock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300' size={18} />
+              <input
+                placeholder='Enter your password'
+                type='password'
+                className='pl-10 border-2 rounded-xl border-[#8f8b86] w-full p-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-300'
+              />
+            </div>
           </div>
 
-          <Link to='/Home'>
+          <Link to='/home'>
             <button
               // Replaced w-[clamp(...)] with w-full
               className='mt-10 border p-2 bg-[#B6862C] border-[#B6862C] rounded-xl w-full text-white cursor-pointer'
@@ -97,9 +102,9 @@ export default function SignIn() {
           </div>
 
           <div className='mt-17 flex-row gap-4 flex justify-center'>
-            <button className='flex items-center border border-[#8f8b86] rounded-xl p-1 hover:bg-gray-50 transition cursor-pointer'>
-              <img src='https://www.svgrepo.com/show/475656/google-color.svg' alt='Google' className='w-5 h-5' />
-              <span className='text-gray-700 font-medium ml-2'>Sign up with Google</span>
+            <button className='flex items-center border border-[#8f8b86] rounded-xl p-3 mb-6 sm:mb-8 hover:bg-gray-50 transition cursor-pointer'>
+              <img src='https://www.svgrepo.com/show/475656/google-color.svg' alt='Google' className='w-6 h-6' />
+              <span className='text-gray-700 font-semibold text-base sm:text-lg ml-2'>Sign up with Google</span>
             </button>
           </div>
         </div>

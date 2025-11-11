@@ -1,40 +1,66 @@
+import { motion } from 'framer-motion'
+import { useState } from 'react'
 import SideBar from '../components/SideBar'
 import PostCard from '../components/PostCard'
+import Footer from '../components/Footer'
+import SortFilter from '../components/SortFilter'
 
 export default function DiscoverPage() {
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+
+  const handleSortChange = (sort: 'newest' | 'oldest' | 'tags', tags?: string[]) => {
+    setSortBy(sort)
+    if (tags) {
+      setSelectedTags(tags)
+    } else {
+      setSelectedTags([])
+    }
+    // TODO: Implement actual sorting logic here
+    console.log('Sorting by:', sort, 'Tags:', tags)
+  }
+
   return (
-    <div className="flex min-h-screen bg-[var(--background)]">
-      {/* Sidebar */}
-      <SideBar />
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      transition={{ duration: 0.5 }}
+      className="flex flex-col min-h-screen bg-[var(--background)]"
+    >      <div className="flex flex-1">
+        {/* Sidebar */}
+        <SideBar />
 
-      {/* Main Content */}
-      <main className="flex-1 p-6">
-        <div className="max-w-6xl mx-auto">
-          <h1 className="text-3xl font-bold text-[var(--text)] mb-6">Discover Events</h1>
-          
-          {/* Search and Filter Bar */}
-          <div className="mb-6 flex flex-col sm:flex-row gap-4">
-            <input
-              type="text"
-              placeholder="Search events..."
-              className="flex-1 px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
-            />
-            <select className="px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)]">
-              <option>All Categories</option>
-              <option>Sports</option>
-              <option>Academic</option>
-              <option>Social</option>
-            </select>
-          </div>
+        {/* Main Content */}
+        <main className="flex-1 p-6 pb-24 md:pb-6">
+          <div className="max-w-6xl mx-auto">
+            <h1 className="text-3xl font-bold text-[var(--text)] mb-6">Discover Events</h1>
+            
+            {/* Search and Filter Bar */}
+            <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+              <input
+                type="text"
+                placeholder="Search events..."
+                className="flex-1 w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] placeholder:text-gray-400 dark:placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] cursor-text"
+              />
+              <select className="w-full sm:w-auto px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] cursor-pointer">
+                <option>All Categories</option>
+                <option>Sports</option>
+                <option>Academic</option>
+                <option>Social</option>
+              </select>
+              <SortFilter onSortChange={handleSortChange} />
+            </div>
 
-          {/* Event Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[1, 2, 3, 4, 5, 6].map((id) => (
-              <PostCard key={id} />
-            ))}
+            {/* Event Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[1, 2, 3, 4, 5, 6].map((id) => (
+                <PostCard key={id} />
+              ))}
+            </div>
           </div>
-        </div>
-      </main>
-    </div>
+        </main>
+      </div>
+      <Footer />
+    </motion.div>
   )
 }

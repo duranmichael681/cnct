@@ -7,6 +7,7 @@ import ProfilePage from './pages/ProfilePage'
 import DiscoverPage from './pages/DiscoverPage'
 import CreatePage from './pages/CreatePage'
 import SettingsPage from './pages/SettingsPage'
+import LandingPage from './pages/LandingPage'
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
       <Route path='/MobileNav' element={<MobileNavBar />}></Route>
       <Route path='/' element={<SignUp />} />
       <Route path='/Signin' element={<SignIn />} />
+      <Route path='/landing' element={<LandingPage />} />
       <Route path='/Home' element={<Home />} />
       <Route path='/profile' element={<ProfilePage />} />
       <Route path='/discover' element={<DiscoverPage />} />

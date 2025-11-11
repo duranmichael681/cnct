@@ -1,14 +1,16 @@
 import SideBar from '../components/SideBar'
+import Footer from '../components/Footer'
 import { Calendar, MapPin, Users, Link as LinkIcon } from 'lucide-react'
 
 export default function CreatePage() {
   return (
-    <div className="flex min-h-screen bg-[var(--background)]">
-      {/* Sidebar */}
-      <SideBar />
+    <div className="flex flex-col min-h-screen bg-[var(--background)]">
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <SideBar />
 
-      {/* Main Content */}
-      <main className="flex-1 p-6">
+        {/* Main Content */}
+        <main className="flex-1 p-6 pb-24 md:pb-6">
         <div className="max-w-3xl mx-auto">
           <h1 className="text-3xl font-bold text-[var(--text)] mb-6">Create Event</h1>
 
@@ -41,7 +43,7 @@ export default function CreatePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
                 <label className="block text-sm font-semibold text-[var(--text)] mb-2 flex items-center gap-2">
-                  <Calendar size={16} />
+                  <Calendar size={16} className="text-[var(--primary)]" />
                   Date
                 </label>
                 <input
@@ -63,7 +65,7 @@ export default function CreatePage() {
             {/* Location */}
             <div>
               <label className="block text-sm font-semibold text-[var(--text)] mb-2 flex items-center gap-2">
-                <MapPin size={16} />
+                <MapPin size={16} className="text-[var(--primary)]" />
                 Location
               </label>
               <input
@@ -76,7 +78,7 @@ export default function CreatePage() {
             {/* Max Attendees */}
             <div>
               <label className="block text-sm font-semibold text-[var(--text)] mb-2 flex items-center gap-2">
-                <Users size={16} />
+                <Users size={16} className="text-[var(--primary)]" />
                 Max Attendees (optional)
               </label>
               <input
@@ -89,7 +91,7 @@ export default function CreatePage() {
             {/* Event Link */}
             <div>
               <label className="block text-sm font-semibold text-[var(--text)] mb-2 flex items-center gap-2">
-                <LinkIcon size={16} />
+                <LinkIcon size={16} className="text-[var(--primary)]" />
                 Event Link (optional)
               </label>
               <input
@@ -124,13 +126,15 @@ export default function CreatePage() {
             {/* Submit Button */}
             <button
               type="submit"
-              className="w-full py-3 bg-[var(--primary)] text-white font-semibold rounded-lg hover:bg-[var(--primary-hover)] transition-colors transform hover:scale-[1.02] active:scale-[0.98]"
+              className="w-full py-3 bg-[var(--primary)] text-white font-semibold rounded-lg hover:bg-[var(--primary-hover)] transition-colors transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
               Create Event
             </button>
           </form>
         </div>
       </main>
+      </div>
+      <Footer />
     </div>
   )
 }

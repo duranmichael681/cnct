@@ -1,8 +1,7 @@
 import SideBar from '../../components/SideBar'
-import UserPicture from '../../assets/istockphoto-1495088043-612x612.jpg'
+import PostCard from '../../components/PostCard'
+import Footer from '../../components/Footer'
 import PostPicture from '../../assets/download.jfif'
-import ChainIcon from '../../assets/455691.png'
-import CommentIcon from '../../assets/comment_24dp_BLACK_FILL0_wght400_GRAD0_opsz24.svg'
 import PopularEventImage from '../../assets/how-it-works.jpg'
 import { useState, useEffect } from 'react'
 
@@ -17,6 +16,7 @@ export default function Home() {
     window.addEventListener('resize', handleResize)
     return () => window.removeEventListener('resize', handleResize)
   }, [])
+  
   // Array of posts
   const posts = [
     {
@@ -67,59 +67,56 @@ export default function Home() {
   ]
 
   return (
-    <div className='flex min-h-screen'>
-      <SideBar />
-      <div className='flex-grow bg-[var(--background)] flex'>
-        {/* Left Section - Posts */}
-        <div className='p-8 text-black w-2/3 flex flex-col gap-10'>
-          <h1 className='text-5xl font-semibold mb-4'>CNCT</h1>
-
-          {posts.map((post, index) => (
-            <div key={index}>
-              <div className='mt-4 flex items-center gap-4'>
-                <img src={UserPicture} alt='User Picture' className='w-full max-w-[70px] aspect-square rounded-full object-cover' />
-                <h2 className='text-xl font-semibold'>{post.user}</h2>
-                <div className='bg-gray-500 h-12 w-0.25 mx-15'></div>
-                <h2 className='font-semibold text-xl'>{post.time}</h2>
-              </div>
-
-              <div className='relative w-full max-w-[765px] aspect-[765/268] my-5 flex-col flex'>
-                <h2 className='mt-5 font-semibold text-2xl'>Event_title</h2>
-                <img src={post.image} alt='User Post' className='w-full h-full object-cover rounded-xl' />
-              </div>
-
-              <div className='flex justify-start'>
-                <div className='mx-8 flex flex-row gap-10'>
-                  <img src={ChainIcon} alt='Chain Icon' className='w-6 h-6 object-contain' />
-                  <h2 className='font-semibold text-xl'>{post.likes}</h2>
-                  <img src={CommentIcon} alt='Comment Icon' className='w-6 h-6 object-contain' />
-                  <h2 className='font-semibold text-xl'>{post.comments}</h2>
-                </div>
-              </div>
+    <div className='flex min-h-screen bg-[var(--background)] flex-col'>
+      <div className='flex flex-1'>
+        <SideBar />
+        <div className='flex-grow flex flex-col lg:flex-row pb-24 md:pb-0'>
+          {/* Left Section - Posts */}
+          <div className='p-4 sm:p-6 lg:p-8 w-full lg:w-2/3 flex flex-col gap-6 sm:gap-8 lg:gap-10'>
+            {/* Welcome Message */}
+            <div className='animate-fade-in'>
+              <h1 className='text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text)] mb-2'>
+                Welcome Back, <span className='text-[var(--primary)]'>User</span>!
+              </h1>
+              <p className='text-base sm:text-lg text-[var(--text)] opacity-80'>
+                Here's what's happening today
+              </p>
             </div>
-          ))}
-        </div>
-        {width >= 1300 && (
-          <div className='m-5 w-1/3 h-auto flex flex-col justify-start items-center border-l border-gray-500 mt-20'>
-            <h1 className='text-center text-[var(--primary)] font-semibold text-3xl mb-6'>Popular this Week</h1>
 
-            <div className='flex flex-col w-full gap-10'>
-              {popularEvents.map((event, index) => (
-                <div key={index} className='flex w-full relative'>
-                  <div className='flex flex-col sm:flex-row w-full items-center sm:items-start sm:justify-start'>
-                    <img src={event.image} alt={event.title} className='ml-5 rounded-xl max-w-[175px] aspect-square object-cover mt-10' />
-                  </div>
-                  <div className='mt-10 mr-10 w-2/3 flex-row items-center justify-center'>
-                    <h2 className='text-[var(--primary)] font-semibold text-2xl'>{event.title}</h2>
-                    <div className='bg-gray-500 h-0.25 w-15 my-3' />
-                    <p className='text-[var(--primary-text)]'>{event.description}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
+            {/* CNCT Title */}
+            <h2 className='text-2xl sm:text-3xl lg:text-4xl font-semibold text-[var(--text)] animate-fade-in-delay-1'>
+              Latest Posts
+            </h2>
+
+            {posts.map((_post, index) => (
+              <div key={index} className={`animate-fade-in-delay-${Math.min(index + 2, 4)}`}>
+                <PostCard />
+              </div>
+            ))}
           </div>
-        )}
+          {width >= 1300 && (
+            <div className='m-5 w-1/3 h-auto flex flex-col justify-start items-center border-l border-[var(--border)] mt-20 animate-fade-in-delay-1'>
+              <h1 className='text-center text-[var(--primary)] font-semibold text-3xl mb-6 animate-fade-in-delay-2'>Popular this Week</h1>
+
+              <div className='flex flex-col w-full gap-10'>
+                {popularEvents.map((event, index) => (
+                  <div key={index} className={`flex w-full relative cursor-pointer hover:bg-[var(--menucard)] transition-colors rounded-lg p-2 animate-fade-in-delay-${Math.min(index + 3, 4)}`}>
+                    <div className='flex flex-col sm:flex-row w-full items-center sm:items-start sm:justify-start'>
+                      <img src={event.image} alt={event.title} className='ml-5 rounded-xl max-w-[175px] aspect-square object-cover mt-10' />
+                    </div>
+                    <div className='mt-10 mr-10 w-2/3 flex-row items-center justify-center'>
+                      <h2 className='text-[var(--primary)] font-semibold text-2xl'>{event.title}</h2>
+                      <div className='bg-[var(--border)] h-0.25 w-15 my-3' />
+                      <p className='text-[var(--text)]'>{event.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
+      <Footer />
     </div>
   )
 }

@@ -1,14 +1,16 @@
 import SideBar from '../components/SideBar'
+import Footer from '../components/Footer'
 import { Settings as SettingsIcon, User, Bell, Lock, Palette } from 'lucide-react'
 
 export default function SettingsPage() {
   return (
-    <div className="flex min-h-screen bg-[var(--background)]">
-      {/* Sidebar */}
-      <SideBar />
+    <div className="flex flex-col min-h-screen bg-[var(--background)]">
+      <div className="flex flex-1">
+        {/* Sidebar */}
+        <SideBar />
 
-      {/* Main Content */}
-      <main className="flex-1 p-6">
+        {/* Main Content */}
+        <main className="flex-1 p-6 pb-24 md:pb-6">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-3xl font-bold text-[var(--text)] mb-6 flex items-center gap-3">
             <SettingsIcon size={32} />
@@ -114,12 +116,14 @@ export default function SettingsPage() {
             </section>
 
             {/* Save Button */}
-            <button className="w-full py-3 bg-[var(--primary)] text-white font-semibold rounded-lg hover:bg-[var(--primary-hover)] transition-all transform hover:scale-[1.02] active:scale-[0.98]">
+            <button className="w-full py-3 bg-[var(--primary)] text-white font-semibold rounded-lg hover:bg-[var(--primary-hover)] transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer">
               Save Changes
             </button>
           </div>
         </div>
       </main>
+      </div>
+      <Footer />
     </div>
   )
 }

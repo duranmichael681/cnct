@@ -32,7 +32,7 @@
   --menucard: #161616;
   --background: #0f172a;
   --text: #fffbeb;
-  --text-secondary: #c8a35c;
+  --text-secondary: #d4a574;
   --border: #665027;
   --card-bg: #081e3f;
 }
@@ -46,4 +46,41 @@ body {
 
 img {
   width: 100%;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Staggered fade-in for multiple elements */
+.animate-fade-in-delay-1 {
+  animation: fadeIn 0.6s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-delay-2 {
+  animation: fadeIn 0.6s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-delay-3 {
+  animation: fadeIn 0.6s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-delay-4 {
+  animation: fadeIn 0.6s ease-out 0.4s forwards;
+  opacity: 0;
 }
