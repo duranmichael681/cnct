@@ -214,8 +214,16 @@ Handle secrets
 ## Running the Project
 
 After you have done all the steps above now for the fun part
-
+[Some Documentation could be found here](https://www.youtube.com/watch?v=oTIJunBa6MA)
 ```bash
 cd cnct
 npm run dev
+```
+## React Router
+
+We are going to need this to route all the pages later on so install this 
+```bash 
+cd cnct
+npm install react-router-dom
+
 ```
