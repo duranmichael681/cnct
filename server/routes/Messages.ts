@@ -10,8 +10,7 @@ const messageRouter = Router();
 messageRouter.get('/messages/threads/:eventId', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware
-        const {thread, error} = supabase.from('posts').select("* WHERE id == " + req.params.eventId);
-        if(error) throw error;
+        const {thread, error} = supabase.from('posts').select("*").eq("id", req.params.eventId);
         res.send(thread);
     } catch (error: any) {
         res.send("Message not found.");
