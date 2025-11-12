@@ -1,7 +1,7 @@
 import { Link } from 'react-router-dom'
 export default function SideBar() {
   return (
-    <div className='w-[70px] relative bg-gradient-to-t from-[#C8A35C] to-[#081E3F] min-h-screen text-white'>
+    <div className='w-[70px] z-50 relative bg-gradient-to-t from-[#C8A35C] to-[#081E3F] min-h-screen text-white'>
       <div className='flex flex-col items-center gap-10 top-10 sticky'>
         <Link to='/home'>
           <svg width='24' height='24' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'>
