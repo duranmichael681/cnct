@@ -1,8 +1,8 @@
 import { useState } from 'react'
-import HomeIcon from '../../../components/icons/HomeIcon.tsx'
-import ExploreIcon from '../../../components/icons/ExploreIcon.tsx'
-import ProfileIcon from '../../../components/icons/ProfileIcon.tsx'
-import CreateIcon from '../../../components/icons/CreateIcon.tsx'
+import HomeIcon from '../../components/icons/HomeIcon.tsx'
+import ExploreIcon from '../../components/icons/ExploreIcon.tsx'
+import ProfileIcon from '../../components/icons/ProfileIcon.tsx'
+import CreateIcon from '../../components/icons/CreateIcon.tsx'
 import {Outlet, Link } from 'react-router'
 
 export default function MobileNavBar() {

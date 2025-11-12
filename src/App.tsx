@@ -3,7 +3,7 @@ import Home from './pages/Home/home'
 import Landing from './pages/Landing/landing'
 import SignUp from './auth/Signup'
 import UploadPage from './pages/Home/UploadPage'
-import MobileNavBar from './pages/Home/Navbars/MobileNavBar'
+import MobileNavBar from './pages/Navbars/MobileNavBar'
 
 import SignIn from './auth/Signin'
 
