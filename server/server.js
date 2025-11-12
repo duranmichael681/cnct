@@ -9,8 +9,8 @@ import { mainRouter } from "./routes/index.ts";
 /*
     To run this server:
 
-    Install tsc (npm install --run-dev tsx)
-    Run this file using the command "npx tsc server.js"
+    Install tsx (npm install --run-dev tsx)
+    Run this file using the command "npx tsx server.js"
 */
 
 dotenv.config();

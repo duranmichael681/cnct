@@ -1,7 +1,7 @@
-import eventsRouter from "./events.js";
-import userRouter from "./users.js";
-import messageRouter from "./Messages.js";
-import webpagesRouter from "./webpages.js";
+import eventsRouter from "./events";
+import userRouter from "./users";
+import messageRouter from "./Messages";
+import webpagesRouter from "./webpages";
 import { Router } from "express";
 
 
