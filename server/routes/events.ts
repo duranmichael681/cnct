@@ -1,14 +1,16 @@
 import { Request, Response, Router } from 'express';
-import { supabase } from '../server';
+import { supabase } from '../server.js';
 //TODO: import other necessary middlewares and controllrs here
 
 const eventsRouter = Router();
 
 //TODO: add middlewares and controllers later
-eventsRouter.get('/events', /*middleware, controller*/ function(req: Request, res: Response) {
+eventsRouter.get('/events', /*middleware, controller*/ async function(req: Request, res: Response) {
     try {
         // Add Middleware
-        res.send("Events");
+        const {data, error} = await supabase.from("events").select("*");
+        if(error) throw error;
+        res.send(data);
     } catch (error: any) {
         res.send("Error");
     }

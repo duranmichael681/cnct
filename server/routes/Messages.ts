@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { supabase } from '../server';
+import { supabase } from '../server.js';
 
 
 //TODO: import other necessary middlewares and controllrs here
@@ -10,7 +10,9 @@ const messageRouter = Router();
 messageRouter.get('/messages/threads/:eventId', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware
-        res.send(req.params.eventId);
+        const {thread, error} = supabase.from('posts').select("* WHERE id == " + req.params.eventId);
+        if(error) throw error;
+        res.send(thread);
     } catch (error: any) {
         res.send("Message not found.");
     }
