@@ -15,11 +15,14 @@ eventsRouter.get('/events', /*middleware, controller*/ async function(req: Reque
         res.send("Error");
     }
 })
-eventsRouter.get('/events/:id', /*middleware, controller*/ function(req: Request, res: Response) {
+eventsRouter.get('/events/:id', /*middleware, controller*/ async function(req: Request, res: Response) {
     try {
         // Add Middleware
-        res.send(req.params.id);
+        const {data, error} = await supabase.from("posts").select("*").eq("id", req.params.id);
+        if(error) throw error;
+        res.send(data);
     } catch (error: any) {
+        console.log(error);
         res.send("Error");
     }
 }
