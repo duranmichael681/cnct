@@ -70,7 +70,7 @@ export default function Home() {
     <div className='flex min-h-screen bg-[var(--background)] flex-col'>
       <div className='flex flex-1'>
         <SideBar />
-        <div className='flex-grow flex flex-col lg:flex-row pb-24 md:pb-0'>
+        <div className='flex-grow flex flex-col lg:flex-row pb-24 md:pb-0 md:ml-[70px]'>
           {/* Left Section - Posts */}
           <div className='p-4 sm:p-6 lg:p-8 w-full lg:w-2/3 flex flex-col gap-6 sm:gap-8 lg:gap-10'>
             {/* Welcome Message */}

@@ -15,8 +15,8 @@ export default function MobileNavBar() {
       <div className="h-dvh">
         <div className={`fixed bottom-0 left-0 flex flex-row w-full h-16 justify-center items-center gap-14 shadow-lg transition-all duration-300 ${
           isDark 
-            ? 'bg-gradient-to-r from-[#081E3F] to-[var(--primary)]' 
-            : 'bg-[#081E3F]'
+            ? 'bg-[var(--background)]' 
+            : 'bg-[#c8a35c]'
         }`}>
           <Link to="/home" className="h-6 aspect-square hover:scale-110 transition-transform cursor-pointer">
             <HomeIcon className="w-full h-full" />
@@ -36,9 +36,9 @@ export default function MobileNavBar() {
             aria-label="Toggle theme"
           >
             {isDark ? (
-              <Sun width={20} height={20} color="#C8A35C" className='hover:drop-shadow-[0_0_8px_rgba(200,163,92,0.6)]' />
+              <Sun width={20} height={20} color="#FFD700" className='hover:drop-shadow-[0_0_8px_rgba(255,215,0,0.6)]' />
             ) : (
-              <Moon width={20} height={20} color="white" />
+              <Moon width={20} height={20} color="#081e3f" />
             )}
           </button>
         </div>

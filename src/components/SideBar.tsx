@@ -8,7 +8,7 @@ export default function SideBar() {
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className={`hidden md:block w-[70px] relative min-h-screen text-white transition-all duration-300 z-40 ${
+      <div className={`hidden md:block w-[70px] fixed left-0 top-0 bottom-0 text-white transition-all duration-300 z-40 ${
         isDark 
           ? 'bg-gradient-to-t from-[#c8a35c] to-[#081e3f]' 
           : 'bg-gradient-to-t from-[#b6862c] to-[#081e3f]'
@@ -76,8 +76,8 @@ export default function SideBar() {
       {/* Mobile Bottom Navigation */}
       <div className={`md:hidden fixed bottom-0 left-0 right-0 z-50 flex justify-around items-center py-3 px-2 shadow-[0_-4px_12px_rgba(0,0,0,0.15)] ${
         isDark
-          ? 'bg-gradient-to-r from-[var(--secondary)] to-[var(--primary)]'
-          : 'bg-gradient-to-r from-[var(--secondary)] to-[#0a1f47]'
+          ? 'bg-[var(--background)]'
+          : 'bg-[#c8a35c]'
       }`}>
         <Link to='/home' className='hover:scale-110 transition-transform cursor-pointer p-2' aria-label='Home'>
           <svg width='28' height='28' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'>
@@ -121,9 +121,9 @@ export default function SideBar() {
           aria-label='Toggle theme'
         >
           {isDark ? (
-            <Sun width={28} height={28} color='#C8A35C' />
+            <Sun width={28} height={28} color='#FFD700' />
           ) : (
-            <Moon width={28} height={28} color='white' />
+            <Moon width={28} height={28} color='#081e3f' />
           )}
         </button>
 

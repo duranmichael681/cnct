@@ -1,9 +1,20 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
+import { useNavigate } from "react-router-dom";
 import { MoreVertical, Flag, Ban, Share2, MapPin, Clock, Calendar, MessageCircle, UserCheck, Link, Share2Icon, LucideShare2 } from "lucide-react";
 
 export default function PostCard() {
+  const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+
+  // Mock user ID - in a real app, this would come from props or context
+  const mockUserId = "123";
+
+  const handleUserClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    navigate(`/profile/${mockUserId}`);
+  };
 
   return (
     <>
@@ -65,10 +76,13 @@ export default function PostCard() {
 
         <div onClick={() => setIsOpen(true)}>
           {/* User + Timestamp */}
-          <div className="flex items-center gap-3 mb-3">
+          <div 
+            className="flex items-center gap-3 mb-3 cursor-pointer hover:opacity-80 transition-opacity w-fit"
+            onClick={handleUserClick}
+          >
             <div className="w-10 h-10 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full" />
             <div>
-              <p className="font-bold text-[var(--text)]">username</p>
+              <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">username</p>
               <p className="text-sm text-[var(--text-secondary)]">2h ago</p>
             </div>
           </div>
@@ -98,10 +112,10 @@ export default function PostCard() {
         </div>
       </div>
 
-      {/* Modal (expanded view) */}
-      {isOpen && (
+      {/* Modal (expanded view) - Rendered as Portal */}
+      {isOpen && createPortal(
         <div
-          className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 backdrop-blur-sm"
+          className="fixed inset-0 bg-black/60 flex items-center justify-center z-[100] backdrop-blur-md p-2 sm:p-4"
           onClick={() => {
             setIsOpen(false);
             setShowMenu(false);
@@ -109,7 +123,7 @@ export default function PostCard() {
         >
           <div
             onClick={(e) => e.stopPropagation()}
-            className="bg-[var(--card-bg)] rounded-xl shadow-2xl w-[90%] max-w-2xl p-6 relative animate-fadeIn"
+            className="bg-[var(--card-bg)] rounded-xl shadow-2xl w-full h-full sm:h-auto sm:max-w-3xl sm:max-h-[95vh] overflow-y-auto p-4 sm:p-6 relative animate-fadeIn"
           >
             {/* Three-dot menu in modal */}
             <div className="absolute top-16 right-4">
@@ -171,10 +185,13 @@ export default function PostCard() {
             </button>
 
             {/* Event Header */}
-            <div className="flex items-center gap-4 mb-4">
+            <div 
+              className="flex items-center gap-4 mb-4 cursor-pointer hover:opacity-80 transition-opacity w-fit"
+              onClick={handleUserClick}
+            >
               <div className="w-12 h-12 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full" />
               <div>
-                <p className="font-bold text-[var(--text)]">username</p>
+                <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">username</p>
                 <p className="text-sm text-[var(--text-secondary)]">2h ago</p>
               </div>
             </div>
@@ -238,7 +255,8 @@ export default function PostCard() {
               ))}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

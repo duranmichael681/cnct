@@ -4,10 +4,12 @@ import SideBar from '../components/SideBar'
 import PostCard from '../components/PostCard'
 import Footer from '../components/Footer'
 import SortFilter from '../components/SortFilter'
+import CategoryFilter from '../components/CategoryFilter'
 
 export default function DiscoverPage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [selectedCategory, setSelectedCategory] = useState('All Categories')
 
   const handleSortChange = (sort: 'newest' | 'oldest' | 'tags', tags?: string[]) => {
     setSortBy(sort)
@@ -18,6 +20,12 @@ export default function DiscoverPage() {
     }
     // TODO: Implement actual sorting logic here
     console.log('Sorting by:', sort, 'Tags:', tags)
+  }
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category)
+    // TODO: Implement actual category filtering logic here
+    console.log('Selected category:', category)
   }
 
   return (
@@ -31,7 +39,7 @@ export default function DiscoverPage() {
         <SideBar />
 
         {/* Main Content */}
-        <main className="flex-1 p-6 pb-24 md:pb-6">
+        <main className="flex-1 p-6 pb-24 md:pb-6 md:ml-[70px]">
           <div className="max-w-6xl mx-auto">
             <h1 className="text-3xl font-bold text-[var(--text)] mb-6">Discover Events</h1>
             
@@ -42,12 +50,7 @@ export default function DiscoverPage() {
                 placeholder="Search events..."
                 className="flex-1 w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] placeholder:text-gray-400 dark:placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] cursor-text"
               />
-              <select className="w-full sm:w-auto px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] cursor-pointer">
-                <option>All Categories</option>
-                <option>Sports</option>
-                <option>Academic</option>
-                <option>Social</option>
-              </select>
+              <CategoryFilter onCategoryChange={handleCategoryChange} />
               <SortFilter onSortChange={handleSortChange} />
             </div>
 

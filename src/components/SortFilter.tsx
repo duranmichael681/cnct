@@ -37,11 +37,11 @@ export default function SortFilter({ onSortChange }: SortFilterProps) {
   }, [])
 
   const handleSortSelect = (option: SortOption) => {
-    setSelectedSort(option)
-    
     if (option === 'tags') {
+      setSelectedSort('tags')
       setShowTagInput(true)
     } else {
+      setSelectedSort(option)
       setShowTagInput(false)
       setSelectedTags([])
       onSortChange(option)
@@ -65,6 +65,8 @@ export default function SortFilter({ onSortChange }: SortFilterProps) {
       onSortChange('tags', newTags)
     } else {
       setSelectedSort(null)
+      setShowTagInput(false)
+      setIsOpen(false)
     }
   }
 
@@ -75,7 +77,7 @@ export default function SortFilter({ onSortChange }: SortFilterProps) {
   }
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative cursor-pointer" ref={dropdownRef}>
       {/* Main Sort Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
@@ -87,11 +89,11 @@ export default function SortFilter({ onSortChange }: SortFilterProps) {
 
       {/* Dropdown Menu */}
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 sm:w-56 bg-[var(--card-bg)] border-2 border-[var(--border)] rounded-lg shadow-2xl z-30 overflow-hidden">
+        <div className="absolute right-0 mt-2 w-[calc(100vw-3rem)] max-w-xs sm:w-56 bg-[var(--card-bg)] border-2 border-[var(--border)] rounded-lg shadow-2xl z-30 overflow-hidden">
           {/* Newest Option */}
           <button
             onClick={() => handleSortSelect('newest')}
-            className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between font-semibold text-sm sm:text-base ${
+            className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between font-semibold text-sm sm:text-base cursor-pointer ${
               selectedSort === 'newest'
                 ? 'bg-[var(--primary)] text-white'
                 : 'bg-[var(--background)] hover:bg-[var(--menucard)] text-[var(--text)]'
@@ -103,7 +105,7 @@ export default function SortFilter({ onSortChange }: SortFilterProps) {
           {/* Oldest Option */}
           <button
             onClick={() => handleSortSelect('oldest')}
-            className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between font-semibold text-sm sm:text-base ${
+            className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between font-semibold text-sm sm:text-base cursor-pointer ${
               selectedSort === 'oldest'
                 ? 'bg-[var(--primary)] text-white'
                 : 'bg-[var(--background)] hover:bg-[var(--menucard)] text-[var(--text)]'
@@ -115,7 +117,7 @@ export default function SortFilter({ onSortChange }: SortFilterProps) {
           {/* Tags Option */}
           <button
             onClick={() => handleSortSelect('tags')}
-            className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between font-semibold text-sm sm:text-base ${
+            className={`w-full px-4 py-3 text-left transition-colors flex items-center justify-between font-semibold text-sm sm:text-base cursor-pointer ${
               selectedSort === 'tags'
                 ? 'bg-[var(--primary)] text-white'
                 : 'bg-[var(--background)] hover:bg-[var(--menucard)] text-[var(--text)]'
@@ -141,8 +143,9 @@ export default function SortFilter({ onSortChange }: SortFilterProps) {
                 className="w-full px-3 py-2 mb-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] text-sm placeholder:text-gray-400 dark:placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--primary)]"
               />
 
-              {/* Predefined Tag Options */}
+              {/* Predefined Tag Options - Quick Select */}
               <div className="flex flex-wrap gap-1.5 mb-3">
+                <p className="w-full text-xs text-[var(--text-secondary)] mb-1">Quick select:</p>
                 {eventTagOptions.map((tag) => (
                   <button
                     key={tag}
@@ -174,7 +177,7 @@ export default function SortFilter({ onSortChange }: SortFilterProps) {
                         <span>{tag}</span>
                         <button
                           onClick={() => handleTagRemove(tag)}
-                          className="hover:bg-white/20 rounded-full p-0.5 transition-colors"
+                          className="hover:bg-white/20 rounded-full p-0.5 transition-colors cursor-pointer"
                         >
                           <X size={12} />
                         </button>

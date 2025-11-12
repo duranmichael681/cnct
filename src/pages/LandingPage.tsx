@@ -11,7 +11,7 @@ export default function LandingPage() {
     <div className="flex min-h-screen bg-[var(--background)]">
       <SideBar />
       
-      <div className="flex-1 overflow-y-auto pb-24 md:pb-0">
+      <div className="flex-1 overflow-y-auto pb-24 md:pb-0 md:ml-[70px]">
         <div className="max-w-[1440px] mx-auto">
           {/* Hero Section */}
           <section className="relative px-6 sm:px-12 lg:px-20 py-12 sm:py-16 lg:py-20 mt-8 md:mt-0">

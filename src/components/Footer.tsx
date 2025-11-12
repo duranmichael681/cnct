@@ -4,7 +4,7 @@ export default function Footer() {
   };
 
   return (
-    <footer className="hidden md:block w-screen bg-[var(--secondary)] dark:bg-[var(--card-bg)] overflow-hidden py-16 px-6 sm:px-10 lg:px-20 relative z-0">
+    <footer className="hidden md:block w-screen bg-[var(--secondary)] dark:bg-[var(--card-bg)] overflow-hidden py-16 px-6 sm:px-10 lg:px-20 relative z-0 md:pl-[calc(70px+1.5rem)] lg:pl-[calc(70px+5rem)]">
       <div className="w-full max-w-[1920px] mx-auto relative">
         {/* Top Section - CNCT Branding */}
         <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
