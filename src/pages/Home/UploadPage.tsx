@@ -244,13 +244,14 @@ export default function UploadPage() {
 
         <div className=' flex flex-col mt-10 '>
           <h2 className='text-xl font-semibold mb-5'>Title</h2>
-          <input placeholder='Event Title' value={title} onChange={(e) => setTitle(e.target.value)} className='w-1/2 border-2 rounded p-2' />
+          <input placeholder='Event Title' value={title} onChange={(e) => setTitle(e.target.value)} className=' border-2 rounded p-2' />
         </div>
         <div className=' flex flex-col mt-10 '>
           <h2 className='text-xl font-semibold mb-5'>Description</h2>
           <textarea
             placeholder='Event description...'
-            className='w-1/2 border-2 rounded p-2 h-[20vh] resize-none text-sm placeholder:text-gray-400'
+            // 👇 FIX APPLIED: Added overflow-y-auto to enforce scrolling within the fixed h-[20vh]
+            className=' border-2 rounded p-2 h-[20vh] resize-none text-sm placeholder:text-gray-400 overflow-y-auto'
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           ></textarea>
@@ -262,12 +263,7 @@ export default function UploadPage() {
         </div>
         <div className=' flex flex-col mt-10 '>
           <h2 className='text-xl font-semibold mb-5'>Attendees</h2>
-          <input
-            placeholder='Amount of People'
-            className='w-1/2 border-2 rounded p-2'
-            value={attendees}
-            onChange={(e) => setAttendees(e.target.value)}
-          />
+          <input placeholder='Amount of People' className='border-2 rounded p-2' value={attendees} onChange={(e) => setAttendees(e.target.value)} />
         </div>
         <div className='flex flex-col justify-center items-center w-1/2 '>
           <button onClick={handleSave} className='bg-[var(--primary-hover)]  w-full mt-10 rounded cursor-pointer p-3 text-white font-bold'>
