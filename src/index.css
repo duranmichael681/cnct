@@ -1,7 +1,6 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 :root {
-  --font-sans: "Rubik", system-ui, -apple-system, "Segoe UI", Roboto,
-    "Helvetica Neue", Arial;
+  --font-sans: 'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
   --primary: #b8862c;
   --primary-hover: #976c1b;
   --primary-text: #071d3e;

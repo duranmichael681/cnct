@@ -5,7 +5,7 @@ import ChainIcon from '../../assets/455691.png'
 import CommentIcon from '../../assets/comment_24dp_BLACK_FILL0_wght400_GRAD0_opsz24.svg'
 import PopularEventImage from '../../assets/how-it-works.jpg'
 import { useState, useEffect } from 'react'
-
+import { Link } from 'react-router-dom'
 export default function Home() {
   const [width, setWidth] = useState(window.innerWidth)
 
@@ -72,7 +72,9 @@ export default function Home() {
       <div className='flex-grow bg-[var(--background)] flex'>
         {/* Left Section - Posts */}
         <div className='p-8 text-black w-2/3 flex flex-col gap-10'>
-          <h1 className='text-5xl font-semibold mb-4'>CNCT</h1>
+          <Link to='/landing'>
+            <h1 className='text-5xl font-semibold mb-4'>CNCT</h1>
+          </Link>
 
           {posts.map((post, index) => (
             <div key={index}>
@@ -83,7 +85,8 @@ export default function Home() {
                 <h2 className='font-semibold text-xl'>{post.time}</h2>
               </div>
 
-              <div className='relative w-full max-w-[765px] aspect-[765/268] my-5'>
+              <div className='relative w-full max-w-[765px] aspect-[765/268] my-5 flex-col flex'>
+                <h2 className='mt-5 font-semibold text-2xl'>Event_title</h2>
                 <img src={post.image} alt='User Post' className='w-full h-full object-cover rounded-xl' />
               </div>
 
@@ -98,7 +101,7 @@ export default function Home() {
             </div>
           ))}
         </div>
-        {width >= 1024 && (
+        {width >= 1300 && (
           <div className='m-5 w-1/3 h-auto flex flex-col justify-start items-center border-l border-gray-500 mt-20'>
             <h1 className='text-center text-[var(--primary)] font-semibold text-3xl mb-6'>Popular this Week</h1>
 
