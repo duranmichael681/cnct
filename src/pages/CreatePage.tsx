@@ -1,12 +1,11 @@
-import React, { useState, useCallback, useEffect, useRef } from "react";
-import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useDropzone } from "react-dropzone";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { Dayjs } from "dayjs";
 import uploadIcon from "../assets/icons/upload_24dp_F3F3F3_FILL0_wght400_GRAD0_opsz24.svg";
+import SideBar from "../components/SideBar";
 
 interface FileWithPreview extends File {
   preview: string;
@@ -213,10 +212,10 @@ export default function UploadPage() {
     ) : (
       // Default content when no files are uploaded
       <>
-        <h2 className="font-semibold text-2xl text-white">
+        <h2 className="font-semibold text-2xl text-[var(--primary)]">
           Your Listing Preview
         </h2>
-        <p className="mt-5 w-1/3 break-words text-center text-white">
+        <p className="mt-5 w-full md:w-1/3 break-words text-center text-[var(--text-secondary)] px-4">
           As you create your listing, you can preview how it will appear to
           others on Marketplace.
         </p>
@@ -225,14 +224,26 @@ export default function UploadPage() {
 
   // --- Main Component Render ---
   return (
-    <div className="w-full min-h-screen flex">
-      <div className="flex w-1/3 m-10 flex-col">
-        {/* Dropzone Area */}
-        <div
-          {...getRootProps()}
-          className="bg-[var(--secondary)] rounded-xl w-[40vh] h-[20vh] flex flex-row items-center justify-start flex-wrap gap-2 cursor-pointer border-2 border-dashed border-gray-400 p-2"
-        >
-          <input {...getInputProps()} />
+    <>
+      <SideBar />
+      <div className="w-full min-h-screen flex flex-col md:flex-row md:ml-[70px] pb-20 md:pb-0">
+        <div className="flex w-full md:w-1/3 mx-4 md:m-10 flex-col overflow-x-hidden">
+          {/* Mobile: Title and Date at top */}
+          <div className="md:hidden mb-6">
+            <h2 className="font-bold text-3xl break-words text-[var(--text)] mb-4">{title || "Title"}</h2>
+            {date && (
+              <p className="font-semibold text-xl text-[var(--text)]">
+                Event Date: {date.format("MMMM D, YYYY")}
+              </p>
+            )}
+          </div>
+
+          {/* Dropzone Area */}
+          <div
+            {...getRootProps()}
+            className="bg-[var(--secondary)] rounded-xl w-full md:w-[40vh] h-[20vh] flex flex-row items-center justify-start flex-wrap gap-2 cursor-pointer border-2 border-dashed border-[var(--border)] p-2"
+          >
+            <input {...getInputProps()} />
 
           {files.length > 0 ? (
             // Show a gallery of small previews
@@ -250,61 +261,68 @@ export default function UploadPage() {
             <div className="flex flex-col items-center justify-center w-full h-full">
               <img
                 src={uploadIcon}
-                className="h-10 w-10 text-white"
+                className="h-10 w-10 brightness-0 saturate-100 opacity-80"
+                style={{
+                  filter: 'invert(58%) sepia(45%) saturate(468%) hue-rotate(0deg) brightness(95%) contrast(88%)'
+                }}
                 alt="Upload Icon"
               />
-              <h2 className="font-semibold text-xl m-2 text-white text-center">
+              <h2 className="font-semibold text-xl m-2 text-[var(--primary)] text-center">
                 {isDragActive
                   ? "Drop files here"
                   : `Upload Pictures (Max ${MAX_FILES})`}
               </h2>
-              <p className="text-xs text-gray-300">(.jpg, .png, .jpeg)</p>
+              <p className="text-xs text-[var(--text-secondary)]">(.jpg, .png, .jpeg)</p>
             </div>
           )}
         </div>
         {/* End Dropzone Integration */}
 
-        <div className=" flex flex-col mt-10 ">
-          <h2 className="text-xl font-semibold mb-5">Title</h2>
+        <div className="flex flex-col mt-10">
+          <h2 className="text-xl font-semibold mb-5 text-[var(--text)]">Title</h2>
           <input
             placeholder="Event Title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className=" border-2 rounded p-2"
+            className="w-full border-2 border-[var(--border)] rounded p-2 bg-[var(--card-bg)] text-[var(--text)] placeholder:text-[var(--text-secondary)]"
           />
         </div>
-        <div className=" flex flex-col mt-10 ">
-          <h2 className="text-xl font-semibold mb-5">Description</h2>
+        <div className="flex flex-col mt-10">
+          <h2 className="text-xl font-semibold mb-5 text-[var(--text)]">Description</h2>
           <textarea
             placeholder="Event description..."
-            // 👇 FIX APPLIED: Added overflow-y-auto to enforce scrolling within the fixed h-[20vh]
-            className=" border-2 rounded p-2 h-[20vh] resize-none text-sm placeholder:text-gray-400 overflow-y-auto"
+            className="w-full border-2 border-[var(--border)] rounded p-2 h-[20vh] resize-none text-sm placeholder:text-[var(--text-secondary)] overflow-y-auto bg-[var(--card-bg)] text-[var(--text)]"
             value={description}
             onChange={(e) => setDescription(e.target.value)}
           ></textarea>
         </div>
-        <div className="w-1/2 mt-10 flex justify-center">
+        <div className="w-full md:w-1/2 mt-10">
           <LocalizationProvider dateAdapter={AdapterDayjs}>
             <DatePicker
               label="Event Date"
               value={date}
               onChange={(newValue) => setDate(newValue)}
+              slotProps={{
+                textField: {
+                  fullWidth: true
+                }
+              }}
             />
           </LocalizationProvider>
         </div>
-        <div className=" flex flex-col mt-10 ">
-          <h2 className="text-xl font-semibold mb-5">Attendees</h2>
+        <div className="flex flex-col mt-10">
+          <h2 className="text-xl font-semibold mb-5 text-[var(--text)]">Attendees</h2>
           <input
             placeholder="Amount of People"
-            className="border-2 rounded p-2"
+            className="w-full border-2 border-[var(--border)] rounded p-2 bg-[var(--card-bg)] text-[var(--text)] placeholder:text-[var(--text-secondary)]"
             value={attendees}
             onChange={(e) => setAttendees(e.target.value)}
           />
         </div>
-        <div className="flex flex-col justify-center items-center w-1/2 ">
+        <div className="flex flex-col justify-center items-center w-full md:w-1/2">
           <button
             onClick={handleSave}
-            className="bg-[var(--primary-hover)]  w-full mt-10 rounded cursor-pointer p-3 text-white font-bold"
+            className="bg-[var(--primary-hover)] w-full mt-10 rounded cursor-pointer p-3 text-white font-bold hover:opacity-90 transition-opacity"
           >
             Submit
           </button>
@@ -312,31 +330,32 @@ export default function UploadPage() {
       </div>
 
       {/* Listing Preview Section: The Carousel */}
-      <div className="w-3/4 flex-col min-h-screen mt-10">
-        <h1 className="font-semibold">
+      <div className="w-full md:w-3/4 flex-col min-h-screen mt-10 px-4 md:px-0">
+        <h1 className="font-semibold text-[var(--text)]">
           Preview ({files.length} / {MAX_FILES} Pictures)
         </h1>
-        <div className="w-3/4 bg-[var(--secondary-hover)] h-[80vh] flex items-center justify-center flex-col overflow-hidden rounded-xl relative">
+        <div className="w-full md:w-3/4 bg-[var(--secondary-hover)] h-[50vh] md:h-[80vh] flex items-center justify-center flex-col overflow-hidden rounded-xl relative">
           {mainCarouselPreview}
         </div>
       </div>
 
       {/* Details Preview Section */}
-      <div className="w-1/4 flex-col flex min-h-screen mt-10">
-        <h2 className="font-bold text-4xl break-words">{title || "Title"}</h2>
+      <div className="hidden md:flex md:w-1/4 flex-col min-h-screen mt-10 px-2 pr-10">
+        <h2 className="font-bold text-4xl break-words text-[var(--text)]">{title || "Title"}</h2>
         {date && (
-          <p className="font-semibold text-2xl mt-10">
+          <p className="font-semibold text-2xl mt-10 text-[var(--text)]">
             Event Date: {date.format("MMMM D, YYYY")}
           </p>
         )}{" "}
-        <h2 className="font-semibold text-l mt-10 break-words ">
+        <h2 className="font-semibold text-l mt-10 break-words text-[var(--text)]">
           {description || "Description"}
         </h2>
-        {attendees && <h2 className="font-bold text-2xl mt-10">Attendees </h2>}
+        {attendees && <h2 className="font-bold text-2xl mt-10 text-[var(--text)]">Attendees </h2>}
         {attendees && (
-          <h2 className="font-bold text-2xl mt-2">{attendees || "Limit"}</h2>
+          <h2 className="font-bold text-2xl mt-2 text-[var(--text)]">{attendees || "Limit"}</h2>
         )}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
