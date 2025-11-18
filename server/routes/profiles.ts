@@ -72,4 +72,5 @@ profileRouter.get('/profile/:userId/followers', /*middleware, controller*/ funct
     }
 })
 
+
 export default profileRouter
