@@ -58,9 +58,17 @@ profileRouter.get('/profile/:userId/following', /*middleware, controller*/ funct
 profileRouter.get('/profile/:userId/followers', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware Services
-        res.send(req.params.userId);
+        const {data, error} = supabase
+        .from('follows')
+        .select("following_user_id")
+        .eq("followed_user_id", req.params.userId);
+        if(error) {
+            console.log("Supabase error retrieving followers data. Error: ");
+            console.log(error);
+        }
+        res.send(data);
     } catch (error: any) {
-        res.send("User not found");
+        res.send("Followers not found");
     }
 })
 
