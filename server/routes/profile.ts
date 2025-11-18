@@ -37,5 +37,13 @@ profileRouter.get('/profile/:userId/following', /*middleware, controller*/ funct
         res.send("User not found");
     }
 })
+profileRouter.get('/profile/:userId/followers', /*middleware, controller*/ function(req: Request, res: Response) {
+    try {
+        // Middleware Services
+        res.send(req.params.userId);
+    } catch (error: any) {
+        res.send("User not found");
+    }
+})
 
 export default profileRouter
