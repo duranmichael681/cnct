@@ -21,14 +21,7 @@ profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
         res.send("Error retrieving user data!");
     }
 })
-profileRouter.put('/profile/:userId', function(req: Request, res: Response) {
-    try {
-        // Middleware Services
-        res.send(req.params.userId);
-    } catch (error: any) {
-        res.send("User not found");
-    }
-})
+
 profileRouter.get('/profile/:userId/events', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware Services
