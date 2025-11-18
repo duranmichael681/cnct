@@ -1,5 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { supabase } from '../server';
+import getProfileData from '../controllers/profiles/fetch-profile-data-controller.js'
 //import other necessary middlewares and controllrs here
 
 const profileRouter = Router();
@@ -20,14 +21,9 @@ For now, it will be kept here until I can see a reference for controller impleme
 profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
     try {
         // Middleware Service
-        const {data, error} = supabase
-        .from('users')
-        .select("profile_picture_url, first_name, last_name, pronouns, degree_program, description")
-        .eq("id", req.params.userId);
-        if(error) {
-            console.log("Supabase error retrieving user data. Error: ");
-            console.log(error);
-        }
+        
+        //Controller
+        const data = getProfileData(req.params.userId);
 
         res.send(data);
     } catch (error: any) {
