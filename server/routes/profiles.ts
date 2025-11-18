@@ -5,6 +5,18 @@ import { supabase } from '../server';
 const profileRouter = Router();
 
 //TODO: add middlewares and controllers later
+
+/* !!!!!!NOTE:
+
+This likely is not how you implement routes, and should instead be in controller.
+However, I have no reference for any development on the backend other than something I found in Messages.ts,
+although I understand that is not where this code should go.
+
+For now, it will be kept here until I can see a reference for controller implementation, and middleware implementation.
+
+*/ 
+
+
 profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
     try {
         // Middleware Service
