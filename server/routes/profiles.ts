@@ -8,7 +8,8 @@ const profileRouter = Router();
 profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
     try {
         // Middleware Service
-        const {data, error} = supabase.from('users')
+        const {data, error} = supabase
+        .from('users')
         .select("profile_picture_url, first_name, last_name, pronouns, degree_program, description")
         .eq("id", req.params.userId);
         if(error) {
@@ -25,7 +26,8 @@ profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
 profileRouter.get('/profile/:userId/events', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware Services
-        const {data, error} = supabase.from('posts')
+        const {data, error} = supabase
+        .from('posts')
         .select()
         .eq("organizer_id", req.params.userId);
         if(error) {
@@ -40,9 +42,17 @@ profileRouter.get('/profile/:userId/events', /*middleware, controller*/ function
 profileRouter.get('/profile/:userId/following', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware Services
-        res.send(req.params.userId);
+        const {data, error} = supabase
+        .from('follows')
+        .select("followed_user_id")
+        .eq("following_user_id", req.params.userId);
+        if(error) {
+            console.log("Supabase error retrieving following data. Error: ");
+            console.log(error);
+        }
+        res.send(data);
     } catch (error: any) {
-        res.send("User not found");
+        res.send("Followings not found");
     }
 })
 profileRouter.get('/profile/:userId/followers', /*middleware, controller*/ function(req: Request, res: Response) {
