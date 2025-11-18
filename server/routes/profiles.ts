@@ -25,9 +25,16 @@ profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
 profileRouter.get('/profile/:userId/events', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware Services
-        res.send(req.params.userId);
+        const {data, error} = supabase.from('posts')
+        .select()
+        .eq("organizer_id", req.params.userId);
+        if(error) {
+            console.log("Supabase error retrieving post data. Error: ");
+            console.log(error);
+        }
+        res.send(data);
     } catch (error: any) {
-        res.send("User not found");
+        res.send("Post not found");
     }
 })
 profileRouter.get('/profile/:userId/following', /*middleware, controller*/ function(req: Request, res: Response) {
