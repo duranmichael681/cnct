@@ -76,7 +76,7 @@ export default function Home() {
             {/* Welcome Message */}
             <div className='animate-fade-in'>
               <h1 className='text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text)] mb-2'>
-                Welcome Back, <span className='text-[var(--primary)]'>User</span>!
+                Welcome, <span className='text-[var(--primary)]'>User</span>!
               </h1>
               <p className='text-base sm:text-lg text-[var(--text)] opacity-80'>
                 Here's what's happening today

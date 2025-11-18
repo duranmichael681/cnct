@@ -1,18 +1,48 @@
 import { Link } from 'react-router-dom'
 import { Moon, Sun } from 'lucide-react'
 import { useTheme } from '../contexts/ThemeContext'
+import { useState, useEffect } from 'react'
 
 export default function SideBar() {
   const { isDark, toggleTheme } = useTheme()
+  const [scrollProgress, setScrollProgress] = useState(0)
+
+  useEffect(() => {
+    const handleScroll = () => {
+      // Gradual transition from 0 to 1 between scroll positions 0 and 500px
+      const maxScroll = 500
+      const progress = Math.min(window.scrollY / maxScroll, 1)
+      setScrollProgress(progress)
+    }
+
+    window.addEventListener('scroll', handleScroll)
+    return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  // Subtle gradient shift as you scroll
+  const getGradientStyle = () => {
+    const goldColor = isDark ? '#c8a35c' : '#b6862c'
+    const blueColor = '#081e3f'
+    
+    // Shift the middle point of the gradient from 50% to 80% as you scroll
+    const midPoint = 50 + (scrollProgress * 30)
+    
+    // Dark mode: gold (bottom) to blue (top)
+    // Light mode: gold (top) to blue (bottom) - inverted
+    return {
+      background: isDark 
+        ? `linear-gradient(to top, ${goldColor} 0%, ${blueColor} ${midPoint}%)`
+        : `linear-gradient(to bottom, ${goldColor} 0%, ${blueColor} ${midPoint}%)`
+    }
+  }
   
   return (
     <>
       {/* Desktop Sidebar */}
-      <div className={`hidden md:block w-[70px] fixed left-0 top-0 bottom-0 text-white transition-all duration-300 z-40 ${
-        isDark 
-          ? 'bg-gradient-to-t from-[#c8a35c] to-[#081e3f]' 
-          : 'bg-gradient-to-t from-[#b6862c] to-[#081e3f]'
-      }`}>
+      <div 
+        className="hidden md:block w-[70px] fixed left-0 top-0 bottom-0 text-white transition-all duration-300 z-40"
+        style={getGradientStyle()}
+      >
         <div className='flex flex-col items-center gap-10 top-10 sticky'>
           <Link to='/home' className='hover:scale-110 transition-transform cursor-pointer' aria-label='Home'>
             <svg width='24' height='24' viewBox='0 0 30 30' fill='none' xmlns='http://www.w3.org/2000/svg'>
@@ -50,18 +80,6 @@ export default function SideBar() {
             </svg>
           </Link>
 
-          <button 
-            onClick={toggleTheme}
-            className='hover:scale-110 transition-transform p-1.5 hover:bg-white/10 rounded-full cursor-pointer'
-            aria-label='Toggle theme'
-          >
-            {isDark ? (
-              <Sun width={24} height={24} color='#C8A35C' className='hover:drop-shadow-[0_0_8px_rgba(200,163,92,0.6)]' />
-            ) : (
-              <Moon width={24} height={24} color='white' />
-            )}
-          </button>
-
           <Link to='/settings' className='hover:scale-110 transition-transform cursor-pointer' aria-label='Settings'>
             <svg width='24' height='24' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>
               <path
@@ -70,6 +88,18 @@ export default function SideBar() {
               />
             </svg>
           </Link>
+
+          <button 
+            onClick={toggleTheme}
+            className='hover:scale-110 transition-transform p-1.5 hover:bg-white/10 rounded-full cursor-pointer'
+            aria-label='Toggle theme'
+          >
+            {isDark ? (
+              <Sun width={24} height={24} color='white' className='hover:drop-shadow-[0_0_8px_rgba(255,255,255,0.6)]' />
+            ) : (
+              <Moon width={24} height={24} color='white' />
+            )}
+          </button>
         </div>
       </div>
 
@@ -114,18 +144,6 @@ export default function SideBar() {
             />
           </svg>
         </Link>
-
-        <button 
-          onClick={toggleTheme}
-          className='hover:scale-110 transition-transform p-2 cursor-pointer'
-          aria-label='Toggle theme'
-        >
-          {isDark ? (
-            <Sun width={28} height={28} color='#FFD700' />
-          ) : (
-            <Moon width={28} height={28} color='#081e3f' />
-          )}
-        </button>
 
         <Link to='/settings' className='hover:scale-110 transition-transform cursor-pointer p-2' aria-label='Settings'>
           <svg width='28' height='28' viewBox='0 0 24 24' fill='none' xmlns='http://www.w3.org/2000/svg'>

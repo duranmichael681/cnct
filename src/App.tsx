@@ -8,6 +8,7 @@ import GuestProfilePage from './pages/GuestProfilePage'
 import DiscoverPage from './pages/DiscoverPage'
 import CreatePage from './pages/CreatePage'
 import SettingsPage from './pages/SettingsPage'
+import ChangePasswordPage from './pages/ChangePasswordPage'
 import LandingPage from './pages/LandingPage'
 
 export default function App() {
@@ -23,6 +24,7 @@ export default function App() {
       <Route path='/discover' element={<DiscoverPage />} />
       <Route path='/create' element={<CreatePage />} />
       <Route path='/settings' element={<SettingsPage />} />
+      <Route path='/change-password' element={<ChangePasswordPage />} />
     </Routes>
   )
 }
