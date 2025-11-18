@@ -6,7 +6,7 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
 import uploadIcon from '../assets/icons/upload_24dp_F3F3F3_FILL0_wght400_GRAD0_opsz24.svg'
 import { Link } from 'react-router-dom'
-import { uploadFileToStorage, createEvent } from '../services/api'
+import { uploadFileToStorage, createPost } from '../services/api'
 import { getCurrentUser } from '../lib/supabaseClient'
 
 interface FileWithPreview extends File {
@@ -138,7 +138,7 @@ export default function UploadPage() {
 
       // Insert Post Data into the 'posts' table via backend
       // Note: organizer_id will come from the auth token, not from the request body
-      const created = await createEvent({
+      const created = await createPost({
         title: title,
         body: description,
         start_date: date ? date.toISOString() : new Date().toISOString(),
@@ -262,12 +262,12 @@ export default function UploadPage() {
         {/* Form Fields - Mobile friendly stacking */}
         <div className=' flex flex-col mt-8 '>
           <h2 className='text-xl font-semibold mb-3'>Title</h2>
-          <input placeholder='Event Title' value={title} onChange={(e) => setTitle(e.target.value)} className=' border-2 rounded p-2' />
+          <input placeholder='Post Title' value={title} onChange={(e) => setTitle(e.target.value)} className=' border-2 rounded p-2' />
         </div>
         <div className=' flex flex-col mt-8 '>
           <h2 className='text-xl font-semibold mb-3'>Description</h2>
           <textarea
-            placeholder='Event description...'
+            placeholder='Post description...'
             className=' border-2 rounded p-2 h-[20vh] resize-none text-sm placeholder:text-gray-400 overflow-y-auto'
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -275,7 +275,7 @@ export default function UploadPage() {
         </div>
         <div className='w-full mt-8 flex justify-start'>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker label='Event Date' value={date} onChange={(newValue) => setDate(newValue)} />
+            <DatePicker label='Post Date' value={date} onChange={(newValue) => setDate(newValue)} />
           </LocalizationProvider>
         </div>
         <div className=' flex flex-col mt-8 '>
@@ -305,7 +305,7 @@ export default function UploadPage() {
         {/* Details Preview (Full width mobile, 1/4 of the right column on desktop) */}
         <div className='w-full flex-col flex lg:w-1/4 lg:pl-6'>
           <h2 className='font-bold text-3xl break-words lg:text-4xl'>{title || 'Title'}</h2>
-          {date && <p className='font-semibold text-xl mt-4 lg:mt-10'>Event Date: {date.format('MMMM D, YYYY')}</p>}
+          {date && <p className='font-semibold text-xl mt-4 lg:mt-10'>Post Date: {date.format('MMMM D, YYYY')}</p>}
           <h2 className='font-semibold text-base mt-4 break-words lg:text-lg '>{description || 'Description'}</h2>
           {attendees && <h2 className='font-bold text-xl mt-6 lg:mt-10'>Attendees </h2>}
           {attendees && <h2 className='font-bold text-xl mt-2'>{attendees || 'Limit'}</h2>}

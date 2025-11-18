@@ -50,7 +50,7 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
   }
 }
 
-// ==================== EVENTS API ====================
+// ==================== POSTS API ====================
 
 export interface Event {
   id: string;
@@ -66,7 +66,7 @@ export interface Event {
   attendees?: { count: number }[];
 }
 
-export interface CreateEventData {
+export interface CreatePostData {
   title: string;
   body: string;
   building?: string;
@@ -91,31 +91,31 @@ export interface Attendee {
   };
 }
 
-// Get all events
-export async function getAllEvents(): Promise<Event[]> {
-  const response = await fetchAPI<{ success: boolean; data: Event[] }>('/events');
+// Get all posts
+export async function getAllPosts(): Promise<Event[]> {
+  const response = await fetchAPI<{ success: boolean; data: Event[] }>('/posts');
   return response.data;
 }
 
-// Get single event by ID
-export async function getEventById(id: string): Promise<Event> {
-  const response = await fetchAPI<{ success: boolean; data: Event }>(`/events/${id}`);
+// Get single post by ID
+export async function getPostById(id: string): Promise<Event> {
+  const response = await fetchAPI<{ success: boolean; data: Event }>(`/posts/${id}`);
   return response.data;
 }
 
-// Create a new event
-export async function createEvent(eventData: CreateEventData): Promise<Event> {
-  const response = await fetchAPI<{ success: boolean; data: Event }>('/events', {
+// Create a new post
+export async function createPost(postData: CreatePostData): Promise<Event> {
+  const response = await fetchAPI<{ success: boolean; data: Event }>('/posts', {
     method: 'POST',
-    body: JSON.stringify(eventData),
+    body: JSON.stringify(postData),
   });
   return response.data;
 }
 
-// Toggle attendance for an event
-export async function toggleEventAttendance(eventId: string, userId: string): Promise<any> {
+// Toggle attendance for a post
+export async function togglePostAttendance(postId: string, userId: string): Promise<any> {
   const response = await fetchAPI<{ success: boolean; action: string; data: any }>(
-    `/events/${eventId}/toggle-attendance`,
+    `/posts/${postId}/toggle-attendance`,
     {
       method: 'POST',
       body: JSON.stringify({ user_id: userId }),
@@ -124,10 +124,10 @@ export async function toggleEventAttendance(eventId: string, userId: string): Pr
   return response;
 }
 
-// Get attendees for an event
-export async function getEventAttendees(eventId: string): Promise<Attendee[]> {
+// Get attendees for a post
+export async function getPostAttendees(postId: string): Promise<Attendee[]> {
   const response = await fetchAPI<{ success: boolean; data: Attendee[] }>(
-    `/events/${eventId}/attendees`
+    `/posts/${postId}/attendees`
   );
   return response.data;
 }
@@ -163,16 +163,16 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
   return response.data;
 }
 
-// Get events created by user
-export async function getUserEvents(userId: string): Promise<Event[]> {
+// Get posts created by user
+export async function getUserPosts(userId: string): Promise<Event[]> {
   const response = await fetchAPI<{ success: boolean; data: Event[] }>(
-    `/users/${userId}/events`
+    `/users/${userId}/posts`
   );
   return response.data;
 }
 
-// Get events user is attending
-export async function getUserAttendingEvents(userId: string): Promise<any[]> {
+// Get posts user is attending
+export async function getUserAttendingPosts(userId: string): Promise<any[]> {
   const response = await fetchAPI<{ success: boolean; data: any[] }>(
     `/users/${userId}/attending`
   );

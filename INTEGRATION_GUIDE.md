@@ -17,22 +17,22 @@ npm run dev
 ## API Usage
 
 ```typescript
-import { getAllEvents, createEvent, toggleEventAttendance } from './services/api';
+import { getAllPosts, createPost, togglePostAttendance } from './services/api';
 
-// Get events
-const events = await getAllEvents();
+// Get posts
+const posts = await getAllPosts();
 
-// Create event
-await createEvent({
+// Create post
+await createPost({
   title: 'Beach Volleyball',
-  description: 'Come play!',
-  location: 'FIU Beach',
-  event_date: '2025-12-01T14:00:00Z',
-  max_attendees: 15,
+  body: 'Come play!',
+  building: 'FIU Beach',
+  start_date: '2025-12-01T14:00:00Z',
+  organizer_id: 'user-id',
 });
 
 // Join/leave
-await toggleEventAttendance(eventId);
+await togglePostAttendance(postId, userId);
 ```
 
 ---
@@ -41,7 +41,7 @@ await toggleEventAttendance(eventId);
 
 | Issue | Solution |
 |-------|----------|
-| "Failed to load events" | Start backend: `cd server && npm run dev` |
+| "Failed to load posts" | Start backend: `cd server && npm run dev` |
 | CORS errors | Ensure backend runs on port 5000 |
 | TypeScript errors | Run `npm install` |
 

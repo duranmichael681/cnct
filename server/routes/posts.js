@@ -4,8 +4,8 @@ import { supabaseAdmin } from '../config/supabase.js';
 const router = express.Router();
 
 /**
- * GET /api/events
- * Fetch all public posts (events)
+ * GET /api/posts
+ * Fetch all public posts
  */
 router.get('/', async (req, res) => {
     try {
@@ -28,8 +28,8 @@ router.get('/', async (req, res) => {
 });
 
 /**
- * GET /api/events/:id
- * Fetch a single post (event) by ID
+ * GET /api/posts/:id
+ * Fetch a single post by ID
  */
 router.get('/:id', async (req, res) => {
     try {
@@ -51,8 +51,8 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * POST /api/events
- * Create a new post (event)
+ * POST /api/posts
+ * Create a new post
  * Body: { title, body, building, start_date, end_date, is_private, post_picture_url }
  * Note: organizer_id is taken from authenticated user (req.user)
  */
@@ -142,8 +142,8 @@ router.post('/', async (req, res) => {
 });
 
 /**
- * POST /api/events/:id/toggle-attendance
- * Toggle attendance for an event
+ * POST /api/posts/:id/toggle-attendance
+ * Toggle attendance for a post
  * Note: user_id is taken from authenticated user (req.user)
  */
 router.post('/:id/toggle-attendance', async (req, res) => {
@@ -194,8 +194,8 @@ router.post('/:id/toggle-attendance', async (req, res) => {
 });
 
 /**
- * GET /api/events/:id/attendees
- * Get all attendees for a specific event
+ * GET /api/posts/:id/attendees
+ * Get all attendees for a specific post
  */
 router.get('/:id/attendees', async (req, res) => {
     try {

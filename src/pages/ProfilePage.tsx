@@ -4,7 +4,7 @@ import PostCard from "../components/PostCard";
 import SideBar from "../components/SideBar";
 import Footer from "../components/Footer";
 import SortFilter from "../components/SortFilter";
-import { getUserEvents, type Event } from "../services/api";
+import { getUserPosts, type Event } from "../services/api";
 import { LoadingSpinner, ErrorMessage, EmptyState } from "../components/ui/UIComponents";
 import { formatEventDate } from "../utils/helpers";
 
@@ -24,15 +24,15 @@ export default function ProfilePage() {
     async function fetchUserEvents() {
       try {
         setLoading(true);
-        const data = await getUserEvents(userId);
+        const data = await getUserPosts(userId);
         if (mounted) {
           setUserEvents(data);
           setError(null);
         }
       } catch (err) {
         if (mounted) {
-          console.error('Error fetching user events:', err);
-          setError('Failed to load your events.');
+          console.error('Error fetching user posts:', err);
+          setError('Failed to load your posts.');
         }
       } finally {
         if (mounted) setLoading(false);
@@ -81,7 +81,7 @@ export default function ProfilePage() {
           {/* Post feed */}
           <section className="mt-6">
             {/* Loading State */}
-            {loading && <LoadingSpinner message="Loading your events..." />}
+            {loading && <LoadingSpinner message="Loading your posts..." />}
 
             {/* Error State */}
             {error && <ErrorMessage message={error} actionText="Retry" onAction={() => window.location.reload()} />}
@@ -90,14 +90,14 @@ export default function ProfilePage() {
             {!loading && !error && userEvents.length === 0 && (
               <EmptyState
                 icon="📝"
-                title="No events yet"
-                message="Start creating events to see them here!"
-                actionText="Create Event"
+                title="No posts yet"
+                message="Start creating posts to see them here!"
+                actionText="Create Post"
                 onAction={() => window.location.href = '/create'}
               />
             )}
 
-            {/* Events Grid */}
+            {/* Posts Grid */}
             {!loading && !error && userEvents.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {userEvents.map((event) => (

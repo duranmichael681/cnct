@@ -4,7 +4,7 @@ import SideBar from '../components/SideBar'
 import Footer from '../components/Footer'
 import SortFilter from '../components/SortFilter'
 import CategoryFilter from '../components/CategoryFilter'
-import { getAllEvents, type Event } from '../services/api'
+import { getAllPosts, type Event } from '../services/api'
 import { LoadingSpinner, ErrorMessage, EmptyState, EventCard } from '../components/ui/UIComponents'
 import { formatEventDate } from '../utils/helpers'
 
@@ -12,62 +12,62 @@ export default function DiscoverPage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedCategory, setSelectedCategory] = useState('All Categories')
-  const [events, setEvents] = useState<Event[]>([])
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([])
+  const [posts, setPosts] = useState<Event[]>([])
+  const [filteredPosts, setFilteredPosts] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
 
-  // Fetch events from backend
+  // Fetch posts from backend
   useEffect(() => {
     let mounted = true;
 
-    async function fetchEvents() {
+    async function fetchPosts() {
       try {
         setLoading(true)
-        const data = await getAllEvents()
+        const data = await getAllPosts()
         if (mounted) {
-          setEvents(data)
-          setFilteredEvents(data)
+          setPosts(data)
+          setFilteredPosts(data)
           setError(null)
         }
       } catch (err) {
         if (mounted) {
-          console.error('Error fetching events:', err)
-          setError('Failed to load events. Make sure the backend server is running.')
+          console.error('Error fetching posts:', err)
+          setError('Failed to load posts. Make sure the backend server is running.')
         }
       } finally {
         if (mounted) setLoading(false)
       }
     }
 
-    fetchEvents()
+    fetchPosts()
     return () => { mounted = false }
   }, [])
 
-  // Filter and sort events when search, category, or sort changes
+  // Filter and sort posts when search, category, or sort changes
   useEffect(() => {
-    let result = [...events]
+    let result = [...posts]
 
     // Filter by search query
     if (searchQuery) {
       result = result.filter(
-        (event) =>
-          event.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          event.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          (event.building && event.building.toLowerCase().includes(searchQuery.toLowerCase()))
+        (post) =>
+          post.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          post.body.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          (post.building && post.building.toLowerCase().includes(searchQuery.toLowerCase()))
       )
     }
 
-    // Sort events
+    // Sort posts
     if (sortBy === 'newest') {
       result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
     } else if (sortBy === 'oldest') {
       result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
     }
 
-    setFilteredEvents(result)
-  }, [searchQuery, sortBy, selectedCategory, events])
+    setFilteredPosts(result)
+  }, [searchQuery, sortBy, selectedCategory, posts])
 
   const handleSortChange = (sort: 'newest' | 'oldest' | 'tags', tags?: string[]) => {
     setSortBy(sort)
@@ -84,10 +84,10 @@ export default function DiscoverPage() {
     console.log('Selected category:', category)
   }
 
-  const handleJoinEvent = async (eventId: string) => {
+  const handleJoinPost = async (postId: string) => {
     // TODO: Implement with real user ID from auth
-    console.log('Join event:', eventId)
-    alert('Please log in to join events')
+    console.log('Join post:', postId)
+    alert('Please log in to join posts')
   }
 
   const getAttendeeCount = (event: Event) => {
@@ -107,13 +107,13 @@ export default function DiscoverPage() {
         {/* Main Content */}
         <main className="flex-1 p-6 pb-24 md:pb-6 md:ml-[70px]">
           <div className="max-w-6xl mx-auto">
-            <h1 className="text-3xl font-bold text-[var(--text)] mb-6">Discover Events</h1>
+            <h1 className="text-3xl font-bold text-[var(--text)] mb-6">Discover Posts</h1>
             
             {/* Search and Filter Bar */}
             <div className="mb-6 flex flex-col sm:flex-row gap-4 items-start sm:items-center">
               <input
                 type="text"
-                placeholder="Search events..."
+                placeholder="Search posts..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] placeholder:text-gray-400 dark:placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] cursor-text"
@@ -123,38 +123,38 @@ export default function DiscoverPage() {
             </div>
 
             {/* Loading State */}
-            {loading && <LoadingSpinner size="lg" message="Loading events from Supabase..." />}
+            {loading && <LoadingSpinner size="lg" message="Loading posts from Supabase..." />}
 
             {/* Error State */}
             {error && <ErrorMessage message={error} actionText="Retry" onAction={() => window.location.reload()} />}
 
             {/* No Results */}
-            {!loading && !error && filteredEvents.length === 0 && (
+            {!loading && !error && filteredPosts.length === 0 && (
               <EmptyState
                 icon="🔍"
-                title={searchQuery ? `No events found for "${searchQuery}"` : 'No events available'}
+                title={searchQuery ? `No posts found for "${searchQuery}"` : 'No posts available'}
                 message="Try adjusting your search or filters"
               />
             )}
 
-            {/* Event Grid */}
-            {!loading && !error && filteredEvents.length > 0 && (
+            {/* Post Grid */}
+            {!loading && !error && filteredPosts.length > 0 && (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {filteredEvents.map((event) => (
+                {filteredPosts.map((post) => (
                   <motion.div
-                    key={event.id}
+                    key={post.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                   >
                     <EventCard
-                      title={event.title}
-                      description={event.body}
-                      location={event.building || 'Location TBD'}
-                      date={formatEventDate(event.start_date)}
-                      maxAttendees={getAttendeeCount(event)}
-                      onViewDetails={() => console.log('View', event.id)}
-                      onJoin={() => handleJoinEvent(event.id)}
+                      title={post.title}
+                      description={post.body}
+                      location={post.building || 'Location TBD'}
+                      date={formatEventDate(post.start_date)}
+                      maxAttendees={getAttendeeCount(post)}
+                      onViewDetails={() => console.log('View', post.id)}
+                      onJoin={() => handleJoinPost(post.id)}
                     />
                   </motion.div>
                 ))}

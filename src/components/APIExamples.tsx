@@ -5,9 +5,9 @@
 
 import { useState, useEffect } from 'react';
 import {
-  getAllEvents,
-  createEvent,
-  toggleEventAttendance,
+  getAllPosts,
+  createPost,
+  togglePostAttendance,
   getAllTags,
   getUserProfile,
   type Event,
@@ -15,54 +15,54 @@ import {
 } from '../services/api';
 
 export default function APIExamples() {
-  const [events, setEvents] = useState<Event[]>([]);
+  const [posts, setPosts] = useState<Event[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(false);
 
-  // Example 1: Fetch all events on component mount
+  // Example 1: Fetch all posts on component mount
   useEffect(() => {
-    async function loadEvents() {
+    async function loadPosts() {
       try {
-        const data = await getAllEvents();
-        setEvents(data);
-        console.log('Loaded events:', data);
+        const data = await getAllPosts();
+        setPosts(data);
+        console.log('Loaded posts:', data);
       } catch (error) {
-        console.error('Failed to load events:', error);
+        console.error('Failed to load posts:', error);
       }
     }
 
-    loadEvents();
+    loadPosts();
   }, []);
 
-  // Example 2: Create a new event
-  async function handleCreateEvent() {
+  // Example 2: Create a new post
+  async function handleCreatePost() {
     try {
       setLoading(true);
-      const newEvent = await createEvent({
+      const newPost = await createPost({
         title: 'Beach Volleyball',
-        description: 'Come play volleyball at FIU Beach!',
-        location: 'FIU Beach',
-        event_date: '2025-12-01T14:00:00Z',
-        max_attendees: 15,
+        body: 'Come play volleyball at FIU Beach!',
+        building: 'FIU Beach',
+        start_date: '2025-12-01T14:00:00Z',
+        organizer_id: 'temp-user-id', // TODO: Get from auth
       });
 
-      console.log('Created event:', newEvent);
+      console.log('Created post:', newPost);
       
-      // Refresh events list
-      const updatedEvents = await getAllEvents();
-      setEvents(updatedEvents);
+      // Refresh posts list
+      const updatedPosts = await getAllPosts();
+      setPosts(updatedPosts);
     } catch (error) {
-      console.error('Failed to create event:', error);
-      alert('Error creating event. Make sure the backend is running.');
+      console.error('Failed to create post:', error);
+      alert('Error creating post. Make sure the backend is running.');
     } finally {
       setLoading(false);
     }
   }
 
-  // Example 3: Toggle attendance for an event
-  async function handleJoinEvent(eventId: string) {
+  // Example 3: Toggle attendance for a post
+  async function handleJoinPost(postId: string) {
     try {
-      const result = await toggleEventAttendance(eventId);
+      const result = await togglePostAttendance(postId, 'user-id-placeholder');
       console.log('Toggled attendance:', result);
       alert('Attendance toggled successfully!');
     } catch (error) {
@@ -96,37 +96,37 @@ export default function APIExamples() {
     <div className="p-8">
       <h1 className="text-3xl font-bold mb-6">API Usage Examples</h1>
 
-      {/* Create Event Example */}
+      {/* Create Post Example */}
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-3">Create Event</h2>
+        <h2 className="text-2xl font-semibold mb-3">Create Post</h2>
         <button
-          onClick={handleCreateEvent}
+          onClick={handleCreatePost}
           disabled={loading}
           className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 disabled:opacity-50"
         >
-          {loading ? 'Creating...' : 'Create Sample Event'}
+          {loading ? 'Creating...' : 'Create Sample Post'}
         </button>
       </div>
 
-      {/* Display Events Example */}
+      {/* Display Posts Example */}
       <div className="mb-8">
-        <h2 className="text-2xl font-semibold mb-3">Events from Supabase</h2>
-        {events.length === 0 ? (
-          <p className="text-gray-500">No events found. Create one above!</p>
+        <h2 className="text-2xl font-semibold mb-3">Posts from Supabase</h2>
+        {posts.length === 0 ? (
+          <p className="text-gray-500">No posts found. Create one above!</p>
         ) : (
           <div className="space-y-4">
-            {events.map((event) => (
-              <div key={event.id} className="border p-4 rounded-lg">
-                <h3 className="font-bold text-xl">{event.title}</h3>
-                <p className="text-gray-600">{event.description}</p>
+            {posts.map((post) => (
+              <div key={post.id} className="border p-4 rounded-lg">
+                <h3 className="font-bold text-xl">{post.title}</h3>
+                <p className="text-gray-600">{post.body}</p>
                 <p className="text-sm text-gray-500 mt-2">
-                  📍 {event.location} | 📅 {new Date(event.event_date).toLocaleDateString()}
+                  📍 {post.building || 'Location TBD'} | 📅 {new Date(post.start_date).toLocaleDateString()}
                 </p>
                 <button
-                  onClick={() => handleJoinEvent(event.id)}
+                  onClick={() => handleJoinPost(post.id)}
                   className="mt-2 bg-green-500 text-white px-4 py-1 rounded hover:bg-green-600"
                 >
-                  Join/Leave Event
+                  Join/Leave Post
                 </button>
               </div>
             ))}
@@ -150,7 +150,7 @@ export default function APIExamples() {
                 key={tag.id}
                 className="bg-gray-200 px-3 py-1 rounded-full text-sm"
               >
-                {tag.name}
+                {tag.code}
               </span>
             ))}
           </div>
@@ -162,36 +162,36 @@ export default function APIExamples() {
         <h2 className="text-2xl font-semibold mb-4">Code Examples</h2>
         
         <div className="mb-6">
-          <h3 className="font-bold mb-2">1. Fetch all events:</h3>
+          <h3 className="font-bold mb-2">1. Fetch all posts:</h3>
           <pre className="bg-white p-4 rounded text-sm overflow-x-auto">
-{`import { getAllEvents } from '../services/api';
+{`import { getAllPosts } from '../services/api';
 
-const events = await getAllEvents();
-console.log(events);`}
+const posts = await getAllPosts();
+console.log(posts);`}
           </pre>
         </div>
 
         <div className="mb-6">
-          <h3 className="font-bold mb-2">2. Create an event:</h3>
+          <h3 className="font-bold mb-2">2. Create a post:</h3>
           <pre className="bg-white p-4 rounded text-sm overflow-x-auto">
-{`import { createEvent } from '../services/api';
+{`import { createPost } from '../services/api';
 
-const newEvent = await createEvent({
+const newPost = await createPost({
   title: 'Study Group',
-  description: 'Studying for finals!',
-  location: 'Library',
-  event_date: '2025-12-15T18:00:00Z',
-  max_attendees: 10,
+  body: 'Studying for finals!',
+  building: 'Library',
+  start_date: '2025-12-15T18:00:00Z',
+  organizer_id: 'user-id',
 });`}
           </pre>
         </div>
 
         <div className="mb-6">
-          <h3 className="font-bold mb-2">3. Join/Leave event:</h3>
+          <h3 className="font-bold mb-2">3. Join/Leave post:</h3>
           <pre className="bg-white p-4 rounded text-sm overflow-x-auto">
-{`import { toggleEventAttendance } from '../services/api';
+{`import { togglePostAttendance } from '../services/api';
 
-await toggleEventAttendance(eventId);`}
+await togglePostAttendance(postId, userId);`}
           </pre>
         </div>
 

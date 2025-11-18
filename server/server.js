@@ -4,7 +4,7 @@
  * 
  * This is the main entry point for the CNCT backend API.
  * It handles:
- * - API routing for events, users, notifications, tags, and storage
+ * - API routing for posts, users, notifications, tags, and storage
  * - Authentication middleware for protected routes
  * - CORS configuration for frontend communication
  * - Database connection via Supabase
@@ -44,7 +44,7 @@ app.get("/", (req, res) => {
         message: "CNCT Backend API is running ✅",
         version: "1.0.0",
         endpoints: {
-            events: "/api/events",
+            posts: "/api/posts",
             users: "/api/users",
             notifications: "/api/notifications",
             tags: "/api/tags",
@@ -84,14 +84,14 @@ app.get("/test-db", async (req, res) => {
  * authMiddleware is applied to routes that require user authentication.
  * 
  * Route Structure:
- * - /api/events       - Event/post management (CREATE, READ, attendance)
+ * - /api/posts        - Post management (CREATE, READ, attendance)
  * - /api/users        - User profile operations
  * - /api/notifications - User notification management
  * - /api/tags         - Tag/category operations
  * - /api/storage      - File upload/download (images)
  */
 
-app.use("/api/events", authMiddleware, postsRouter);         // Protected: requires auth token
+app.use("/api/posts", authMiddleware, postsRouter);         // Protected: requires auth token
 app.use("/api/users", usersRouter);                          // Public: user profile reads
 app.use("/api/notifications", authMiddleware, notificationsRouter); // Protected: user-specific
 app.use("/api/tags", tagsRouter);                            // Public: tag browsing

@@ -6,20 +6,20 @@ Base URL: `http://localhost:5000`
 
 ## Quick Reference
 
-### Events
+### Posts
 ```bash
-GET    /api/events              # Get all events
-GET    /api/events/:id          # Get single event
-POST   /api/events              # Create event
-POST   /api/events/:id/toggle-attendance
-GET    /api/events/:id/attendees
+GET    /api/posts              # Get all posts
+GET    /api/posts/:id          # Get single post
+POST   /api/posts              # Create post
+POST   /api/posts/:id/toggle-attendance
+GET    /api/posts/:id/attendees
 ```
 
 ### Users
 ```bash
 GET    /api/users/:id           # Get profile
-GET    /api/users/:id/events    # User's events
-GET    /api/users/:id/attending # Events attending
+GET    /api/users/:id/posts    # User's posts
+GET    /api/users/:id/attending # Posts attending
 POST   /api/users/:id/settings  # Update settings
 POST   /api/users/:id/tags/toggle
 GET    /api/users/:id/tags
@@ -42,9 +42,9 @@ GET    /api/tags/:id            # Get specific tag
 
 ## Common Examples
 
-### Create Event
+### Create Post
 ```bash
-POST /api/events
+POST /api/posts
 Content-Type: application/json
 
 {
@@ -56,9 +56,9 @@ Content-Type: application/json
 }
 ```
 
-### Get All Events
+### Get All Posts
 ```bash
-GET /api/events
+GET /api/posts
 ```
 
 Response:
@@ -81,7 +81,7 @@ Response:
 
 ### Toggle Attendance
 ```bash
-POST /api/events/{event-id}/toggle-attendance
+POST /api/posts/{post-id}/toggle-attendance
 ```
 
 ---
@@ -128,9 +128,9 @@ curl http://localhost:5000
 curl http://localhost:5000/test-db
 ```
 
-**Get events:**
+**Get posts:**
 ```bash
-curl http://localhost:5000/api/events
+curl http://localhost:5000/api/posts
 ```
 
 ---

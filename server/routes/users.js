@@ -27,10 +27,10 @@ router.get('/:id', async (req, res) => {
 });
 
 /**
- * GET /api/users/:id/events
- * Get all events created by a user
+ * GET /api/users/:id/posts
+ * Get all posts created by a user
  */
-router.get('/:id/events', async (req, res) => {
+router.get('/:id/posts', async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -47,14 +47,14 @@ router.get('/:id/events', async (req, res) => {
 
         res.json({ success: true, data });
     } catch (error) {
-        console.error('Error fetching user events:', error);
+        console.error('Error fetching user posts:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });
 
 /**
  * GET /api/users/:id/attending
- * Get all events a user is attending
+ * Get all posts a user is attending
  */
 router.get('/:id/attending', async (req, res) => {
     try {

@@ -24,10 +24,10 @@ This is what we will use for this project
   ## Features 📲
 
   - User Stores Data and being able to Log In to save changes, add friends and message others
-  - OverView of all the events that will be available (Explore Page or Home Page)
+  - OverView of all the posts that will be available (Explore Page or Home Page)
   - Being able to see who is going or who is CNCT'D (Under user post it will show 3 people that are going and users will be able to click on an additional "bubble" that will say a number ( 3 - the people actually going) and when they do it will expand and show the rest of the people who are going.)
   - Resposive Designs that will be powered by Framer
-  - Using Profile Pictures under users post or "events" to see whos going
+  - Using Profile Pictures under users posts to see whos going
   - We plan to incorporate a messaging system that allows users to communicate privately, in addition to commenting under public posts. To maintain a safe and positive environment, we’ll implement moderation tools and safeguards that allow us to oversee user interactions and prevent misuse.
  # Setup
 
@@ -248,18 +248,18 @@ Frontend runs at: `http://localhost:5174`
 ### Using the API
 
 ```typescript
-import { getAllEvents, createEvent } from './services/api';
+import { getAllPosts, createPost } from './services/api';
 
-// Fetch events
-const events = await getAllEvents();
+// Fetch posts
+const posts = await getAllPosts();
 
-// Create event
-await createEvent({
+// Create post
+await createPost({
   title: 'Beach Volleyball',
-  description: 'Come play!',
-  location: 'FIU Beach',
-  event_date: '2025-12-01T14:00:00Z',
-  max_attendees: 15,
+  body: 'Come play!',
+  building: 'FIU Beach',
+  start_date: '2025-12-01T14:00:00Z',
+  organizer_id: 'user-id',
 });
 ```
 
