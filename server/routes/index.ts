@@ -1,5 +1,5 @@
 import eventsRouter from "./events";
-import userRouter from "./users";
+import profilesRouter from "./profiles";
 import messageRouter from "./Messages";
 import webpagesRouter from "./webpages";
 import { Router } from "express";
@@ -12,7 +12,7 @@ export const mainRouter = Router();
 //to make API calls from the frontend
 
 mainRouter.use('/api', eventsRouter)
-mainRouter.use('/api', userRouter)
+mainRouter.use('/api', profilesRouter)
 mainRouter.use('/api', messageRouter)
 mainRouter.use('/', webpagesRouter) //webpages will be served from root
 

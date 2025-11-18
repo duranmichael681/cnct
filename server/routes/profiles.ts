@@ -15,7 +15,7 @@ profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
             console.log("Supabase error retrieving user data. Error: ");
             console.log(error);
         }
-        
+
         res.send(data);
     } catch (error: any) {
         res.send("Error retrieving user data!");
@@ -23,8 +23,8 @@ profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
 })
 profileRouter.put('/profile/:userId', function(req: Request, res: Response) {
     try {
-        // Middleware Service
-        res.send(req.params.id);
+        // Middleware Services
+        res.send(req.params.userId);
     } catch (error: any) {
         res.send("User not found");
     }
