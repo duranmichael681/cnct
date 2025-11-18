@@ -8,9 +8,17 @@ const profileRouter = Router();
 profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
     try {
         // Middleware Service
-        res.send(req.params.id);
+        const {data, error} = supabase.from('users')
+        .select("profile_picture_url, first_name, last_name, pronouns, degree_program, description")
+        .eq("id", req.params.userId);
+        if(error) {
+            console.log("Supabase error retrieving user data. Error: ");
+            console.log(error);
+        }
+        
+        res.send(data);
     } catch (error: any) {
-        res.send("User not found");
+        res.send("Error retrieving user data!");
     }
 })
 profileRouter.put('/profile/:userId', function(req: Request, res: Response) {
