@@ -16,6 +16,7 @@ eventsRouter.get('/events', /*middleware, controller*/ async function(req: Reque
         res.send("Error");
     }
 })
+
 eventsRouter.get('/events/:id', fetch_events_by_id_controller);
 
 eventsRouter.post('/events', /*middleware, controller*/ function(req: Request, res: Response) {

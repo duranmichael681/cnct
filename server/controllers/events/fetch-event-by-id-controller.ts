@@ -1,7 +1,7 @@
 import { Request, Response} from 'express';
 import { fetch_events_by_id } from "../../services/events/fetch-event-by-id-service.js";
 
-export function fethc_events_by_id_controller(req: Request, res: Response) {
+export function fetch_events_by_id_controller(req: Request, res: Response) {
     try {
         var id = req.params.id;
     } catch(error: any) {
