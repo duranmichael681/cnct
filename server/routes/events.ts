@@ -1,6 +1,7 @@
 import { Request, Response, Router } from 'express';
-import { supabase } from '../server';
+import { supabase } from '../server.js';
 //TODO: import other necessary middlewares and controllrs here
+import { fetch_events_by_id_controller } from "../controllers/events/fetch-event-by-id-controller.js";
 
 const eventsRouter = Router();
 
@@ -15,18 +16,8 @@ eventsRouter.get('/events', /*middleware, controller*/ async function(req: Reque
         res.send("Error");
     }
 })
-eventsRouter.get('/events/:id', /*middleware, controller*/ async function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        const {data, error} = await supabase.from("posts").select("*").eq("id", req.params.id);
-        if(error) throw error;
-        res.send(data);
-    } catch (error: any) {
-        console.log(error);
-        res.send("Error");
-    }
-}
-)
+eventsRouter.get('/events/:id', fetch_events_by_id_controller);
+
 eventsRouter.post('/events', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
