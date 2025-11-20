@@ -6,17 +6,16 @@ import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
 import uploadIcon from '../assets/icons/upload_24dp_F3F3F3_FILL0_wght400_GRAD0_opsz24.svg'
 import { Link } from 'react-router-dom'
-
-// NOTE: You must uncomment this line and ensure your supabaseClient is correctly configured.
-// import { supabase } from '../supabaseClient';
+import { uploadFileToStorage, createPost } from '../services/api'
+import { getCurrentUser } from '../lib/supabaseClient'
 
 interface FileWithPreview extends File {
   preview: string
 }
 
 const MAX_FILES = 3
-// For unauthenticated testing, use the correct bucket name you confirmed earlier.
-const STORAGE_BUCKET = 'posts_picture'
+// Use bucket name from env or fallback to actual project bucket
+const STORAGE_BUCKET = (import.meta.env.VITE_POSTS_BUCKET as string) || 'posts_picture'
 
 export default function UploadPage() {
   // --- Form State Variables ---
@@ -63,12 +62,17 @@ export default function UploadPage() {
 
   // --- Cleanup Logic ---
 
+  // Keep a ref of current files for unmount cleanup only
   useEffect(() => {
     fileRef.current = files
+  }, [files])
+
+  // Revoke object URLs only on unmount to avoid StrictMode double-invoke issues
+  useEffect(() => {
     return () => {
       fileRef.current.forEach((file) => URL.revokeObjectURL(file.preview))
     }
-  }, [files])
+  }, [])
 
   // --- Carousel Navigation & Removal ---
 
@@ -108,31 +112,40 @@ export default function UploadPage() {
       return
     }
 
-    // 🛑 TEMPORARY: Hardcode the Organizer ID
-    const TEST_USER_ID = '00000000-0000-0000-0000-000000000001'
+    // Check if user is logged in
+    console.log('🔍 DEBUG - Checking current user...');
+    const { user, error: userError } = await getCurrentUser();
+    
+    if (userError || !user) {
+      console.error('❌ User not logged in:', userError);
+      alert('You must be logged in to create a post. Please sign in first.');
+      return;
+    }
+    
+    console.log('✅ User authenticated:', user.email, 'ID:', user.id);
+    
     let imageUrls: string[] = []
     alert('Starting upload and insertion...')
 
     try {
-      // 3. Upload Pictures to Supabase Storage
+      // Upload Pictures to Supabase Storage via backend
       for (const file of files) {
-        const filePath = `${TEST_USER_ID}/${Date.now()}-${file.name.replace(/\s/g, '_')}`
-
-        // 🚨 Supabase code omitted for brevity
+        const { url } = await uploadFileToStorage(file, STORAGE_BUCKET)
+        imageUrls.push(url)
       }
 
-      // 4. Insert Post Data into the 'post' table (Assuming structure is simple)
-      const postData = {
-        uidD: TEST_USER_ID,
+      console.log('📸 Uploaded images:', imageUrls);
+
+      // Insert Post Data into the 'posts' table via backend
+      // Note: organizer_id will come from the auth token, not from the request body
+      const created = await createPost({
         title: title,
         body: description,
-        organizer_id: TEST_USER_ID,
-        date: date ? date.toISOString() : null,
+        start_date: date ? date.toISOString() : new Date().toISOString(),
         post_picture_url: imageUrls.length > 0 ? imageUrls[0] : null,
-      }
+      } as any) // Type assertion since we removed organizer_id from the interface
 
-      // 🚨 Supabase code omitted for brevity
-
+      console.log('✅ Post created:', created)
       alert('Listing saved successfully!')
 
       // Cleanup and Reset
@@ -145,7 +158,7 @@ export default function UploadPage() {
       setCurrentImageIndex(0)
     } catch (error) {
       console.error('Submission Error:', error)
-      alert(`Error saving data. Please check console. Error: ${(error as Error).message}`)
+      alert(`Error saving data. ${(error as Error).message}. Configured bucket: ${STORAGE_BUCKET}`)
     }
   }
 
@@ -249,12 +262,12 @@ export default function UploadPage() {
         {/* Form Fields - Mobile friendly stacking */}
         <div className=' flex flex-col mt-8 '>
           <h2 className='text-xl font-semibold mb-3'>Title</h2>
-          <input placeholder='Event Title' value={title} onChange={(e) => setTitle(e.target.value)} className=' border-2 rounded p-2' />
+          <input placeholder='Post Title' value={title} onChange={(e) => setTitle(e.target.value)} className=' border-2 rounded p-2' />
         </div>
         <div className=' flex flex-col mt-8 '>
           <h2 className='text-xl font-semibold mb-3'>Description</h2>
           <textarea
-            placeholder='Event description...'
+            placeholder='Post description...'
             className=' border-2 rounded p-2 h-[20vh] resize-none text-sm placeholder:text-gray-400 overflow-y-auto'
             value={description}
             onChange={(e) => setDescription(e.target.value)}
@@ -262,7 +275,7 @@ export default function UploadPage() {
         </div>
         <div className='w-full mt-8 flex justify-start'>
           <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker label='Event Date' value={date} onChange={(newValue) => setDate(newValue)} />
+            <DatePicker label='Post Date' value={date} onChange={(newValue) => setDate(newValue)} />
           </LocalizationProvider>
         </div>
         <div className=' flex flex-col mt-8 '>
@@ -292,7 +305,7 @@ export default function UploadPage() {
         {/* Details Preview (Full width mobile, 1/4 of the right column on desktop) */}
         <div className='w-full flex-col flex lg:w-1/4 lg:pl-6'>
           <h2 className='font-bold text-3xl break-words lg:text-4xl'>{title || 'Title'}</h2>
-          {date && <p className='font-semibold text-xl mt-4 lg:mt-10'>Event Date: {date.format('MMMM D, YYYY')}</p>}
+          {date && <p className='font-semibold text-xl mt-4 lg:mt-10'>Post Date: {date.format('MMMM D, YYYY')}</p>}
           <h2 className='font-semibold text-base mt-4 break-words lg:text-lg '>{description || 'Description'}</h2>
           {attendees && <h2 className='font-bold text-xl mt-6 lg:mt-10'>Attendees </h2>}
           {attendees && <h2 className='font-bold text-xl mt-2'>{attendees || 'Limit'}</h2>}
