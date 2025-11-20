@@ -2,9 +2,9 @@ import { Link } from 'react-router-dom';
 import { Search, Users } from 'lucide-react';
 import SideBar from '../components/SideBar';
 import Footer from '../components/Footer';
-import HeroImage from '../assets/hero.jpg';
-import WhatIsCNCT from '../assets/image1.jpg';
-import HowItWorks from '../assets/how-it-works.jpg';
+import HeroImage from '../assets/hero.jpg?url';
+import WhatIsCNCT from '../assets/image1.jpg?url';
+import HowItWorks from '../assets/how-it-works.jpg?url';
 
 export default function LandingPage() {
   return (
