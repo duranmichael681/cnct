@@ -16,15 +16,18 @@ This is what we will use for this project
 - **Backend**: **Express** (Node.js)
 - **Authentication**: [Auth.js (formerly Next-Auth)](https://next-auth.js.org/)
 - **Database**: [Supabase](https://supabase.com/) (Postgres)
-- **Image Storage**: Supabase Storage Bucket
+- **Image Storage**: Supabase Storage
+  - **Storage Endpoint**: `https://dzfnvmwepmukenpsdfsy.storage.supabase.co/storage/v1/s3`
+  - **Active Buckets**: `posts_picture`, `profile_pictures`
+  - 📦 See [SUPABASE_BUCKETS.md](./SUPABASE_BUCKETS.md) for bucket setup, RLS policies, and upload flows
 
   ## Features 📲
 
   - User Stores Data and being able to Log In to save changes, add friends and message others
-  - OverView of all the events that will be available (Explore Page or Home Page)
+  - OverView of all the posts that will be available (Explore Page or Home Page)
   - Being able to see who is going or who is CNCT'D (Under user post it will show 3 people that are going and users will be able to click on an additional "bubble" that will say a number ( 3 - the people actually going) and when they do it will expand and show the rest of the people who are going.)
   - Resposive Designs that will be powered by Framer
-  - Using Profile Pictures under users post or "events" to see whos going
+  - Using Profile Pictures under users posts to see whos going
   - We plan to incorporate a messaging system that allows users to communicate privately, in addition to commenting under public posts. To maintain a safe and positive environment, we’ll implement moderation tools and safeguards that allow us to oversee user interactions and prevent misuse.
  # Setup
 
@@ -213,12 +216,66 @@ Handle secrets
 
 ## Running the Project
 
-After you have done all the steps above now for the fun part
-[Some Documentation could be found here](https://www.youtube.com/watch?v=oTIJunBa6MA)
+**Start Backend:**
 ```bash
-cd cnct
+cd server
 npm run dev
 ```
+Backend runs at: `http://localhost:5000`
+
+**Start Frontend:**
+```bash
+npm run dev
+```
+Frontend runs at: `http://localhost:5174`
+
+---
+
+## 🎨 Code Structure
+
+### Key Files
+- `src/services/api.ts` - All API calls to backend
+- `src/services/storage.ts` - File upload utilities
+- `src/components/ui/UIComponents.tsx` - Reusable UI components
+- `src/components/ImageUpload.tsx` - Image upload component
+- `src/utils/helpers.ts` - Utility functions
+- `server/routes/` - Express API endpoints
+- `server/routes/storage.js` - File storage endpoints
+- `server/API_DOCUMENTATION.md` - Complete API reference
+- `INTEGRATION_GUIDE.md` - Quick integration guide
+- `Supabase/` - Database schema, functions, and RLS policies
+
+### Using the API
+
+```typescript
+import { getAllPosts, createPost } from './services/api';
+
+// Fetch posts
+const posts = await getAllPosts();
+
+// Create post
+await createPost({
+  title: 'Beach Volleyball',
+  body: 'Come play!',
+  building: 'FIU Beach',
+  start_date: '2025-12-01T14:00:00Z',
+  organizer_id: 'user-id',
+});
+```
+
+### Uploading Images
+
+See [SUPABASE_BUCKETS.md](./SUPABASE_BUCKETS.md) for detailed bucket configuration and upload patterns.
+
+```typescript
+import { uploadFileToStorage } from './services/api';
+
+// Upload to posts_picture bucket
+const { url } = await uploadFileToStorage(file, 'posts_picture');
+```
+
+---
+
 ## React Router
 
 We are going to need this to route all the pages later on so install this 

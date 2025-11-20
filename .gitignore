@@ -14,6 +14,28 @@ dist-ssr
 .env
 .env.local
 
+# Package managers
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# Build cache
+.vite
+.vite-temp
+.cache
+
+# Coverage directory used by tools like istanbul
+coverage/
+*.lcov
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+
+# Temporary folders
+tmp/
+temp/
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

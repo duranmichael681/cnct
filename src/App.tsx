@@ -1,11 +1,16 @@
-import { Routes, Route, Navigate } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
 import Home from './pages/Home/home'
 import Landing from './pages/Landing/landing'
 import SignUp from './auth/Signup'
 import UploadPage from './pages/Home/UploadPage'
-import MobileNavBar from './pages/Navbars/MobileNavBar'
-
 import SignIn from './auth/Signin'
+import MobileNavBar from './pages/Navbars/MobileNavBar'
+import ProfilePage from './pages/ProfilePage'
+import GuestProfilePage from './pages/GuestProfilePage'
+import DiscoverPage from './pages/DiscoverPage'
+import CreatePage from './pages/CreatePage'
+import SettingsPage from './pages/SettingsPage'
+import LandingPage from './pages/LandingPage'
 
 export default function App() {
   return (
@@ -14,8 +19,14 @@ export default function App() {
       <Route path='/' element={<SignUp />} />
       <Route path='/landing' element={<Landing />} />
       <Route path='/Signin' element={<SignIn />} />
+      <Route path='/landing' element={<LandingPage />} />
       <Route path='/Home' element={<Home />} />
       <Route path='/Upload' element={<UploadPage />} />
+      <Route path='/profile' element={<ProfilePage />} />
+      <Route path='/profile/:userId' element={<GuestProfilePage />} />
+      <Route path='/discover' element={<DiscoverPage />} />
+      <Route path='/create' element={<CreatePage />} />
+      <Route path='/settings' element={<SettingsPage />} />
     </Routes>
   )
 }
