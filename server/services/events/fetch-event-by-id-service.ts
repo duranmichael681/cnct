@@ -1,8 +1,7 @@
-import { Request, Response} from 'express';
 import { supabase } from '../../server.js';
 
 
-export async function fetch_events_by_id(id: string)
+export async function fetchEventsByID(id: string)
 {
     try 
     {
