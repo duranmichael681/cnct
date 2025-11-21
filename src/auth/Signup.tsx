@@ -11,6 +11,9 @@ import CollageImg7 from '../assets/placeholder_event_7.png'
 import CollageImg8 from '../assets/placeholder_event_8.png'
 import { Link } from 'react-router-dom'
 
+//auth imports
+import { googleAuth } from '../supabase/auth'
+
 export default function SignUp() {
   const images = [
     [
@@ -102,7 +105,7 @@ export default function SignUp() {
           </div>
 
           <div className='mt-17 flex-row gap-4 flex justify-center'>
-            <button className='flex items-center border border-[#8f8b86] rounded-xl p-3 mb-6 sm:mb-8 hover:bg-gray-50 transition cursor-pointer'>
+            <button onClick={googleAuth} className='flex items-center border border-[#8f8b86] rounded-xl p-3 mb-6 sm:mb-8 hover:bg-gray-50 transition cursor-pointer' >
               <img src='https://www.svgrepo.com/show/475656/google-color.svg' alt='Google' className='w-6 h-6' />
               <span className='text-gray-700 font-semibold text-base sm:text-lg ml-2'>Sign up with Google</span>
             </button>

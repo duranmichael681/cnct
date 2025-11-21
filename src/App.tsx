@@ -10,6 +10,7 @@ import DiscoverPage from './pages/DiscoverPage'
 import CreatePage from './pages/CreatePage'
 import SettingsPage from './pages/SettingsPage'
 import LandingPage from './pages/LandingPage'
+import AuthCallback from './pages/AuthCallback'
 
 export default function App() {
   return (
@@ -25,6 +26,8 @@ export default function App() {
       <Route path='/discover' element={<DiscoverPage />} />
       <Route path='/create' element={<CreatePage />} />
       <Route path='/settings' element={<SettingsPage />} />
+      <Route path='/auth/callback' element={<AuthCallback/>}/> // setting up call back
+    
     </Routes>
   )
 }

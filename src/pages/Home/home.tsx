@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 import SideBar from "../../components/SideBar";
 import PostCard from "../../components/PostCard";
 import Footer from "../../components/Footer";
@@ -6,12 +7,26 @@ import { useState, useEffect } from "react";
 import { getAllPosts, type Event } from "../../services/api";
 import { LoadingSpinner, ErrorMessage } from "../../components/ui/UIComponents";
 import { formatEventDate } from "../../utils/helpers";
+=======
+import SideBar from '../../components/SideBar'
+import PostCard from '../../components/PostCard'
+import Footer from '../../components/Footer'
+import PostPicture from '../../assets/download.jfif'
+import PopularEventImage from '../../assets/how-it-works.jpg'
+import { useState, useEffect } from 'react'
+import {supabase} from '../../supabase/client'
+
+>>>>>>> feature/backend-googleAuth
 
 export default function Home() {
   const [width, setWidth] = useState(window.innerWidth);
   const [posts, setPosts] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+   useEffect(() => {
+      supabase.auth.getUser().then((res) => console.log(res));
+    } , []); //for seeing if log in via supabase worked , can delete later 
 
   useEffect(() => {
     function handleResize() {
