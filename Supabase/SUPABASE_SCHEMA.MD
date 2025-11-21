@@ -213,3 +213,63 @@ CREATE INDEX IF NOT EXISTS idx_user_settings_setting ON public.user_settings (se
 -- notifications
 CREATE INDEX IF NOT EXISTS idx_notifications_user ON public.notifications (user_id);
 CREATE INDEX IF NOT EXISTS idx_notifications_created ON public.notifications (created_at);
+
+-- ======================
+-- USER SYNC TRIGGER
+-- ======================
+-- Automatically syncs Supabase Auth users to public.users table
+-- This prevents "User account not found in database" errors
+
+-- Drop existing trigger and function if they exist
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+DROP FUNCTION IF EXISTS public.handle_new_user();
+
+-- Create function to insert new users
+CREATE OR REPLACE FUNCTION public.handle_new_user()
+RETURNS TRIGGER
+SECURITY DEFINER SET search_path = public
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  -- Insert the new user from auth.users into public.users
+  INSERT INTO public.users (id, username_email, first_name, last_name, profile_picture_url)
+  VALUES (
+    NEW.id,
+    NEW.email,
+    -- Try to extract first name from raw_user_meta_data if available
+    COALESCE(NEW.raw_user_meta_data->>'first_name', NEW.raw_user_meta_data->>'given_name', split_part(NEW.email, '@', 1)),
+    -- Try to extract last name from raw_user_meta_data if available
+    COALESCE(NEW.raw_user_meta_data->>'last_name', NEW.raw_user_meta_data->>'family_name', ''),
+    -- Get profile picture from Google OAuth metadata if available
+    COALESCE(NEW.raw_user_meta_data->>'avatar_url', NEW.raw_user_meta_data->>'picture', NULL)
+  )
+  ON CONFLICT (id) DO NOTHING;
+  
+  RETURN NEW;
+END;
+$$;
+
+-- Create trigger on auth.users table
+CREATE TRIGGER on_auth_user_created
+  AFTER INSERT ON auth.users
+  FOR EACH ROW
+  EXECUTE FUNCTION public.handle_new_user();
+
+-- Grant necessary permissions
+GRANT USAGE ON SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO postgres, anon, authenticated, service_role;
+GRANT ALL ON ALL FUNCTIONS IN SCHEMA public TO postgres, anon, authenticated, service_role;
+
+-- Sync existing auth users who don't have records in public.users
+INSERT INTO public.users (id, username_email, first_name, last_name, profile_picture_url)
+SELECT 
+  au.id,
+  au.email,
+  COALESCE(au.raw_user_meta_data->>'first_name', au.raw_user_meta_data->>'given_name', split_part(au.email, '@', 1)),
+  COALESCE(au.raw_user_meta_data->>'last_name', au.raw_user_meta_data->>'family_name', ''),
+  COALESCE(au.raw_user_meta_data->>'avatar_url', au.raw_user_meta_data->>'picture', NULL)
+FROM auth.users au
+LEFT JOIN public.users pu ON au.id = pu.id
+WHERE pu.id IS NULL -- Only insert users that don't exist in public.users
+ON CONFLICT (id) DO NOTHING;

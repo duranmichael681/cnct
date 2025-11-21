@@ -380,6 +380,42 @@ const { data, error } = await supabase.rpc('set_user_setting', {
 - Make sure you're using `await` with the function call
 - Verify your network tab shows the request
 
+### "User account not found in database" error
+**Problem:** Authenticated user exists in Supabase Auth but not in application database.
+
+**Solution:** Run the user sync trigger (see SUPABASE_SCHEMA.MD for full SQL):
+
+1. Go to Supabase Dashboard → SQL Editor
+2. Run this query to check if trigger exists:
+```sql
+SELECT * FROM pg_trigger WHERE tgname = 'on_auth_user_created';
+```
+
+3. If trigger doesn't exist, run the full schema file to create it
+4. Verify your user was synced:
+```sql
+SELECT au.id, au.email, pu.username_email, pu.first_name, pu.last_name
+FROM auth.users au
+LEFT JOIN public.users pu ON au.id = pu.id
+WHERE au.email = 'your-email@example.com';
+```
+
+5. If still missing, manually sync:
+```sql
+INSERT INTO public.users (id, username_email, first_name, last_name)
+SELECT id, email, 
+       raw_user_meta_data->>'given_name',
+       raw_user_meta_data->>'family_name'
+FROM auth.users
+WHERE id = 'your-user-id'
+ON CONFLICT (id) DO NOTHING;
+```
+
+**How it works:**
+- Trigger automatically creates public.users record when user signs up
+- Extracts name and profile picture from Google OAuth metadata
+- All future signups work automatically - no manual intervention needed
+
 ---
 
 ## 📚 Need More Help?
