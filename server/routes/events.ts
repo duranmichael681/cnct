@@ -5,6 +5,11 @@ import { fetch_events_by_id_controller } from "../controllers/events/fetch-event
 
 const eventsRouter = Router();
 
+/*
+    TODO: Replace each lambda function with their respective controller.
+    The functions can then be put inside the appropriate service.
+ */
+
 //TODO: add middlewares and controllers later
 eventsRouter.get('/events', /*middleware, controller*/ async function(req: Request, res: Response) {
     try {

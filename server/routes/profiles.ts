@@ -17,6 +17,13 @@ For now, it will be kept here until I can see a reference for controller impleme
 
 */ 
 
+/*
+    TODO: Replace each lambda function with their respective controller.
+    The functions can then be put inside the appropriate service.
+
+    Refer to the comment above.
+*/
+
 
 profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
     try {
