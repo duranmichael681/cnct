@@ -1,5 +1,4 @@
 import { Request, Response, Router } from 'express';
-import { supabase } from '../server.js';
 //TODO: import other necessary middlewares and controllrs here
 import { fetchEventsController } from "../controllers/events/fetch-events-controller.js";
 import { fetchEventsByIDController } from "../controllers/events/fetch-event-by-id-controller.js";
@@ -14,7 +13,7 @@ const eventsRouter = Router();
  */
 
 //TODO: add middlewares and controllers later
-eventsRouter.get('/events', fetchEventsController)
+eventsRouter.get('/events', fetchEventsController);
 
 eventsRouter.get('/events/:id', fetchEventsByIDController);
 
@@ -45,7 +44,7 @@ eventsRouter.post('/events/:id/join', /*middleware, controller*/ function(req: R
     }
 })
 
-eventsRouter.post('/events/:id/leave', removeAttendeesController)
+eventsRouter.post('/events/:id/leave', removeAttendeesController);
 
 eventsRouter.get('/events/:id/attendees', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
