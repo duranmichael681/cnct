@@ -4,9 +4,15 @@ import Footer from '../../components/Footer'
 import PostPicture from '../../assets/download.jfif'
 import PopularEventImage from '../../assets/how-it-works.jpg'
 import { useState, useEffect } from 'react'
+import {supabase} from '../../supabase/client'
+
 
 export default function Home() {
   const [width, setWidth] = useState(window.innerWidth)
+
+   useEffect(() => {
+      supabase.auth.getUser().then((res) => console.log(res));
+    } , []); //for seeing if log in via supabase worked , can delete later 
 
   useEffect(() => {
     function handleResize() {
