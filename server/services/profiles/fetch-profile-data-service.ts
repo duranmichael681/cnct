@@ -1,4 +1,4 @@
-import { supabase } from '../server';
+import { supabase } from '../../server.js';
 
 export default function fetchProfileData(userId) {
     const {data, error} = supabase

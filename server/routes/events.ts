@@ -3,6 +3,7 @@ import { Request, Response, Router } from 'express';
 import { fetchEventsController } from "../controllers/events/fetch-events-controller.js";
 import { fetchEventsByIDController } from "../controllers/events/fetch-event-by-id-controller.js";
 import { createEventController } from "../controllers/events/create-event-controller.js";
+import { fetchAttendeesController } from "../controllers/events/fetch-attendees-controller.js";
 import { removeAttendeesController } from "../controllers/events/remove-attendee-controller.js";
 
 const eventsRouter = Router();
@@ -46,13 +47,6 @@ eventsRouter.post('/events/:id/join', /*middleware, controller*/ function(req: R
 
 eventsRouter.post('/events/:id/leave', removeAttendeesController);
 
-eventsRouter.get('/events/:id/attendees', /*middleware, controller*/ function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        res.send(req.params.id);
-    } catch (error: any) {
-        res.send("Error");
-    }
-})
+eventsRouter.get('/events/:id/attendees', fetchAttendeesController);
 
 export default eventsRouter

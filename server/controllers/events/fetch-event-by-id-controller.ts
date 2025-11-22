@@ -1,7 +1,7 @@
 import { Request, Response} from 'express';
 import { fetchEventsByID } from "../../services/events/fetch-event-by-id-service.js";
 
-export function fetchEventsByIDController(req: Request, res: Response) {
+export async function fetchEventsByIDController(req: Request, res: Response) {
     try {
         var id = req.params.id;
     } catch(error: any) {
@@ -10,8 +10,7 @@ export function fetchEventsByIDController(req: Request, res: Response) {
 
     try 
     {
-        var result = fetchEventsByID(id);
-        res.send(result);
+        res.send(await fetchEventsByID(id));
     } catch(error: any) {
         res.send("Event not found.");
     }

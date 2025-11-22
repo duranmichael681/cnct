@@ -1,7 +1,7 @@
-import { createEventService } from "../../services/events/create-event-service"
+import { createEventService } from "../../services/events/create-event-service.js"
 import {Response, Request} from 'express'
 
-export function createEventController(req: Request, res: Response)
+export async function createEventController(req: Request, res: Response)
 {
     try {
         var title = req.params.title;
@@ -9,12 +9,11 @@ export function createEventController(req: Request, res: Response)
         var is_private = req.params.is_private;
         var created_at = req.params.created_at;
     } catch(error: any) {
-        res.send("ERROR! Missing parameters.");
-        return null;
+        return res.send("ERROR! Missing parameters.");
     } 
 
     try {
-    res.send(createEventService(title, date, is_private, created_at));
+        res.send(await createEventService(title, date, is_private, created_at));
     } catch(error: any) {
         res.send("Supabase failure");
     }

@@ -9,6 +9,6 @@ export async function fetchEventsByID(id: string)
         if(error) throw error;
         return data
     } catch (error: any) {
-        return null;
+        return "Event does not exist";
     }
 }

@@ -1,5 +1,5 @@
 import { date } from "zod";
-import supabase  from '../../server.js';
+import { supabase }  from '../../server.js';
 
 export async function createEventService(title: string, date: date, is_private: boolean, created_at: date)
 {

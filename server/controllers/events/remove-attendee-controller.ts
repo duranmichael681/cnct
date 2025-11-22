@@ -1,15 +1,15 @@
-import { removeAttendeesService } from "../../services/events/remove-attendee-service";
+import { removeAttendeesService } from "../../services/events/remove-attendee-service.js";
 import {Request, Response} from 'express';
 
-export function removeAttendeesController(req: Request, res: Response)
+export async function removeAttendeesController(req: Request, res: Response)
 {
     try {
         var user_id = req.params.user_id;
     } catch(error: any) {
-        res.send("User not found");
+        res.send("Invalid ID");
     }
     try{
-        removeAttendeesService(user_id);
+        res.send(await removeAttendeesService(user_id));
     } catch(error: any) {
         res.send("Supabase failure");
     }

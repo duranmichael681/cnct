@@ -1,14 +1,13 @@
 import { Request, Response} from 'express';
-import { fetchEventsService } from "../../services/events/fetch-events-service";
+import { fetchEventsService } from "../../services/events/fetch-events-service.js";
 
 
-export function fetchEventsController(req: Request, res: Response)
+export async function fetchEventsController(req: Request, res: Response)
 {
     try {
-        var result = fetchEventsService();
-        res.send(result);
+        res.send(await fetchEventsService());
     } catch (error: any)
     {
-        res.send("Failure");
+        res.send("Failure: " + error);
     }
 }
