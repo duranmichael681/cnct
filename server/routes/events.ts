@@ -1,11 +1,14 @@
 import { Request, Response, Router } from 'express';
 import { supabase } from '../server';
+import { EventControllerModule } from '../controllers/controller-module.js';
 //TODO: import other necessary middlewares and controllrs here
 
 const eventsRouter = Router();
 
-//TODO: add middlewares and controllers later
-eventsRouter.get('/events', /*middleware, controller*/ async function(req: Request, res: Response) {
+//TODO: Are these in file controllers or what?
+//      for now, i'm going to write my controllers but commented out
+
+eventsRouter.get('/events', /* EventControllerModule.fetchEventsController*/async function(req: Request, res: Response) {
     try {
         // Add Middleware
         const {data, error} = await supabase.from("posts").select("*");
@@ -15,7 +18,7 @@ eventsRouter.get('/events', /*middleware, controller*/ async function(req: Reque
         res.send("Error");
     }
 })
-eventsRouter.get('/events/:id', /*middleware, controller*/ async function(req: Request, res: Response) {
+eventsRouter.get('/events/:id', /*middleware, EventControllerModule.fetchEventByIdController*/ async function(req: Request, res: Response) {
     try {
         // Add Middleware
         const {data, error} = await supabase.from("posts").select("*").eq("id", req.params.id);
@@ -27,7 +30,7 @@ eventsRouter.get('/events/:id', /*middleware, controller*/ async function(req: R
     }
 }
 )
-eventsRouter.post('/events', /*middleware, controller*/ function(req: Request, res: Response) {
+eventsRouter.post('/events', /*middleware, EventControllerModule.createEventController*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
         res.send("Events");
@@ -35,7 +38,7 @@ eventsRouter.post('/events', /*middleware, controller*/ function(req: Request, r
         res.send("Error");
     }
 })
-eventsRouter.put('/events/:id', /*middleware, controller*/ function(req: Request, res: Response) {
+eventsRouter.put('/events/:id', /*middleware, EventControllerModule.updateEventController*/function(req: Request, res: Response) {
     try {
         // Add Middleware
         res.send(req.params.id);
@@ -43,7 +46,7 @@ eventsRouter.put('/events/:id', /*middleware, controller*/ function(req: Request
         res.send("Error");
     }
 })
-eventsRouter.delete('/events/:id', /*middleware, controller*/ function(req: Request, res: Response) {
+eventsRouter.delete('/events/:id', /*middleware, EventControllerModule.deletePostService*/ function(req: Request, res: Response) {
     try {
         // Add Middleware
         res.send(req.params.id);
@@ -77,3 +80,4 @@ eventsRouter.get('/events/:id/attendees', /*middleware, controller*/ function(re
 })
 
 export default eventsRouter
+
