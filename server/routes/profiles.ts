@@ -3,28 +3,14 @@ import { supabase } from '../server.js';
 
 import fetchProfileData from '../controllers/profiles/fetch-profile-data-controller.js'
 import fetchProfileEvents from '../controllers/profiles/fetch-profile-events-controller.js'
+import fetchProfileFollowing from '../controllers/profiles/fetch-profile-following-controller.js'
+import fetchProfileFollowers from '../controllers/profiles/fetch-profile-following-controller.js'
 //import other necessary middlewares and controllrs here
 
 const profileRouter = Router();
 
-//TODO: add middlewares and controllers later
+//TODO: add middlewares, controllers, and services responsibilities later
 
-/* !!!!!!NOTE:
-
-This likely is not how you implement routes, and should instead be in controller.
-However, I have no reference for any development on the backend other than something I found in Messages.ts,
-although I understand that is not where this code should go.
-
-For now, it will be kept here until I can see a reference for controller implementation, and middleware implementation.
-
-*/ 
-
-/*
-    TODO: Replace each lambda function with their respective controller.
-    The functions can then be put inside the appropriate service.
-
-    Refer to the comment above.
-*/
 
 
 profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
@@ -53,14 +39,7 @@ profileRouter.get('/profile/:userId/events', /*middleware, controller*/ function
 profileRouter.get('/profile/:userId/following', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware Services
-        const {data, error} = supabase
-        .from('follows')
-        .select("followed_user_id")
-        .eq("following_user_id", req.params.userId);
-        if(error) {
-            console.log("Supabase error retrieving following data. Error: ");
-            console.log(error);
-        }
+        const data = fetchProfileFollowing(req.params.userId);
         res.send(data);
     } catch (error: any) {
         res.send("Followings not found");
@@ -69,14 +48,7 @@ profileRouter.get('/profile/:userId/following', /*middleware, controller*/ funct
 profileRouter.get('/profile/:userId/followers', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware Services
-        const {data, error} = supabase
-        .from('follows')
-        .select("following_user_id")
-        .eq("followed_user_id", req.params.userId);
-        if(error) {
-            console.log("Supabase error retrieving followers data. Error: ");
-            console.log(error);
-        }
+        const data = fetchProfileFollowers(req.params.userId)
         res.send(data);
     } catch (error: any) {
         res.send("Followers not found");
