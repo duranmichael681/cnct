@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { supabase } from '../server';
+import { supabase } from '../server.js';
 import fetchProfileData from '../controllers/profiles/fetch-profile-data-controller.js'
 //import other necessary middlewares and controllrs here
 
