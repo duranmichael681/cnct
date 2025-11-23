@@ -152,7 +152,7 @@ yarn add framer-motion
 
 ## Backend (Backend Devs Only)
 
-If you’re working on backend tasks or need access to server logic, follow these steps:
+If you're working on backend tasks or need access to server logic, follow these steps:
 1. Inside the /server folder, create a file named .env
 2. Add the following lines:
 
@@ -162,13 +162,68 @@ SUPABASE_SERVICE_ROLE_KEY=<service-role-key>
 ```
 
 3. Save the file — this connects the Express backend to Supabase.
-4. Ensure your .env file is included in .gitignore so it’s never uploaded to GitHub.
+4. Ensure your .env file is included in .gitignore so it's never uploaded to GitHub.
 
 NOTE:
   - Co-leads (Jose or Jorge) will provide SERVICE_ROLE_KEY to backend devs!!
-  - Frontend-only devs don’t need this file. Your .env.local is enough.
+  - Frontend-only devs don't need this file. Your .env.local is enough.
   - **The backend .env is used only for server routes and secure operations.**
   - **DO NOT share this key publicly or commit it to the repository.**
+
+### Backend Architecture
+
+We'll use a **Layered Architecture** approach. For our MVP, we'll start simple and add complexity as needed.
+
+#### ✅ MUST HAVE (MVP - Start Here)
+
+**Folder Structure:**
+```
+server/
+├── routes/           # API endpoints
+├── controllers/      # Request handlers + business logic
+├── middleware/
+│   └── auth.js       # JWT authentication
+├── config/
+│   └── supabase.js   # Supabase client
+└── server.js         # Entry point
+```
+
+**Core Components:**
+- **Routes**: Define API endpoints (events, users, messages)
+- **Controllers**: Handle requests + Supabase calls directly
+- **Auth Middleware**: Simple JWT verification for protected routes
+- **Supabase RLS**: Let database handle basic permissions
+
+**Essential Middleware:**
+- ✅ **Authentication**: Verify Supabase JWT tokens
+- ✅ **Basic Error Handling**: Try-catch blocks in controllers
+
+**Core API Endpoints:**
+- `POST /api/events` - Create event
+- `GET /api/events` - Get all events
+- `POST /api/events/:id/join` - Join an event
+- `GET /api/messages/:threadId` - Get messages
+- `POST /api/messages` - Send message
+
+#### 🟡 NICE TO HAVE (Add When Needed)
+
+**Add these layers as the app grows:**
+- **Services Layer**: Separate business logic when it gets complex (waitlists, notifications)
+- **Repositories Layer**: Abstraction for database calls (easier testing)
+- **Validation Middleware**: Advanced input validation (Joi/Zod schemas)
+- **Rate Limiting**: Prevent spam (add when you have 100+ users)
+- **Moderation Middleware**: Content filtering (add if abuse becomes an issue)
+
+**Why wait?**
+- Faster MVP development
+- Easier for team to learn
+- Add complexity only when you actually need it
+- Avoid over-engineering
+
+**Real-time features** (attendee updates, live messaging) will use **Supabase Realtime subscriptions**.
+
+📖 **For detailed architecture docs, see `BACKEND_ARCHITECTURE.md` and https://excalidraw.com/#json=KLm8GHkA8p921qGEkOeuA,Lgf7R-EHszyTbOuSTMKYIg**
+
 
 
   ## Supabase Command Lines (CLI)

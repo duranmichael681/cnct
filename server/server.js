@@ -13,8 +13,11 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import { createClient } from "@supabase/supabase-js" // Placeholder for until we refactor to ./config/supabase.js
 import { supabaseAdmin } from "./config/supabase.js";
 import { authMiddleware } from "./middleware/auth.js";
+import { mainRouter } from "./routes/index.ts";
+
 
 // Import API route handlers
 import postsRouter from "./routes/posts.js";
@@ -24,10 +27,22 @@ import tagsRouter from "./routes/tags.js";
 import storageRouter from "./routes/storage.js";
 
 // Load environment variables from .env file
+/*
+    To run this server:
+
+    Install tsx (npm install --run-dev tsx)
+    Run this file using the command "npx tsx server.js"
+*/
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Initialize Supabase client
+export const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // ==================== MIDDLEWARE ====================
 
@@ -76,6 +91,9 @@ app.get("/test-db", async (req, res) => {
         });
     }
 });
+
+// Connect main router to the app.
+app.use(mainRouter);
 
 // ==================== API ROUTES ====================
 
