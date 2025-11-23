@@ -13,9 +13,11 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import { createClient } from "@supabase/supabase-js" // Placeholder for until we refactor to ./config/supabase.js
 import { supabaseAdmin } from "./config/supabase.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { mainRouter } from "./routes/index.ts";
+
 
 // Import API route handlers
 import postsRouter from "./routes/posts.js";
