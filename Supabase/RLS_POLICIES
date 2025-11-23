@@ -1,0 +1,310 @@
+-- ============================================
+-- USERS TABLE POLICIES
+-- ============================================
+
+DROP POLICY IF EXISTS users_select_self ON public.users;
+DROP POLICY IF EXISTS users_update_self ON public.users;
+-- Read: only your own user row
+CREATE POLICY users_select_self
+ON public.users
+FOR SELECT
+USING (id = (select auth.uid()));
+
+-- Update: only your own user row
+CREATE POLICY users_update_self
+ON public.users
+FOR UPDATE
+USING (id = (select auth.uid()))
+WITH CHECK (id = (select auth.uid()));
+
+
+
+-- ============================================
+-- POSTS TABLE POLICIES
+-- ============================================
+
+DROP POLICY IF EXISTS posts_select_public_or_involved ON public.posts;
+DROP POLICY IF EXISTS posts_insert_organizer        ON public.posts;
+DROP POLICY IF EXISTS posts_update_organizer        ON public.posts;
+DROP POLICY IF EXISTS posts_delete_organizer        ON public.posts;
+
+--Select
+CREATE POLICY posts_select_public_or_involved
+ON public.posts
+FOR SELECT
+USING (
+  is_private = false
+  OR organizer_id = (select auth.uid())
+  OR EXISTS (
+    SELECT 1
+    FROM public.attendees a
+    WHERE a.posts_id = public.posts.id
+      AND a.user_id  = (select auth.uid())
+  )
+);
+
+
+--Insert
+CREATE POLICY posts_insert_organizer
+ON public.posts
+FOR INSERT
+WITH CHECK (organizer_id = (select auth.uid()));
+
+
+--Update
+CREATE POLICY posts_update_organizer
+ON public.posts
+FOR UPDATE
+USING      (organizer_id = (select auth.uid()))
+WITH CHECK (organizer_id = (select auth.uid()));
+
+--delete
+CREATE POLICY posts_delete_organizer
+ON public.posts
+FOR DELETE
+USING (organizer_id = (select auth.uid()));
+
+
+
+
+-- ============================================
+-- POST TAGS TABLE POLICIES
+-- ============================================
+
+DROP POLICY IF EXISTS post_tags_select_all           ON public.post_tags;
+DROP POLICY IF EXISTS post_tags_modify_organizer_only ON public.post_tags;
+
+ALTER TABLE public.post_tags ENABLE ROW LEVEL SECURITY;
+
+--Select
+CREATE POLICY post_tags_select_all
+ON public.post_tags
+FOR SELECT
+USING (true);
+
+
+--Insert
+CREATE POLICY post_tags_insert_organizer_only
+ON public.post_tags
+FOR INSERT
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.posts p
+    WHERE p.id = post_id
+      AND p.organizer_id = (select auth.uid())
+  )
+);
+
+--update
+CREATE POLICY post_tags_update_organizer_only
+ON public.post_tags
+FOR UPDATE
+USING (
+  EXISTS (
+    SELECT 1 FROM public.posts p
+    WHERE p.id = post_id
+      AND p.organizer_id = (select auth.uid())
+  )
+)
+WITH CHECK (
+  EXISTS (
+    SELECT 1 FROM public.posts p
+    WHERE p.id = post_id
+      AND p.organizer_id = (select auth.uid())
+  )
+);
+
+--delete
+CREATE POLICY post_tags_delete_organizer_only
+ON public.post_tags
+FOR DELETE
+USING (
+  EXISTS (
+    SELECT 1 FROM public.posts p
+    WHERE p.id = post_id
+      AND p.organizer_id = (select auth.uid())
+  )
+);
+
+
+-- ============================================
+-- ATTENDEES TABLE POLICIES
+-- ============================================
+
+ALTER TABLE public.attendees ENABLE ROW LEVEL SECURITY;
+
+-- Clean re-runs
+DROP POLICY IF EXISTS attendees_select_all        ON public.attendees;
+DROP POLICY IF EXISTS attendees_insert_self_only  ON public.attendees;
+DROP POLICY IF EXISTS attendees_delete_self_only  ON public.attendees;
+
+-- Anyone (with table SELECT privilege) can read attendees
+CREATE POLICY attendees_select_all
+ON public.attendees
+FOR SELECT
+USING (true);
+
+-- You can only RSVP yourself
+CREATE POLICY attendees_insert_self_only
+ON public.attendees
+FOR INSERT
+WITH CHECK (user_id = (select auth.uid()));
+
+-- You can only cancel *your own* attendance
+CREATE POLICY attendees_delete_self_only
+ON public.attendees
+FOR DELETE
+USING (user_id = (select auth.uid()));
+
+
+
+
+-- ============================================
+-- USER SETTINGS TABLE POLICIES
+-- ============================================
+
+ALTER TABLE public.user_settings ENABLE ROW LEVEL SECURITY;
+
+-- Clean re-runs
+DROP POLICY IF EXISTS user_settings_select_self  ON public.user_settings;
+DROP POLICY IF EXISTS user_settings_update_self  ON public.user_settings;
+DROP POLICY IF EXISTS user_settings_insert_self  ON public.user_settings;
+
+-- Read your own settings
+CREATE POLICY user_settings_select_self
+ON public.user_settings
+FOR SELECT
+USING (user_id = (select auth.uid()));
+
+-- Update only your own settings
+CREATE POLICY user_settings_update_self
+ON public.user_settings
+FOR UPDATE
+USING (user_id = (select auth.uid()))
+WITH CHECK (user_id = (select auth.uid()));
+
+-- Optional: allow clients to INSERT their own settings
+-- If you're seeding settings server-side, keep this or drop it.
+CREATE POLICY user_settings_insert_self
+ON public.user_settings
+FOR INSERT
+WITH CHECK (user_id = (select auth.uid()));
+
+
+
+
+
+-- ============================================
+-- USER TAG PREFERENCES TABLE POLICIES
+-- ============================================
+
+ALTER TABLE public.user_tag_preferences ENABLE ROW LEVEL SECURITY;
+
+-- Clean re-runs
+DROP POLICY IF EXISTS user_tag_prefs_select_self ON public.user_tag_preferences;
+DROP POLICY IF EXISTS user_tag_prefs_all_self    ON public.user_tag_preferences;
+DROP POLICY IF EXISTS user_tag_prefs_insert_self ON public.user_tag_preferences;
+DROP POLICY IF EXISTS user_tag_prefs_update_self ON public.user_tag_preferences;
+DROP POLICY IF EXISTS user_tag_prefs_delete_self ON public.user_tag_preferences;
+
+-- 1) SELECT: only see your own prefs
+CREATE POLICY user_tag_prefs_select_self
+ON public.user_tag_preferences
+FOR SELECT
+USING (user_id = (select auth.uid()));
+
+-- 2) INSERT: only create your own prefs
+CREATE POLICY user_tag_prefs_insert_self
+ON public.user_tag_preferences
+FOR INSERT
+WITH CHECK (user_id = (select auth.uid()));
+
+-- 3) UPDATE: only modify your own prefs
+CREATE POLICY user_tag_prefs_update_self
+ON public.user_tag_preferences
+FOR UPDATE
+USING (user_id = (select auth.uid()))
+WITH CHECK (user_id = (select auth.uid()));
+
+-- 4) DELETE: only delete your own prefs
+CREATE POLICY user_tag_prefs_delete_self
+ON public.user_tag_preferences
+FOR DELETE
+USING (user_id = (select auth.uid()));
+
+
+
+
+
+
+-- ============================================
+-- FOLLOWS TABLE POLICIES
+-- ============================================
+
+ALTER TABLE public.follows ENABLE ROW LEVEL SECURITY;
+
+-- Clean re-runs
+DROP POLICY IF EXISTS follows_select_involving_me      ON public.follows;
+DROP POLICY IF EXISTS follows_insert_self_as_follower  ON public.follows;
+DROP POLICY IF EXISTS follows_delete_self_as_follower  ON public.follows;
+
+-- Read: see follows where you're either follower or followed
+CREATE POLICY follows_select_involving_me
+ON public.follows
+FOR SELECT
+USING (
+  following_user_id = (select auth.uid())
+  OR followed_user_id = (select auth.uid())
+);
+
+-- Insert: you can only create follows where YOU are the follower
+CREATE POLICY follows_insert_self_as_follower
+ON public.follows
+FOR INSERT
+WITH CHECK (following_user_id = (select auth.uid()));
+
+-- Delete: you can only unfollow relationships where YOU are the follower
+CREATE POLICY follows_delete_self_as_follower
+ON public.follows
+FOR DELETE
+USING (following_user_id = (select auth.uid()));
+
+
+
+
+-- ============================================
+-- NOTIFICATIONS TABLE POLICIES
+-- ============================================
+
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+-- Clean re-runs
+DROP POLICY IF EXISTS notif_select_self  ON public.notifications;
+DROP POLICY IF EXISTS notif_insert_self  ON public.notifications;
+DROP POLICY IF EXISTS notif_update_self  ON public.notifications;
+DROP POLICY IF EXISTS notif_delete_self  ON public.notifications;
+
+-- Read only your own notifications
+CREATE POLICY notif_select_self
+ON public.notifications
+FOR SELECT
+USING (user_id = (select auth.uid()));
+
+-- Insert only for yourself (clients can queue their own reminders if you allow it)
+CREATE POLICY notif_insert_self
+ON public.notifications
+FOR INSERT
+WITH CHECK (user_id = (select auth.uid()));
+
+-- Update only your own (e.g., mark as read)
+CREATE POLICY notif_update_self
+ON public.notifications
+FOR UPDATE
+USING (user_id = (select auth.uid()))
+WITH CHECK (user_id = (select auth.uid()));
+
+-- Delete only your own
+CREATE POLICY notif_delete_self
+ON public.notifications
+FOR DELETE
+USING (user_id = (select auth.uid()));

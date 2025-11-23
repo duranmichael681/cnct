@@ -1,23 +1,86 @@
 @import 'tailwindcss';
 :root {
   --font-sans: 'Rubik', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
-  --primary: #b8862c;
-  --primary-hover: #976c1b;
+  
+  /* Light Mode Colors */
+  --primary: #b6862c;
+  --primary-hover: #9b7426;
   --primary-text: #071d3e;
   --secondary: #081e3f;
   --secondary-hover: #0c2b63;
   --tertiary: #c8a35c;
   --danger: #d64545;
-  --success: #48a957;
+  --success: #4ba357;
   --menucard: #d6d2cd;
   --background: #fffbeb;
+  --text: #081e3f;
+  --text-secondary: #665027;
+  --border: #c8a35c;
+  --card-bg: #ffffff;
+}
+
+[data-theme='dark'] {
+  /* Dark Mode Colors - Inverted palette */
+  --primary: #c8a35c;
+  --primary-hover: #b6862c;
+  --primary-text: #fffbeb;
+  --secondary: #fffbeb;
+  --secondary-hover: #eeeeee;
+  --tertiary: #9b7426;
+  --danger: #d64545;
+  --success: #4ba357;
+  --menucard: #161616;
+  --background: #0f172a;
+  --text: #fffbeb;
+  --text-secondary: #d4a574;
+  --border: #665027;
+  --card-bg: #081e3f;
 }
 
 body {
-  @apply bg-[var(--background)] text-[var(--secondary)];
+  background-color: var(--background);
+  color: var(--text);
   font-family: var(--font-sans);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 img {
   width: 100%;
+}
+
+/* Fade-in animation */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.6s ease-out forwards;
+}
+
+/* Staggered fade-in for multiple elements */
+.animate-fade-in-delay-1 {
+  animation: fadeIn 0.6s ease-out 0.1s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-delay-2 {
+  animation: fadeIn 0.6s ease-out 0.2s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-delay-3 {
+  animation: fadeIn 0.6s ease-out 0.3s forwards;
+  opacity: 0;
+}
+
+.animate-fade-in-delay-4 {
+  animation: fadeIn 0.6s ease-out 0.4s forwards;
+  opacity: 0;
 }
