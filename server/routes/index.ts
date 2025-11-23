@@ -1,4 +1,4 @@
-import eventsRouter from "./events";
+import postsRouter from "./posts";
 import profilesRouter from "./profiles";
 import messageRouter from "./Messages";
 import webpagesRouter from "./webpages";
@@ -11,7 +11,7 @@ export const mainRouter = Router();
 //these routes will SOLELY be used
 //to make API calls from the frontend
 
-mainRouter.use('/api', eventsRouter)
+mainRouter.use('/api', postsRouter)
 mainRouter.use('/api', profilesRouter)
 mainRouter.use('/api', messageRouter)
 mainRouter.use('/', webpagesRouter) //webpages will be served from root
