@@ -1,7 +1,7 @@
-import { supabase } from '../../server.js';
+import { supabase } from '../../server.js'
 
-export default function fetchProfileEvents(userId: String) {
-    const {data, error} = supabase
+export default async function fetchProfileEvents(userId: string) {
+    const {data, error} = await supabase
         .from('posts')
         .select()
         .eq("organizer_id", userId);
@@ -9,5 +9,5 @@ export default function fetchProfileEvents(userId: String) {
             console.log("Supabase error retrieving post data. Error: ");
             console.log(error);
         }
-        return data;
+    return data;
 }

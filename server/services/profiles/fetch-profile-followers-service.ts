@@ -1,6 +1,6 @@
 import fetchProfileFollowers from "../../repositories/profiles/fetch-profile-followers-repository.js"
 
-export default function fetchProfileFollowersService(userId : String) {
-    const data = fetchProfileFollowers(userId);
+export default async function fetchProfileFollowersService(userId : string) {
+    const data = await fetchProfileFollowers(userId);
     return data
 }

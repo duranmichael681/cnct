@@ -1,6 +1,7 @@
-import { supabase } from '../../server.js';
-export default function fetchProfileFollowing(userId) {
-    const {data, error} = supabase
+import { supabase } from '../../server.js'
+
+export default async function fetchProfileFollowing(userId : string) {
+    const {data, error} = await supabase
         .from('follows')
         .select("followed_user_id")
         .eq("following_user_id", userId);

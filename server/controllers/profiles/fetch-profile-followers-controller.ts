@@ -1,5 +1,7 @@
 import profileFollowersService from "../../services/profiles/fetch-profile-followers-service.js"
 
-export default function returnProfileFollowers(userId: String) {
-    return profileFollowersService(userId);
+export default async function returnProfileFollowers(userId: string) {
+    if (false)
+        throw Error("Inputted ID not valid");
+    return await profileFollowersService(userId);
 }

@@ -1,6 +1,6 @@
 import fetchProfileEvents from "../../repositories/profiles/fetch-profile-events-repository.js"
 
-export default function fetchProfileEventsService(userId : String) {
-    const data = fetchProfileEvents(userId);
+export default async function fetchProfileEventsService(userId : string) {
+    const data = await fetchProfileEvents(userId);
     return data
 }

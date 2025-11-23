@@ -1,7 +1,7 @@
-import { supabase } from '../../server.js';
+import { supabase } from '../../server.js'
 
-export default function fetchProfileData(userId : String) {
-    const {data, error} = supabase
+export default async function fetchProfileData(userId : string) {
+    const {data, error} = await supabase
         .from('users')
         .select("profile_picture_url, first_name, last_name, pronouns, degree_program, description")
         .eq("id", userId);
@@ -9,5 +9,5 @@ export default function fetchProfileData(userId : String) {
             console.log("Supabase error retrieving user data. Error: ");
             console.log(error);
         }
-        return data;
+    return data;
 }

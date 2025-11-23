@@ -1,5 +1,4 @@
 import { Request, Response, Router } from 'express';
-import { supabase } from '../server.js';
 
 import fetchProfileData from '../controllers/profiles/fetch-profile-data-controller.js'
 import fetchProfileEvents from '../controllers/profiles/fetch-profile-events-controller.js'
@@ -13,12 +12,12 @@ const profileRouter = Router();
 
 
 
-profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
+profileRouter.get('/profile/:userId', async function(req: Request, res: Response) {
     try {
         // Middleware Service
         
         //Controller
-        const data = fetchProfileData(req.params.userId);
+        const data = await fetchProfileData(req.params.userId);
 
         res.send(data);
     } catch (error: any) {
@@ -26,29 +25,38 @@ profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
     }
 })
 
-profileRouter.get('/profile/:userId/events', /*middleware, controller*/ function(req: Request, res: Response) {
+profileRouter.get('/profile/:userId/events', /*middleware, controller*/ async function(req: Request, res: Response) {
     try {
         // Middleware Services
-        const data = fetchProfileEvents(req.params.userId);
+
+        //Controller
+        const data = await fetchProfileEvents(req.params.userId);
+
         res.send(data);
     } catch (error: any) {
-        res.send("Post not found");
+        res.send("Posts not found");
     }
     
 })
-profileRouter.get('/profile/:userId/following', /*middleware, controller*/ function(req: Request, res: Response) {
+profileRouter.get('/profile/:userId/following', /*middleware, controller*/ async function(req: Request, res: Response) {
     try {
         // Middleware Services
-        const data = fetchProfileFollowing(req.params.userId);
+
+        //Controller
+        const data = await fetchProfileFollowing(req.params.userId);
+
         res.send(data);
     } catch (error: any) {
         res.send("Followings not found");
     }
 })
-profileRouter.get('/profile/:userId/followers', /*middleware, controller*/ function(req: Request, res: Response) {
+profileRouter.get('/profile/:userId/followers', /*middleware, controller*/ async function(req: Request, res: Response) {
     try {
         // Middleware Services
-        const data = fetchProfileFollowers(req.params.userId)
+
+        //Controller
+        const data = await fetchProfileFollowers(req.params.userId)
+        
         res.send(data);
     } catch (error: any) {
         res.send("Followers not found");
