@@ -8,76 +8,22 @@ const eventsRouter = Router();
 //TODO: Are these in file controllers or what?
 //      for now, i'm going to write my controllers but commented out
 
-eventsRouter.get('/events', /* EventControllerModule.fetchEventsController*/async function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        const {data, error} = await supabase.from("posts").select("*");
-        if(error) throw error;
-        res.send(data);
-    } catch (error: any) {
-        res.send("Error");
-    }
-})
-eventsRouter.get('/events/:id', /*middleware, EventControllerModule.fetchEventByIdController*/ async function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        const {data, error} = await supabase.from("posts").select("*").eq("id", req.params.id);
-        if(error) throw error;
-        res.send(data);
-    } catch (error: any) {
-        console.log(error);
-        res.send("Error");
-    }
-}
-)
-eventsRouter.post('/events', /*middleware, EventControllerModule.createEventController*/ function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        res.send("Events");
-    } catch (error: any) {
-        res.send("Error");
-    }
-})
-eventsRouter.put('/events/:id', /*middleware, EventControllerModule.updateEventController*/function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        res.send(req.params.id);
-    } catch (error: any) {
-        res.send("Error");
-    }
-})
-eventsRouter.delete('/events/:id', /*middleware, EventControllerModule.deletePostService*/ function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        res.send(req.params.id);
-    } catch (error: any) {
-        res.send("Error");
-    }
-})
+eventsRouter.get('/events', EventControllerModule.fetchPostsController)
+
+eventsRouter.get('/events/:id',  EventControllerModule.fetchPostByIdController)
+
+eventsRouter.post('/events', EventControllerModule.createPostController)
+
+eventsRouter.put('/events/:id', EventControllerModule.updatePostController)
+
+eventsRouter.delete('/events/:id', EventControllerModule.deletePostController)
+
 eventsRouter.post('/events/:id/join', /*middleware, controller*/ function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        res.send(req.params.id);
-    } catch (error: any) {
-        res.send("Error");
-    }
+    res.send("Joined event!");
 })
-eventsRouter.post('/events/:id/leave', /*middleware, controller*/ function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        res.send(req.params.id);
-    } catch (error: any) {
-        res.send("Error");
-    }
-})
-eventsRouter.get('/events/:id/attendees', /*middleware, controller*/ function(req: Request, res: Response) {
-    try {
-        // Add Middleware
-        res.send(req.params.id);
-    } catch (error: any) {
-        res.send("Error");
-    }
-})
+eventsRouter.post('/events/:id/leave', EventControllerModule.removeAttendeeController)
+
+eventsRouter.get('/events/:id/attendees', EventControllerModule.fetchAttendeesController)
 
 export default eventsRouter
 

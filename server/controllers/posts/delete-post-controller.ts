@@ -1,4 +1,4 @@
-import { deletePostService } from "../../services/events/delete-post-service";
+import { deletePostService } from "../../services/posts/delete-post-service";
 
 export async function deletePostController(eventId: string) {
     try {

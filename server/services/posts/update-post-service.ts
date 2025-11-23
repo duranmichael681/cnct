@@ -1,7 +1,7 @@
-import { supabase } from './config/supabase';
-import { Event } from './fetch-event-by-id-service';
+import { supabase } from '../../server'
+import { Post } from './fetch-post-by-id-service';
 
-export async function updateEventService(eventId: string, updatedData: Partial<Event>): Promise<Event> {
+export async function updatePostService(eventId: string, updatedData: Partial<Post>): Promise<Post> {
     try {
         const { data, error } = await supabase
             .from('posts')
@@ -26,7 +26,7 @@ export async function updateEventService(eventId: string, updatedData: Partial<E
             throw new Error('No data returned from update');
         }
         
-        const updatedEvent: Event = {
+        const updatedEvent: Post = {
             id: data.id,
             title: data.title,
             body: data.body,

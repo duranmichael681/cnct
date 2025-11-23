@@ -1,4 +1,4 @@
-import { fetchAttendeesService, Attendee } from '../../services/events/fetch-attendees-service.js';
+import { fetchAttendeesService, Attendee } from '../../services/posts/fetch-attendees-service.js';
 
 export async function fetchAttendeesController(eventId: string): Promise<Attendee[]> {
     try {

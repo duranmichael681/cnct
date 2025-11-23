@@ -1,7 +1,7 @@
-import { supabase } from './config/supabase';
-import { Event } from './fetch-event-by-id-service';
+import { supabase } from '../../server';
+import { Post } from './fetch-post-by-id-service';
 
-export async function fetchPostService(): Promise<Event[]> {
+export async function fetchPostService(): Promise<Post[]> {
     try {
         const { data, error } = await supabase
             .from('posts')
@@ -14,7 +14,7 @@ export async function fetchPostService(): Promise<Event[]> {
             throw new Error('No data returned from fetch');
         }
         
-        const events: Event[] = data.map((item: any) => ({
+        const events: Post[] = data.map((item: any) => ({
             id: item.id,
             title: item.title,
             body: item.body,

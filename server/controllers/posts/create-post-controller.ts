@@ -1,6 +1,6 @@
-import { createPostService, postData, postResponse } from '../../services/events/create-event-service';
+import { createPostService, postData, postResponse } from '../../services/posts/create-post-service';
 
-export async function createEventController(postData: postData): Promise<postResponse> {
+export async function createPostController(postData: postData): Promise<postResponse> {
     try {
         const response = await createPostService(postData);
         return response;

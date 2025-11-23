@@ -1,4 +1,4 @@
-import { supabase } from './config/supabase';
+import { supabase } from '../../server';
 
 export interface RemoveAttendeeResponse {
     success: boolean;

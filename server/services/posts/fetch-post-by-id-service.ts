@@ -1,6 +1,6 @@
-import { supabase } from './config/supabase';
+import { supabase } from '../../server';
 
-export interface Event {
+export interface Post {
     id: string;
     title: string;
     body: string;
@@ -14,7 +14,7 @@ export interface Event {
     rsvp: number;
 }
 
-export async function fetchEventByIdService(eventId: string): Promise<Event> {
+export async function fetchPostByIdService(eventId: string): Promise<Post> {
     try {
         const { data, error } = await supabase
             .from('posts')
@@ -23,13 +23,13 @@ export async function fetchEventByIdService(eventId: string): Promise<Event> {
             .single();
             
         if (error) {
-            throw new Error(`Error fetching event: ${error.message}`);
+            throw new Error(`Error fetching post: ${error.message}`);
         }
         if (!data) {
             throw new Error('No data returned from fetch');
         }
         
-        const event: Event = {
+        const event: Post = {
             id: data.id,
             title: data.title,
             body: data.body,
@@ -45,7 +45,7 @@ export async function fetchEventByIdService(eventId: string): Promise<Event> {
         
         return event;
     } catch (error) {
-        console.error('Error in fetchEventById:', error);
+        console.error('Error in fetchPostById:', error);
         throw error;
     }
 }

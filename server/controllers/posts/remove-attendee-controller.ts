@@ -1,4 +1,4 @@
-import { removeAttendeeService, RemoveAttendeeResponse} from "../../services/events/remove-attendee-service";
+import { removeAttendeeService, RemoveAttendeeResponse} from "../../services/posts/remove-attendee-service";
 
 export async function removeAttendeeController(eventId: string, userId: string): Promise<RemoveAttendeeResponse> {
     try {
