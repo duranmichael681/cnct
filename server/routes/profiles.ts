@@ -1,6 +1,6 @@
 import { Request, Response, Router } from 'express';
 import { supabase } from '../server';
-import getProfileData from '../controllers/profiles/fetch-profile-data-controller.js'
+import fetchProfileData from '../controllers/profiles/fetch-profile-data-controller.js'
 //import other necessary middlewares and controllrs here
 
 const profileRouter = Router();
@@ -30,7 +30,7 @@ profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
         // Middleware Service
         
         //Controller
-        const data = getProfileData(req.params.userId);
+        const data = fetchProfileData(req.params.userId);
 
         res.send(data);
     } catch (error: any) {
