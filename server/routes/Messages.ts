@@ -4,6 +4,8 @@ import { supabase } from '../server';
 
 //TODO: import other necessary middlewares and controllrs here
 
+// TODO: Replace the placeholder lambda functions with their respective controllers.
+
 const messageRouter = Router();
 
 //TODO: add middlewares and controllers later

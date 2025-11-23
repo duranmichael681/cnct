@@ -1,4 +1,4 @@
-import { supabase } from '../../server';
+import { supabaseAdmin } from '../../config/supabase';
 
 export interface Post {
     id: string;
@@ -16,7 +16,7 @@ export interface Post {
 
 export async function fetchPostByIdService(eventId: string): Promise<Post> {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('posts')
             .select('*')
             .eq('id', eventId)

@@ -1,5 +1,4 @@
 import { Request, Response, Router } from 'express';
-import { supabase } from '../server.js';
 import { EventControllerModule } from '../controllers/controller-module.js';
 //TODO: import other necessary middlewares and controllrs here
 
