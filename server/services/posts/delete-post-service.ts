@@ -1,4 +1,4 @@
-import { supabase } from '../../server';
+import { supabaseAdmin } from '../../config/supabase';
 
 export interface DeletePostResponse {
     success: boolean;
@@ -6,7 +6,7 @@ export interface DeletePostResponse {
 }
 export async function deletePostService(postId: string): Promise<DeletePostResponse> {
     try {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
             .from('posts')
             .delete()
             .eq('id', postId);

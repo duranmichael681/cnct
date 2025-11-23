@@ -1,5 +1,5 @@
 import { Request, Response, Router } from 'express';
-import { supabase } from '../server';
+import { supabaseAdmin } from '../../config/supabase.js';
 
 
 //TODO: import other necessary middlewares and controllrs here
@@ -10,7 +10,7 @@ const messageRouter = Router();
 messageRouter.get('/messages/threads/:eventId', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware
-        const {thread, error} = supabase.from('posts').select("*").eq("id", req.params.eventId);
+        const {thread, error} = supabaseAdmin.from('posts').select("*").eq("id", req.params.eventId);
         res.send(thread);
     } catch (error: any) {
         res.send("Message not found.");

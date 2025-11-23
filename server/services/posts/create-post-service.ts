@@ -1,4 +1,4 @@
-import { supabase } from '../../server';
+import { supabaseAdmin } from '../../config/supabase';
 
 export interface postData {
     title: string;
@@ -20,7 +20,7 @@ export interface postResponse{
 export async function createPostService(postData: postData): Promise<postResponse> {
     try {
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('posts')
             .insert([postData])
             .select()

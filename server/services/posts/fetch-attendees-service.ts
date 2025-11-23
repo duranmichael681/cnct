@@ -1,4 +1,4 @@
-import { supabase } from '../../server';
+import { supabaseAdmin } from '../../config/supabase';
 
 export interface Attendee{
     id: number;
@@ -9,7 +9,7 @@ export interface Attendee{
 
 export async function fetchAttendeesService(eventId: string): Promise<Attendee[]> {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('attendees')
             .select('*')
             .eq('event_id', eventId);

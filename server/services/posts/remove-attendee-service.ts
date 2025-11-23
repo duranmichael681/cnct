@@ -1,4 +1,4 @@
-import { supabase } from '../../server';
+import { supabaseAdmin } from '../../config/supabase';
 
 export interface RemoveAttendeeResponse {
     success: boolean;
@@ -7,7 +7,7 @@ export interface RemoveAttendeeResponse {
 
 export async function removeAttendeeService(eventId: number, userId: number): Promise<RemoveAttendeeResponse> {
     try {
-        const { error } = await supabase
+        const { error } = await supabaseAdmin
             .from('attendees')
             .delete()
             .eq('event_id', eventId)

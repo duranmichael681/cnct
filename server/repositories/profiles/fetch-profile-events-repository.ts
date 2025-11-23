@@ -1,7 +1,7 @@
-import { supabase } from '../../server.js'
+import { supabaseAdmin } from '../../config/supabase.js';
 
 export default async function fetchProfileEvents(userId: string) {
-    const {data, error} = await supabase
+    const {data, error} = await supabaseAdmin
         .from('posts')
         .select()
         .eq("organizer_id", userId);

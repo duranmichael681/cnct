@@ -1,9 +1,9 @@
-import { supabase } from '../../server'
+import { supabaseAdmin } from '../../config/supabase';
 import { Post } from './fetch-post-by-id-service';
 
 export async function updatePostService(eventId: string, updatedData: Partial<Post>): Promise<Post> {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('posts')
             .update({
                 title: updatedData.title,
