@@ -1,6 +1,8 @@
 import { Request, Response, Router } from 'express';
 import { supabase } from '../server.js';
+
 import fetchProfileData from '../controllers/profiles/fetch-profile-data-controller.js'
+import fetchProfileEvents from '../controllers/profiles/fetch-profile-events-controller.js'
 //import other necessary middlewares and controllrs here
 
 const profileRouter = Router();
@@ -41,18 +43,12 @@ profileRouter.get('/profile/:userId', function(req: Request, res: Response) {
 profileRouter.get('/profile/:userId/events', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
         // Middleware Services
-        const {data, error} = supabase
-        .from('posts')
-        .select()
-        .eq("organizer_id", req.params.userId);
-        if(error) {
-            console.log("Supabase error retrieving post data. Error: ");
-            console.log(error);
-        }
+        const data = fetchProfileEvents(req.params.userId);
         res.send(data);
     } catch (error: any) {
         res.send("Post not found");
     }
+    
 })
 profileRouter.get('/profile/:userId/following', /*middleware, controller*/ function(req: Request, res: Response) {
     try {
