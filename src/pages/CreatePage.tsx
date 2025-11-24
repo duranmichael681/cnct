@@ -422,13 +422,13 @@ export default function UploadPage() {
     >
       <div className="flex flex-1">
         <SideBar />
-        <div className="flex-1 w-full min-h-screen flex flex-col md:flex-row md:ml-[70px] pb-24 md:pb-6">
+        <div className="flex-1 w-full min-h-screen flex flex-col lg:flex-row md:ml-[70px] pb-24 md:pb-6">
         
         {/* Left Column - Form Inputs */}
-        <div className="flex w-full max-w-md mx-auto md:max-w-none md:w-1/3 md:mx-10 flex-col mt-4 md:mt-10 px-4 md:px-0">
+        <div className="flex w-full max-w-2xl mx-auto lg:max-w-none lg:w-full lg:flex-1 flex-col mt-4 md:mt-10 px-4 md:px-6 lg:px-8">
           
           {/* Mobile: Title and Date Preview */}
-          <div className="md:hidden mb-6">
+          <div className="lg:hidden mb-6">
             <h2 className="font-bold text-2xl text-center text-[var(--text)] mb-4">
               {title || "Title"}
             </h2>
@@ -440,7 +440,7 @@ export default function UploadPage() {
           </div>
 
           {/* Dropzone Area */}
-          <div className="bg-[var(--secondary)] rounded-xl w-full md:w-[60vh] md:mx-auto h-[18vh] md:h-[20vh] flex flex-col items-center justify-center border-2 border-dashed border-[var(--border)] p-2">
+          <div className="bg-[var(--secondary)] rounded-xl w-full max-w-2xl mx-auto h-48 lg:h-56 flex flex-col items-center justify-center border-2 border-dashed border-[var(--border)] p-2">
             {files.length === 0 ? (
               <div
                 {...getRootProps()}
@@ -516,7 +516,7 @@ export default function UploadPage() {
             </h2>
             <textarea
               placeholder="Event description..."
-              className="w-full border-2 border-[var(--border)] rounded p-2 h-[15vh] md:h-[20vh] resize-none text-sm placeholder:text-[var(--text-secondary)] overflow-y-auto bg-[var(--card-bg)] text-[var(--text)]"
+              className="w-full border-2 border-[var(--border)] rounded p-2 h-32 lg:h-40 resize-none text-sm placeholder:text-[var(--text-secondary)] overflow-y-auto bg-[var(--card-bg)] text-[var(--text)]"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             ></textarea>
@@ -716,7 +716,7 @@ export default function UploadPage() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-col gap-3 mt-6 w-full md:w-[40vh] md:mx-auto">
+          <div className="flex flex-col gap-3 mt-6 mb-6 lg:mb-0 w-full max-w-md mx-auto">
             <div className="flex flex-col md:flex-row gap-3">
               <button
                 onClick={saveDraft}
@@ -751,18 +751,18 @@ export default function UploadPage() {
         </div>
 
         {/* Middle Column - Preview Image */}
-        <div className="w-full max-w-md mx-auto md:max-w-none md:w-2/5 flex flex-col mt-6 md:mt-10 px-4 md:px-0">
-          <h1 className="font-semibold text-base text-center md:text-left text-[var(--text)] mb-2">
+        <div className="w-full max-w-2xl mx-auto lg:max-w-none lg:w-full lg:flex-1 flex flex-col mt-6 lg:mt-10 px-4 md:px-6 lg:px-8">
+          <h1 className="font-semibold text-base text-center lg:text-left text-[var(--text)] mb-2">
             Preview ({files.length} / {MAX_FILES} Pictures)
           </h1>
-          <div className="w-full bg-[var(--secondary-hover)] h-[50vh] md:h-[90vh] flex items-center justify-center flex-col overflow-hidden rounded-xl relative">
+          <div className="w-full bg-[var(--secondary-hover)] h-96 lg:h-[600px] xl:h-[700px] flex items-center justify-center flex-col overflow-hidden rounded-xl relative">
             {mainCarouselPreview}
           </div>
         </div>
 
-        {/* Right Column - Preview Details (Desktop Only) */}
-        <div className="hidden md:flex md:w-1/4 flex-col mt-10 px-10 pr-10">
-          <h2 className="font-bold text-4xl break-words text-[var(--text)]">{title || "Title"}</h2>
+        {/* Right Column - Preview Details (Large Screens Only) */}
+        <div className="hidden xl:flex xl:w-full xl:max-w-sm flex-col mt-10 px-6 xl:px-8">
+          <h2 className="font-bold text-3xl xl:text-4xl break-words text-[var(--text)]">{title || "Title"}</h2>
           
           {(buildingCode || roomNumber) && (
             <div className="mt-6">
