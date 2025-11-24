@@ -82,16 +82,22 @@ export default function SignIn() {
           <Link to='/home'>
             <button
               // Replaced w-[clamp(...)] with w-full
-              className='mt-10 border p-2 bg-[#B6862C] border-[#B6862C] rounded-xl w-full text-white cursor-pointer'
+              className='mt-10 border p-2 bg-[#B6862C] border-[#B6862C] rounded-xl w-full text-white cursor-pointer hover:bg-[var(--secondary-hover)] transition hover:text-[var(--primary)]'
             >
               Log In
             </button>
           </Link>
 
-          <p className='mt-3 text-sm text-gray-600 text-center'>
+          <p className='mt-3 text-sm text-[var(--secondary)] text-center'>
             Don't have an account?{' '}
-            <Link to='/' className='text-[#B6862C] hover:underline hover:cursor-pointer'>
+            <Link to='/questionnaire/start' className='text-[#B6862C] hover:underline hover:cursor-pointer'>
               Sign Up
+            </Link>
+          </p>
+
+          <p className='mt-2 text-sm text-gray-600 text-center'>
+            <Link to='/forgot-password' className='text-[#B6862C] hover:underline hover:cursor-pointer'>
+              Forgot Password?
             </Link>
           </p>
 
@@ -102,9 +108,9 @@ export default function SignIn() {
           </div>
 
           <div className='mt-17 flex-row gap-4 flex justify-center'>
-            <button className='flex items-center border border-[#8f8b86] rounded-xl p-3 mb-6 sm:mb-8 hover:bg-gray-50 transition cursor-pointer'>
-              <img src='https://www.svgrepo.com/show/475656/google-color.svg' alt='Google' className='w-6 h-6' />
-              <span className='text-gray-700 font-semibold text-base sm:text-lg ml-2'>Sign up with Google</span>
+            <button className='flex items-center border border-[#8f8b86] rounded-xl px-6 py-3 mb-6 sm:mb-8 hover:bg-[var(--primary-hover)] transition cursor-pointer w-full max-w-xs'>
+              <img src='https://www.svgrepo.com/show/475656/google-color.svg' alt='Google' className='w-5 h-5' />
+              <span className='text-var(--primary) font-semibold text-sm ml-2 whitespace-nowrap'>Sign up with Google</span>
             </button>
           </div>
         </div>

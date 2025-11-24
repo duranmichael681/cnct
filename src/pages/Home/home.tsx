@@ -9,6 +9,9 @@ export default function Home() {
   const [width, setWidth] = useState(window.innerWidth)
 
   useEffect(() => {
+    // Mark that user has visited the app (for showing sidebar on info pages)
+    sessionStorage.setItem('hasVisitedApp', 'true');
+    
     function handleResize() {
       setWidth(window.innerWidth)
     }
@@ -45,24 +48,56 @@ export default function Home() {
   // Array of popular events
   const popularEvents = [
     {
-      title: 'Event 1',
-      image: PopularEventImage,
-      description: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Pellentesque a mi placerat.',
+      postId: 'pop1',
+      username: 'EventOrganizer1',
+      timestamp: '3h ago',
+      eventName: 'Beach Volleyball Tournament',
+      location: 'FIU Beach',
+      time: 'Saturday, 2:00 PM',
+      description: 'Join us for an exciting beach volleyball tournament! All skill levels welcome.',
+      tags: ['#Volleyball', '#Beach', '#Tournament'],
+      imageUrl: PopularEventImage,
+      initialRsvpCount: 45,
+      initialCommentCount: 12,
     },
     {
-      title: 'Event 2',
-      image: PopularEventImage,
-      description: 'Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia.',
+      postId: 'pop2',
+      username: 'StudentLife',
+      timestamp: '5h ago',
+      eventName: 'Campus Food Festival',
+      location: 'GC Ballrooms',
+      time: 'Friday, 11:00 AM',
+      description: 'Taste cuisines from around the world at our annual food festival!',
+      tags: ['#Food', '#Festival', '#Culture'],
+      imageUrl: PopularEventImage,
+      initialRsvpCount: 120,
+      initialCommentCount: 28,
     },
     {
-      title: 'Event 3',
-      image: PopularEventImage,
-      description: 'Pellentesque a mi placerat, aliquam sem ut, tincidunt justo.',
+      postId: 'pop3',
+      username: 'FIUAthletics',
+      timestamp: '1d ago',
+      eventName: 'Panthers Basketball Game',
+      location: 'FIU Arena',
+      time: 'Thursday, 7:00 PM',
+      description: 'Cheer on the Panthers as they take on their conference rivals!',
+      tags: ['#Basketball', '#Panthers', '#Sports'],
+      imageUrl: PopularEventImage,
+      initialRsvpCount: 200,
+      initialCommentCount: 45,
     },
     {
-      title: 'Event 4',
-      image: PopularEventImage,
-      description: 'Mauris in metus ut lorem consequat feugiat.',
+      postId: 'pop4',
+      username: 'ArtClub',
+      timestamp: '2d ago',
+      eventName: 'Student Art Exhibition',
+      location: 'Patricia & Phillip Frost Art Museum',
+      time: 'Sunday, 1:00 PM',
+      description: 'Showcase of incredible artwork from FIU students. Don\'t miss it!',
+      tags: ['#Art', '#Exhibition', '#Culture'],
+      imageUrl: PopularEventImage,
+      initialRsvpCount: 85,
+      initialCommentCount: 19,
     },
   ]
 
@@ -98,17 +133,21 @@ export default function Home() {
             <div className='m-5 w-1/3 h-auto flex flex-col justify-start items-center border-l border-[var(--border)] mt-20 animate-fade-in-delay-1'>
               <h1 className='text-center text-[var(--primary)] font-semibold text-3xl mb-6 animate-fade-in-delay-2'>Popular this Week</h1>
 
-              <div className='flex flex-col w-full gap-10'>
+              <div className='flex flex-col w-full gap-6 px-4'>
                 {popularEvents.map((event, index) => (
-                  <div key={index} className={`flex w-full relative cursor-pointer hover:bg-[var(--menucard)] transition-colors rounded-lg p-2 animate-fade-in-delay-${Math.min(index + 3, 4)}`}>
-                    <div className='flex flex-col sm:flex-row w-full items-center sm:items-start sm:justify-start'>
-                      <img src={event.image} alt={event.title} className='ml-5 rounded-xl max-w-[175px] aspect-square object-cover mt-10' />
-                    </div>
-                    <div className='mt-10 mr-10 w-2/3 flex-row items-center justify-center'>
-                      <h2 className='text-[var(--primary)] font-semibold text-2xl'>{event.title}</h2>
-                      <div className='bg-[var(--border)] h-0.25 w-15 my-3' />
-                      <p className='text-[var(--text)]'>{event.description}</p>
-                    </div>
+                  <div key={index} className={`animate-fade-in-delay-${Math.min(index + 3, 4)}`}>
+                    <PostCard
+                      postId={event.postId}
+                      username={event.username}
+                      timestamp={event.timestamp}
+                      eventName={event.eventName}
+                      location={event.location}
+                      time={event.time}
+                      description={event.description}
+                      tags={event.tags}
+                      imageUrl={event.imageUrl}
+                      initialRsvpCount={event.initialRsvpCount}
+                    />
                   </div>
                 ))}
               </div>

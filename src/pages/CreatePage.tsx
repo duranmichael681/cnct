@@ -5,6 +5,7 @@ import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { DatePicker } from "@mui/x-date-pickers/DatePicker";
 import dayjs, { Dayjs } from "dayjs";
 import { motion, Reorder } from "framer-motion";
+import { X, Plus } from "lucide-react";
 import uploadIcon from "../assets/icons/upload_24dp_F3F3F3_FILL0_wght400_GRAD0_opsz24.svg";
 import SideBar from "../components/SideBar";
 import Footer from "../components/Footer";
@@ -12,6 +13,33 @@ import Footer from "../components/Footer";
 interface FileWithPreview extends File {
   preview: string;
 }
+
+const FIU_BUILDINGS = [
+  { code: 'AC1', name: 'Academic Center 1 (BBC)' },
+  { code: 'AC2', name: 'Academic Center 2 (BBC)' },
+  { code: 'AHC1', name: 'Academic Health Center 1' },
+  { code: 'AHC2', name: 'Academic Health Center 2' },
+  { code: 'AHC3', name: 'Academic Health Center 3' },
+  { code: 'CP', name: 'Chemistry and Physics Building' },
+  { code: 'DM', name: 'Deuxième Maison' },
+  { code: 'ECS', name: 'Engineering and Computer Science Building' },
+  { code: 'GC', name: 'Graham Center' },
+  { code: 'GL', name: 'Green Library' },
+  { code: 'OE', name: 'Owa Ehan' },
+  { code: 'PC', name: 'Primera Casa' },
+  { code: 'PG1', name: 'Gold Garage' },
+  { code: 'PG2', name: 'Blue Garage' },
+  { code: 'PG3', name: 'Panther Garage' },
+  { code: 'PG4', name: 'Red Garage' },
+  { code: 'PG5', name: 'Market Station' },
+  { code: 'PG6', name: 'Tech Station' },
+  { code: 'RB', name: 'Ryder Business Building' },
+  { code: 'SIPA', name: 'School of International and Public Affairs' },
+  { code: 'VH', name: 'Viertes Haus' },
+  { code: 'WPAC', name: 'Wertheim Performing Arts Center' },
+  { code: 'WUC', name: 'Wolfe University Center (BBC)' },
+  { code: 'ZEB', name: 'Ziff Education Building' }
+];
 
 // Define the maximum file limit
 const MAX_FILES = 3;
@@ -21,6 +49,13 @@ export default function UploadPage() {
   const [description, setDescription] = useState("");
   const [attendees, setAttendees] = useState("");
   const [date, setDate] = useState<Dayjs | null>(dayjs());
+  const [buildingCode, setBuildingCode] = useState("");
+  const [roomNumber, setRoomNumber] = useState("");
+  const [timeHour, setTimeHour] = useState("12");
+  const [timeMinute, setTimeMinute] = useState("00");
+  const [timePeriod, setTimePeriod] = useState("PM");
+  const [tags, setTags] = useState<string[]>([]);
+  const [newTag, setNewTag] = useState("");
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
@@ -39,6 +74,12 @@ export default function UploadPage() {
         if (draft.date) {
           setDate(dayjs(draft.date));
         }
+        setBuildingCode(draft.buildingCode || "");
+        setRoomNumber(draft.roomNumber || "");
+        setTimeHour(draft.timeHour || "12");
+        setTimeMinute(draft.timeMinute || "00");
+        setTimePeriod(draft.timePeriod || "PM");
+        setTags(draft.tags || []);
         // Note: Files can't be restored from localStorage for security reasons
       } catch (error) {
         console.error("Failed to load draft:", error);
@@ -120,6 +161,20 @@ export default function UploadPage() {
     }
   };
 
+  // --- Tag Management ---
+
+  const handleAddTag = () => {
+    if (newTag.trim() && !tags.includes(newTag.trim())) {
+      const formattedTag = newTag.trim().startsWith('#') ? newTag.trim() : `#${newTag.trim()}`;
+      setTags([...tags, formattedTag]);
+      setNewTag("");
+    }
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    setTags(tags.filter(tag => tag !== tagToRemove));
+  };
+
   // --- Submission Handler ---
 
   const clearDraft = () => {
@@ -135,6 +190,12 @@ export default function UploadPage() {
       setDescription("");
       setAttendees("");
       setDate(dayjs());
+      setBuildingCode("");
+      setRoomNumber("");
+      setTimeHour("12");
+      setTimeMinute("00");
+      setTimePeriod("PM");
+      setTags([]);
       setFiles([]);
       setCurrentImageIndex(0);
       
@@ -148,6 +209,12 @@ export default function UploadPage() {
       description,
       attendees,
       date: date ? date.toISOString() : null,
+      buildingCode,
+      roomNumber,
+      timeHour,
+      timeMinute,
+      timePeriod,
+      tags,
       savedAt: new Date().toISOString()
     };
     localStorage.setItem('eventDraft', JSON.stringify(draft));
@@ -160,6 +227,9 @@ export default function UploadPage() {
       title.trim() !== "" ||
       description.trim() !== "" ||
       attendees.trim() !== "" ||
+      buildingCode !== "" ||
+      roomNumber !== "" ||
+      tags.length > 0 ||
       files.length > 0
     );
   };
@@ -171,6 +241,7 @@ export default function UploadPage() {
     if (!title.trim()) missingFields.push("Title");
     if (!description.trim()) missingFields.push("Description");
     if (!date) missingFields.push("Event Date");
+    if (!buildingCode) missingFields.push("Building Location");
     if (!attendees.trim()) missingFields.push("Attendees");
     if (files.length === 0) missingFields.push("At least 1 image");
 
@@ -180,11 +251,22 @@ export default function UploadPage() {
     }
 
     const formData = new FormData();
+    
+    // Format location
+    const formattedLocation = roomNumber 
+      ? `${buildingCode} ${roomNumber}`
+      : buildingCode;
+    
+    // Format time
+    const formattedTime = `${timeHour}:${timeMinute} ${timePeriod} EST`;
 
     formData.append("title", title);
     formData.append("description", description);
     formData.append("attendees", attendees);
     formData.append("date", date ? date.toISOString() : "");
+    formData.append("location", formattedLocation);
+    formData.append("time", formattedTime);
+    formData.append("tags", JSON.stringify(tags));
 
     files.forEach((file, index) => {
       formData.append(`picture-${index}`, file);
@@ -208,6 +290,12 @@ export default function UploadPage() {
         setDescription("");
         setAttendees("");
         setDate(dayjs());
+        setBuildingCode("");
+        setRoomNumber("");
+        setTimeHour("12");
+        setTimeMinute("00");
+        setTimePeriod("PM");
+        setTags([]);
         setFiles([]);
         setCurrentImageIndex(0);
       } else {
@@ -485,6 +573,110 @@ export default function UploadPage() {
             </LocalizationProvider>
           </div>
 
+          {/* Location Input */}
+          <div className="flex flex-col mt-6">
+            <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
+              Location <span className="text-red-600">*</span>
+            </h2>
+            <div className="flex flex-col md:flex-row gap-2">
+              <select
+                value={buildingCode}
+                onChange={(e) => setBuildingCode(e.target.value)}
+                className="w-full md:flex-1 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+              >
+                <option value="">Select Building</option>
+                {FIU_BUILDINGS.map(building => (
+                  <option key={building.code} value={building.code}>
+                    {building.code} - {building.name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Room #"
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+                className="w-full md:w-24 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none"
+              />
+            </div>
+          </div>
+
+          {/* Time Picker */}
+          <div className="flex flex-col mt-6">
+            <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
+              Time (EST) <span className="text-red-600">*</span>
+            </h2>
+            <div className="flex gap-2">
+              <select
+                value={timeHour}
+                onChange={(e) => setTimeHour(e.target.value)}
+                className="flex-1 px-3 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
+                  <option key={hour} value={hour}>{hour}</option>
+                ))}
+              </select>
+              <span className="flex items-center text-[var(--text)] font-bold">:</span>
+              <select
+                value={timeMinute}
+                onChange={(e) => setTimeMinute(e.target.value)}
+                className="flex-1 px-3 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+              >
+                {['00', '15', '30', '45'].map(minute => (
+                  <option key={minute} value={minute}>{minute}</option>
+                ))}
+              </select>
+              <select
+                value={timePeriod}
+                onChange={(e) => setTimePeriod(e.target.value)}
+                className="flex-1 px-3 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+            </div>
+          </div>
+
+          {/* Tags Input */}
+          <div className="flex flex-col mt-6">
+            <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
+              Tags
+            </h2>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--primary)] text-white rounded-full text-sm"
+                >
+                  {tag}
+                  <button
+                    onClick={() => handleRemoveTag(tag)}
+                    className="hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors cursor-pointer"
+                  >
+                    <X size={14} />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                placeholder="Add a tag..."
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                className="flex-1 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] placeholder:text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none"
+              />
+              <button
+                onClick={handleAddTag}
+                className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 cursor-pointer"
+              >
+                <Plus size={18} />
+                Add
+              </button>
+            </div>
+          </div>
+
           {/* Attendees Input */}
           <div className="flex flex-col mt-6">
             <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
@@ -538,7 +730,7 @@ export default function UploadPage() {
           <h1 className="font-semibold text-base text-center md:text-left text-[var(--text)] mb-2">
             Preview ({files.length} / {MAX_FILES} Pictures)
           </h1>
-          <div className="w-full bg-[var(--secondary-hover)] h-[40vh] md:h-[80vh] flex items-center justify-center flex-col overflow-hidden rounded-xl relative">
+          <div className="w-full bg-[var(--secondary-hover)] h-[50vh] md:h-[90vh] flex items-center justify-center flex-col overflow-hidden rounded-xl relative">
             {mainCarouselPreview}
           </div>
         </div>
@@ -546,20 +738,64 @@ export default function UploadPage() {
         {/* Right Column - Preview Details (Desktop Only) */}
         <div className="hidden md:flex md:w-1/4 flex-col mt-10 px-10 pr-10">
           <h2 className="font-bold text-4xl break-words text-[var(--text)]">{title || "Title"}</h2>
+          
+          {(buildingCode || roomNumber) && (
+            <div className="mt-6">
+              <h3 className="font-bold text-xl text-[var(--text)] mb-2">Location</h3>
+              <p className="font-semibold text-lg text-[var(--text)]">
+                {buildingCode && FIU_BUILDINGS.find(b => b.code === buildingCode)?.name}
+                {roomNumber && ` - Room ${roomNumber}`}
+              </p>
+            </div>
+          )}
+          
           {date && (
-            <p className="font-semibold text-2xl mt-6 text-[var(--text)]">
-              Event Date: {date.format("MMMM D, YYYY")}
+            <div className="mt-6">
+              <h3 className="font-bold text-xl text-[var(--text)] mb-2">Event Date</h3>
+              <p className="font-semibold text-lg text-[var(--text)]">
+                {date.format("MMMM D, YYYY")}
+              </p>
+            </div>
+          )}
+          
+          {(timeHour || timeMinute || timePeriod) && (
+            <div className="mt-6">
+              <h3 className="font-bold text-xl text-[var(--text)] mb-2">Time</h3>
+              <p className="font-semibold text-lg text-[var(--text)]">
+                {timeHour}:{timeMinute} {timePeriod} EST
+              </p>
+            </div>
+          )}
+          
+          <div className="mt-6">
+            <h3 className="font-bold text-xl text-[var(--text)] mb-2">Description</h3>
+            <p className="font-semibold text-base break-words text-[var(--text)]">
+              {description || "No description yet"}
             </p>
+          </div>
+          
+          {tags.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-bold text-xl text-[var(--text)] mb-2">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {tags.map((tag, index) => (
+                  <span
+                    key={index}
+                    className="inline-block px-3 py-1 bg-[var(--primary)] text-white rounded-full text-sm"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            </div>
           )}
-          <h2 className="font-semibold text-lg mt-6 break-words text-[var(--text)]">
-            {description || "Description"}
-          </h2>
-          {attendees && (
-            <>
-              <h2 className="font-bold text-2xl mt-6 text-[var(--text)]">Attendees</h2>
-              <h2 className="font-bold text-xl mt-2 text-[var(--text)]">{attendees}</h2>
-            </>
-          )}
+          
+          <div className="mt-6">
+            <h3 className="font-bold text-xl text-[var(--text)] mb-2">Attendees</h3>
+            <p className="font-semibold text-lg text-[var(--text)]">
+              {attendees || "Not specified"}
+            </p>
+          </div>
         </div>
 
         </div>
