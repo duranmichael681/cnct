@@ -1,7 +1,7 @@
 import { createPostService, postData, postResponse } from '../../services/posts/create-post-service';
 import {Request, Response } from "express";
 
-export async function createPostController(req: Request, res: Response): Promise<postResponse> {
+export async function createPostController(req: Request, res: Response) {
     try {
         const newPost: postData = {
             title: String(req.query.title),
@@ -13,11 +13,9 @@ export async function createPostController(req: Request, res: Response): Promise
         }
 
         const response = await createPostService(newPost);
-        res.send(response);
-        return response;
+        res.json({ success: true, data: response });
     } catch (error) {
-        console.error('Error in createEventController:', error);
-        res.send('Error in createEventController:' + error)
-        throw error;
+        console.error('Error in createPostController:', error);
+        res.status(500).json({ success: false, error: String(error) });
     }
 }

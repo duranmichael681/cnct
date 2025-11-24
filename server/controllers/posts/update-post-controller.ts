@@ -2,7 +2,7 @@ import { updatePostService } from '../../services/posts/update-post-service';
 import { Post } from '../../services/posts/fetch-post-by-id-service';
 import { Request, Response } from 'express';
 
-export async function updatePostController(req: Request, res: Response/* eventId: string, eventData: Partial<Post>*/): Promise<Post> {
+export async function updatePostController(req: Request, res: Response) {
     try {
         const eventId = req.params.id;
         const eventData: Partial<Post> = {
@@ -19,11 +19,9 @@ export async function updatePostController(req: Request, res: Response/* eventId
             rsvp: req.body.rsvp
         }
         const updatedEvent = await updatePostService(eventId, eventData);
-        res.send(updatedEvent);
-        return updatedEvent
+        res.json({ success: true, data: updatedEvent });
     } catch (error) {
-        console.error('Error in updateEventController:', error);
-        res.send('Error in updateEventController:' + error);
-        throw error;
+        console.error('Error in updatePostController:', error);
+        res.status(500).json({ success: false, error: String(error) });
     }
 }

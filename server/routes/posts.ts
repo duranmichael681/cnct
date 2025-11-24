@@ -8,22 +8,22 @@ const postsRouter = Router();
 //TODO: Are these in file controllers or what?
 //      for now, i'm going to write my controllers but commented out
 
-postsRouter.get('/posts', EventControllerModule.fetchPostsController)
+postsRouter.get('/', EventControllerModule.fetchPostsController)
 
-postsRouter.get('/posts/:id',  EventControllerModule.fetchPostByIdController)
+postsRouter.get('/:id',  EventControllerModule.fetchPostByIdController)
 
-postsRouter.post('/posts', EventControllerModule.createPostController)
+postsRouter.post('/', EventControllerModule.createPostController)
 
-postsRouter.put('/posts/:id', EventControllerModule.updatePostController)
+postsRouter.put('/:id', EventControllerModule.updatePostController)
 
-postsRouter.delete('/posts/:id', EventControllerModule.deletePostController)
+postsRouter.delete('/:id', EventControllerModule.deletePostController)
 
-postsRouter.post('/posts/:id/join', /*middleware, controller*/ function(req: Request, res: Response) {
+postsRouter.post('/:id/join', /*middleware, controller*/ function(req: Request, res: Response) {
     res.send("Joined event!");
 })
-postsRouter.post('/posts/:id/leave', EventControllerModule.removeAttendeeController)
+postsRouter.post('/:id/leave', EventControllerModule.removeAttendeeController)
 
-postsRouter.get('/posts/:id/attendees', EventControllerModule.fetchAttendeesController)
+postsRouter.get('/:id/attendees', EventControllerModule.fetchAttendeesController)
 
 export default postsRouter
 

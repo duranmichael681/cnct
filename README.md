@@ -189,7 +189,7 @@ server/
 ```
 
 **Core Components:**
-- **Routes**: Define API endpoints (events, users, messages)
+- **Routes**: Define API endpoints (posts, users, messages)
 - **Controllers**: Handle requests + Supabase calls directly
 - **Auth Middleware**: Simple JWT verification for protected routes
 - **Supabase RLS**: Let database handle basic permissions
@@ -199,9 +199,9 @@ server/
 - ✅ **Basic Error Handling**: Try-catch blocks in controllers
 
 **Core API Endpoints:**
-- `POST /api/events` - Create event
-- `GET /api/events` - Get all events
-- `POST /api/events/:id/join` - Join an event
+- `POST /api/posts` - Create event
+- `GET /api/posts` - Get all events
+- `POST /api/posts/:id/join` - Join an event
 - `GET /api/messages/:threadId` - Get messages
 - `POST /api/messages` - Send message
 

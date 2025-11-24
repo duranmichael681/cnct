@@ -11,10 +11,9 @@ export const mainRouter = Router();
 //these routes will SOLELY be used
 //to make API calls from the frontend
 
-mainRouter.use('/api', postsRouter)
+mainRouter.use('/api/posts', postsRouter)
 mainRouter.use('/api', profilesRouter)
 mainRouter.use('/api', messageRouter)
 mainRouter.use('/', webpagesRouter) //webpages will be served from root
 
 export default mainRouter;
-

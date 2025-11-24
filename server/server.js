@@ -18,14 +18,6 @@ import { supabaseAdmin } from "./config/supabase.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { mainRouter } from "./routes/index.ts";
 
-
-// Import API route handlers
-import postsRouter from "./routes/posts.js";
-import usersRouter from "./routes/users.js";
-import notificationsRouter from "./routes/notifications.js";
-import tagsRouter from "./routes/tags.js";
-import storageRouter from "./routes/storage.js";
-
 // Load environment variables from .env file
 /*
     To run this server:
@@ -94,26 +86,6 @@ app.get("/test-db", async (req, res) => {
 
 // Connect main router to the app.
 app.use(mainRouter);
-
-// ==================== API ROUTES ====================
-
-/**
- * All routes are prefixed with their respective paths.
- * authMiddleware is applied to routes that require user authentication.
- * 
- * Route Structure:
- * - /api/posts        - Post management (CREATE, READ, attendance)
- * - /api/users        - User profile operations
- * - /api/notifications - User notification management
- * - /api/tags         - Tag/category operations
- * - /api/storage      - File upload/download (images)
- */
-
-app.use("/api/posts", authMiddleware, postsRouter);         // Protected: requires auth token
-app.use("/api/users", usersRouter);                          // Public: user profile reads
-app.use("/api/notifications", authMiddleware, notificationsRouter); // Protected: user-specific
-app.use("/api/tags", tagsRouter);                            // Public: tag browsing
-app.use("/api/storage", authMiddleware, storageRouter);      // Protected: file uploads
 
 // ==================== ERROR HANDLERS ====================
 

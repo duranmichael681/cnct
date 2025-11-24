@@ -37,7 +37,7 @@ export default function Home() {
       try {
         setLoading(true);
         const data = await getAllPosts();
-        if (mounted) {
+        if (mounted && data) {
           setPosts(data);
           setError(null);
         }
