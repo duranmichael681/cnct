@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import ProfileHeader from "../components/ProfileHeader";
-import PostCard from "../components/PostCard";
 import SideBar from "../components/SideBar";
 import Footer from "../components/Footer";
 import SortFilter from "../components/SortFilter";
@@ -12,6 +11,7 @@ export default function ProfilePage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [userEvents, setUserEvents] = useState<Event[]>([]);
+  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -27,6 +27,7 @@ export default function ProfilePage() {
         const data = await getUserPosts(userId);
         if (mounted) {
           setUserEvents(data);
+          setFilteredEvents(data);
           setError(null);
         }
       } catch (err) {
@@ -42,6 +43,26 @@ export default function ProfilePage() {
     fetchUserEvents();
     return () => { mounted = false };
   }, [userId]);
+  
+  useEffect(() => {
+    document.title = 'CNCT | My Profile';
+    // Mark that user has visited the app (for showing sidebar on info pages)
+    sessionStorage.setItem('hasVisitedApp', 'true');
+  }, []);
+
+  // Sort posts when sortBy changes
+  useEffect(() => {
+    let result = [...userEvents];
+
+    if (sortBy === 'newest') {
+      result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    } else if (sortBy === 'oldest') {
+      result.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
+    }
+    // Note: 'tags' sorting would require tag filtering logic
+
+    setFilteredEvents(result);
+  }, [sortBy, userEvents]);
 
   const handleSortChange = (sort: 'newest' | 'oldest' | 'tags', tags?: string[]) => {
     setSortBy(sort);
@@ -52,15 +73,6 @@ export default function ProfilePage() {
       setSelectedTags([]);
       console.log('Sorting by:', sort);
     }
-
-    // Apply sorting
-    let sorted = [...userEvents];
-    if (sort === 'newest') {
-      sorted.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
-    } else if (sort === 'oldest') {
-      sorted.sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime());
-    }
-    setUserEvents(sorted);
   };
 
   return (
@@ -87,7 +99,7 @@ export default function ProfilePage() {
             {error && <ErrorMessage message={error} actionText="Retry" onAction={() => window.location.reload()} />}
 
             {/* Empty State */}
-            {!loading && !error && userEvents.length === 0 && (
+            {!loading && !error && filteredEvents.length === 0 && (
               <EmptyState
                 icon="📝"
                 title="No posts yet"
@@ -98,9 +110,9 @@ export default function ProfilePage() {
             )}
 
             {/* Posts Grid */}
-            {!loading && !error && userEvents.length > 0 && (
+            {!loading && !error && filteredEvents.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {userEvents.map((event) => (
+                {filteredEvents.map((event) => (
                   <div key={event.id} className="bg-[var(--menucard)] rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow">
                     <h3 className="text-[var(--text)] font-semibold text-xl mb-2">{event.title}</h3>
                     <p className="text-[var(--text)] opacity-80 mb-4 line-clamp-2">{event.body}</p>

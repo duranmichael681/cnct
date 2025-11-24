@@ -9,9 +9,9 @@ import {
   LoadingSpinner,
   ErrorMessage,
   EmptyState,
-  EventCard,
 } from "../components/ui/UIComponents";
 import { formatEventDate } from "../utils/helpers";
+import PostCard from "../components/PostCard";
 
 export default function DiscoverPage() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "tags" | null>(
@@ -24,6 +24,10 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    document.title = 'CNCT | Discover';
+  }, []);
 
   // Fetch posts from backend
   useEffect(() => {
@@ -105,12 +109,6 @@ export default function DiscoverPage() {
     console.log("Selected category:", category);
   };
 
-  const handleJoinPost = async (postId: string) => {
-    // TODO: Implement with real user ID from auth
-    console.log("Join post:", postId);
-    alert("Please log in to join posts");
-  };
-
   const getAttendeeCount = (event: Event) => {
     return event.attendees && event.attendees.length > 0
       ? event.attendees[0].count
@@ -186,15 +184,7 @@ export default function DiscoverPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    <EventCard
-                      title={post.title}
-                      description={post.body}
-                      location={post.building || "Location TBD"}
-                      date={formatEventDate(post.start_date)}
-                      maxAttendees={getAttendeeCount(post)}
-                      onViewDetails={() => console.log("View", post.id)}
-                      onJoin={() => handleJoinPost(post.id)}
-                    />
+                    <PostCard event={post} />
                   </motion.div>
                 ))}
               </div>

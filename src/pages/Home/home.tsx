@@ -1,12 +1,10 @@
 import SideBar from "../../components/SideBar";
-import PostCard from "../../components/PostCard";
 import Footer from "../../components/Footer";
 import PopularEventImage from "../../assets/how-it-works.jpg";
 import { useState, useEffect } from "react";
 import { getAllPosts, type Event } from "../../services/api";
 import { LoadingSpinner, ErrorMessage } from "../../components/ui/UIComponents";
 import { formatEventDate } from "../../utils/helpers";
-import PostPicture from '../../assets/download.jfif'
 import {supabase} from '../../supabase/client'
 
 
@@ -21,6 +19,10 @@ export default function Home() {
     } , []); //for seeing if log in via supabase worked , can delete later 
 
   useEffect(() => {
+    document.title = 'CNCT | Home';
+    // Mark that user has visited the app (for showing sidebar on info pages)
+    sessionStorage.setItem('hasVisitedApp', 'true');
+    
     function handleResize() {
       setWidth(window.innerWidth);
     }
@@ -90,10 +92,9 @@ export default function Home() {
           {/* Left Section - Posts */}
           <div className="p-4 sm:p-6 lg:p-8 w-full lg:w-2/3 flex flex-col gap-6 sm:gap-8 lg:gap-10">
             {/* Welcome Message */}
-            <div className="animate-fade-in">
-              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text)] mb-2">
-                Welcome Back,{" "}
-                <span className="text-[var(--primary)]">User</span>!
+            <div className='animate-fade-in'>
+              <h1 className='text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text)] mb-2'>
+                Welcome, <span className='text-[var(--primary)]'>User</span>!
               </h1>
               <p className="text-base sm:text-lg text-[var(--text)] opacity-80">
                 Here's what's happening today

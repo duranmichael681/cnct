@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import ProfileHeader from "../components/ProfileHeader";
 import PostCard from "../components/PostCard";
@@ -10,6 +10,10 @@ export default function GuestProfilePage() {
   const { userId } = useParams<{ userId: string }>();
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  
+  useEffect(() => {
+    document.title = userId ? `CNCT | ${userId}` : 'CNCT | Profile';
+  }, [userId]);
 
   const handleSortChange = (sort: 'newest' | 'oldest' | 'tags', tags?: string[]) => {
     setSortBy(sort);
