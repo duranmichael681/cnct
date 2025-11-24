@@ -12,7 +12,7 @@ export default function QuestionnaireStart() {
         {[69, 192, 315, 438, 561, 684].map((top, i) => (
           <div
             key={`left-${i}`}
-            className="absolute w-24 h-24 left-[75px] opacity-20"
+            className="absolute w-24 h-24 left-[75px] opacity-80"
             style={{ top: `${top}px` }}
           >
             <PawPrint size={96} color="var(--primary)" />
@@ -22,18 +22,11 @@ export default function QuestionnaireStart() {
         {[69, 192, 315, 438, 561, 684].map((top, i) => (
           <div
             key={`right-${i}`}
-            className="absolute w-24 h-24 right-[75px] opacity-20"
+            className="absolute w-24 h-24 right-[75px] opacity-80"
             style={{ top: `${top}px` }}
           >
             <PawPrint size={96} color="var(--primary)" />
           </div>
-        ))}
-      </div>
-
-      {/* Mobile Paws - Bottom, with more margin and top margin to avoid button collision */}
-      <div className="lg:hidden absolute bottom-24 left-0 right-0 flex justify-center gap-4 mt-16">
-        {[1, 2, 3, 4].map((i) => (
-          <PawPrint key={i} size={48} color="var(--primary)" className="opacity-20" />
         ))}
       </div>
 
@@ -78,12 +71,19 @@ export default function QuestionnaireStart() {
         </div>
 
         {/* Already have an account link */}
-        <p className="text-center mt-6 text-[var(--primary)] dark:text-[var(--primary)] text-sm">
+        <p className="text-center mt-6 text-[var(--primary)] dark:text-[var(--primary)] text-sm mb-32">
           Already have an account?{' '}
           <Link to="/signin" className="text-[var(--primary)] dark:text-[var(--primary)] hover:underline cursor-pointer font-semibold">
             Click here to sign in
           </Link>
         </p>
+      </div>
+
+      {/* Mobile Paws - At very bottom with proper spacing */}
+      <div className="lg:hidden fixed bottom-4 left-0 right-0 flex justify-center gap-4 z-0">
+        {[1, 2, 3, 4].map((i) => (
+          <PawPrint key={i} size={48} color="var(--primary)" className="opacity-80" />
+        ))}
       </div>
     </div>
   )
