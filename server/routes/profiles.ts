@@ -25,7 +25,7 @@ profileRouter.get('/profile/:userId', async function(req: Request, res: Response
     }
 })
 
-profileRouter.get('/profile/:userId/events', /*middleware, controller*/ async function(req: Request, res: Response) {
+profileRouter.get('/profile/:userId/posts', /*middleware, controller*/ async function(req: Request, res: Response) {
     try {
         // Middleware Services
 
