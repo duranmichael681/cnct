@@ -9,6 +9,7 @@ export interface postData {
     end_date?: string;
     postPictureUrl?: string;
     isPrivate?: boolean;
+    tagIds?: string[];
 }
 
 export interface postResponse {
@@ -43,6 +44,23 @@ export async function createPostService(postData: postData): Promise<postRespons
 
         if (!data) {
             throw new Error('No data returned after insert');
+        }
+
+        // Insert tags into post_tags junction table if provided
+        if (postData.tagIds && postData.tagIds.length > 0) {
+            const postTagsData = postData.tagIds.map(tagId => ({
+                post_id: data.id,
+                tag_id: tagId
+            }));
+
+            const { error: tagsError } = await supabaseAdmin
+                .from('post_tags')
+                .insert(postTagsData);
+
+            if (tagsError) {
+                console.error('Error inserting post tags:', tagsError);
+                // Don't throw - post was created successfully, tags are optional
+            }
         }
 
         const response: postResponse = {

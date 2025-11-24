@@ -56,7 +56,7 @@ export default function Footer() {
           <div className="flex items-center flex-shrink-0">
             <button 
               onClick={scrollToTop}
-              className="text-xl text-[var(--primary)] hover:text-[var(--primary-hover)] text-base font-bold font-['Rubik'] hover:underline transition-all cursor-pointer whitespace-nowrap"
+              className="text-xl text-[var(--primary)] hover:text-[var(--primary-hover)] font-bold font-['Rubik'] hover:underline transition-all cursor-pointer whitespace-nowrap"
             >
               Back to Top ↑
             </button>

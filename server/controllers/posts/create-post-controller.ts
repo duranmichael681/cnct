@@ -22,6 +22,7 @@ export async function createPostController(req: Request, res: Response) {
             end_date: req.body.end_date,
             postPictureUrl: req.body.post_picture_url,
             isPrivate: Boolean(req.body.is_private),
+            tagIds: req.body.tag_ids || [],
         }
 
         const response = await createPostService(newPost);

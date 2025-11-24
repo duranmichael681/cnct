@@ -1,35 +1,20 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MoreVertical, Flag, Ban, Share2, MapPin, Clock, MessageCircle, Link, Send, EyeOff, Unlink, Pencil, Trash2, ThumbsUp, ThumbsDown, Edit3, Plus, X } from "lucide-react";
 import ShareModal from "./ShareModal";
+import { supabase } from "../lib/supabaseClient";
+import type { Event } from "../services/api";
 
-const FIU_BUILDINGS = [
-  { code: 'AC1', name: 'Academic Center 1 (BBC)' },
-  { code: 'AC2', name: 'Academic Center 2 (BBC)' },
-  { code: 'AHC1', name: 'Academic Health Center 1' },
-  { code: 'AHC2', name: 'Academic Health Center 2' },
-  { code: 'AHC3', name: 'Academic Health Center 3' },
-  { code: 'CP', name: 'Chemistry and Physics Building' },
-  { code: 'DM', name: 'Deuxième Maison' },
-  { code: 'ECS', name: 'Engineering and Computer Science Building' },
-  { code: 'GC', name: 'Graham Center' },
-  { code: 'GL', name: 'Green Library' },
-  { code: 'OE', name: 'Owa Ehan' },
-  { code: 'PC', name: 'Primera Casa' },
-  { code: 'PG1', name: 'Gold Garage' },
-  { code: 'PG2', name: 'Blue Garage' },
-  { code: 'PG3', name: 'Panther Garage' },
-  { code: 'PG4', name: 'Red Garage' },
-  { code: 'PG5', name: 'Market Station' },
-  { code: 'PG6', name: 'Tech Station' },
-  { code: 'RB', name: 'Ryder Business Building' },
-  { code: 'SIPA', name: 'School of International and Public Affairs' },
-  { code: 'VH', name: 'Viertes Haus' },
-  { code: 'WPAC', name: 'Wertheim Performing Arts Center' },
-  { code: 'WUC', name: 'Wolfe University Center (BBC)' },
-  { code: 'ZEB', name: 'Ziff Education Building' }
-];
+interface Tag {
+  id: string;
+  code: string;
+}
+
+interface Building {
+  building_code: string;
+  building_name: string;
+}
 
 interface Comment {
   id: string;
@@ -43,17 +28,7 @@ interface Comment {
 }
 
 interface PostCardProps {
-  postId?: string;
-  username?: string;
-  timestamp?: string;
-  eventName?: string;
-  location?: string;
-  time?: string;
-  description?: string;
-  tags?: string[];
-  imageUrl?: string;
-  initialRsvpCount?: number;
-  initialIsRsvpd?: boolean;
+  event: Event;
   isOwnProfile?: boolean;
   onUpdate?: (postId: string, updatedData: {
     eventName: string;
@@ -66,38 +41,38 @@ interface PostCardProps {
 }
 
 export default function PostCard({
-  postId = "1",
-  username = "username",
-  timestamp = "2h ago",
-  eventName = "Event Name Goes Here",
-  location = "Event Location",
-  time = "Event Time",
-  description = "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat.",
-  tags = ["#Volleyball", "#CampusEvent", "#Sports", "#FunWeekend"],
-  imageUrl = "",
-  initialRsvpCount = 12,
-  initialIsRsvpd = false,
+  event,
   isOwnProfile = false,
   onUpdate,
   onDelete,
 }: PostCardProps) {
   const navigate = useNavigate();
   const location_route = useLocation();
+  
+  // Fetch dynamic data from Supabase
+  const [buildings, setBuildings] = useState<Building[]>([]);
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [postTags, setPostTags] = useState<Tag[]>([]);
+  const [organizerUsername, setOrganizerUsername] = useState<string>("");
+  const [organizerProfilePic, setOrganizerProfilePic] = useState<string | null>(null);
+  const [timeAgo, setTimeAgo] = useState<string>("");
+  
+  // UI State
   const [isOpen, setIsOpen] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
-  const [editedEventName, setEditedEventName] = useState(eventName);
+  const [editedEventName, setEditedEventName] = useState("");
   const [editedBuildingCode, setEditedBuildingCode] = useState("");
   const [editedRoomNumber, setEditedRoomNumber] = useState("");
   const [editedTimeHour, setEditedTimeHour] = useState("12");
   const [editedTimeMinute, setEditedTimeMinute] = useState("00");
   const [editedTimePeriod, setEditedTimePeriod] = useState("PM");
-  const [editedDescription, setEditedDescription] = useState(description);
-  const [editedTags, setEditedTags] = useState<string[]>(tags);
+  const [editedDescription, setEditedDescription] = useState("");
+  const [editedTags, setEditedTags] = useState<string[]>([]);
   const [newTag, setNewTag] = useState("");
-  const [isRsvpd, setIsRsvpd] = useState(initialIsRsvpd);
-  const [rsvpCount, setRsvpCount] = useState(initialRsvpCount);
+  const [isRsvpd, setIsRsvpd] = useState(false);
+  const [rsvpCount, setRsvpCount] = useState(0);
   const [isRsvpLoading, setIsRsvpLoading] = useState(false);
   const [isRsvpHovered, setIsRsvpHovered] = useState(false);
   const [showComments, setShowComments] = useState(false);
@@ -120,6 +95,91 @@ export default function PostCard({
 
   // Mock user ID - in a real app, this would come from props or context
   const mockUserId = "123";
+
+  // Fetch dynamic data on mount
+  useEffect(() => {
+    async function fetchData() {
+      // Fetch buildings
+      const { data: buildingsData } = await supabase
+        .from('fiu_buildings')
+        .select('building_code, building_name')
+        .order('building_code', { ascending: true });
+      if (buildingsData) setBuildings(buildingsData);
+
+      // Fetch all tags
+      const { data: tagsData } = await supabase
+        .from('tags')
+        .select('id, code')
+        .order('code', { ascending: true });
+      if (tagsData) setAvailableTags(tagsData);
+
+      // Fetch post tags
+      const { data: postTagsData, error: tagsError } = await supabase
+        .from('post_tags')
+        .select('tag_id, tags(id, code)')
+        .eq('post_id', event.id);
+      
+      if (tagsError) {
+        console.error('Error fetching post tags:', tagsError);
+      } else if (postTagsData) {
+        const tags = postTagsData
+          .map(pt => pt.tags)
+          .filter((t): t is Tag => t !== null);
+        setPostTags(tags);
+      }
+
+      // Fetch organizer info
+      const { data: userData, error: userError } = await supabase
+        .from('users')
+        .select('first_name, last_name, profile_picture_url')
+        .eq('id', event.organizer_id)
+        .single();
+      
+      if (userError) {
+        console.error('Error fetching user:', userError);
+        setOrganizerUsername('Unknown User');
+      } else if (userData) {
+        const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+        setOrganizerUsername(fullName || 'Unknown User');
+        // Only set profile pic if it's a valid non-empty URL
+        setOrganizerProfilePic(userData.profile_picture_url && userData.profile_picture_url.trim() ? userData.profile_picture_url : null);
+      }
+
+      // Fetch RSVP info
+      const { data: attendeesData, error: attendeesError } = await supabase
+        .from('attendees')
+        .select('user_id')
+        .eq('posts_id', event.id);
+      
+      if (attendeesError) {
+        console.error('Error fetching attendees:', attendeesError);
+      } else if (attendeesData) {
+        setRsvpCount(attendeesData.length);
+        setIsRsvpd(attendeesData.some(a => a.user_id === mockUserId));
+      }
+
+      // Calculate time ago
+      if (event.created_at) {
+        const now = new Date();
+        // Ensure created_at is parsed as UTC by adding 'Z' if missing
+        const createdAtString = event.created_at.endsWith('Z') ? event.created_at : event.created_at + 'Z';
+        const created = new Date(createdAtString);
+        const diffMs = now.getTime() - created.getTime();
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMins / 60);
+        const diffDays = Math.floor(diffHours / 24);
+        
+        if (diffMins < 1) setTimeAgo('Just now');
+        else if (diffMins < 60) setTimeAgo(`${diffMins}m ago`);
+        else if (diffHours < 24) setTimeAgo(`${diffHours}h ago`);
+        else setTimeAgo(`${diffDays}d ago`);
+      } else {
+        setTimeAgo('Recently');
+      }
+    }
+
+    fetchData();
+  }, [event.id, event.organizer_id, event.created_at]);
 
   // Determine if we're on home or discover page
   const isHomeOrDiscover = location_route.pathname === '/home' || location_route.pathname === '/discover';
@@ -272,9 +332,9 @@ export default function PostCard({
     e.stopPropagation();
     setShowMenu(false);
     // In a real app, make API call and update user preferences
-    if (confirm(`Are you sure you want to block ${username}?`)) {
-      alert(`User ${username} has been blocked. You won't see their posts anymore.`);
-      // await fetch(`/api/users/${mockUserId}/block`, { method: 'POST', body: JSON.stringify({ blockUserId: username }) });
+    if (confirm(`Are you sure you want to block ${organizerUsername}?`)) {
+      alert(`User ${organizerUsername} has been blocked. You won't see their posts anymore.`);
+      // await fetch(`/api/users/${mockUserId}/block`, { method: 'POST', body: JSON.stringify({ blockUserId: event.organizer_id }) });
     }
   };
 
@@ -282,9 +342,10 @@ export default function PostCard({
     e.stopPropagation();
     setShowMenu(false);
     // Remove associated tags from user preferences
-    alert(`This post has been marked as "Not Interested". We'll show you less content like this. Tags affected: ${tags.join(', ')}`);
+    const tagNames = postTags.map(t => `#${t.code}`).join(', ');
+    alert(`This post has been marked as "Not Interested". We'll show you less content like this. Tags affected: ${tagNames}`);
     // In a real app:
-    // await fetch(`/api/users/${mockUserId}/preferences`, { method: 'PUT', body: JSON.stringify({ removeTags: tags }) });
+    // await fetch(`/api/users/${mockUserId}/preferences`, { method: 'PUT', body: JSON.stringify({ removeTags: postTags.map(t => t.id) }) });
     // Then remove the post from the feed
   };
 
@@ -293,27 +354,30 @@ export default function PostCard({
     setShowMenu(false);
     
     // Reset edit values to current values
-    setEditedEventName(eventName);
-    setEditedDescription(description);
-    setEditedTags([...tags]);
+    setEditedEventName(event.title);
+    setEditedDescription(event.body);
+    setEditedTags(postTags.map(t => t.id));
     
     // Parse location into building code and room number
-    const locationMatch = location.match(/^([A-Z0-9]+)\s*(\d+)?$/);
+    const locationMatch = event.building?.match(/^([A-Z0-9]+)\s*(\d+)?$/);
     if (locationMatch) {
       setEditedBuildingCode(locationMatch[1]);
       setEditedRoomNumber(locationMatch[2] || "");
     } else {
-      setEditedBuildingCode("");
+      setEditedBuildingCode(event.building || "");
       setEditedRoomNumber("");
     }
     
-    // Parse time if it exists
-    const timeMatch = time.match(/(\d{1,2}):(\d{2})\s*(AM|PM)/i);
-    if (timeMatch) {
-      setEditedTimeHour(timeMatch[1]);
-      setEditedTimeMinute(timeMatch[2]);
-      setEditedTimePeriod(timeMatch[3].toUpperCase());
-    }
+    // Parse time from start_date
+    const startDate = new Date(event.start_date);
+    let hours = startDate.getHours();
+    const minutes = startDate.getMinutes();
+    const period = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    
+    setEditedTimeHour(hours.toString());
+    setEditedTimeMinute(minutes.toString().padStart(2, '0'));
+    setEditedTimePeriod(period);
     
     setShowEditModal(true);
   };
@@ -324,8 +388,8 @@ export default function PostCard({
       ? `${editedBuildingCode} ${editedRoomNumber}`
       : editedBuildingCode;
     
-    if (onUpdate && postId) {
-      onUpdate(postId, {
+    if (onUpdate) {
+      onUpdate(event.id, {
         eventName: editedEventName,
         location: formattedLocation,
         time: formattedTime,
@@ -354,13 +418,13 @@ export default function PostCard({
     setShowMenu(false);
     if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
       if (onDelete) {
-        onDelete(postId);
+        onDelete(event.id);
       }
-      // In a real app: await fetch(`/api/events/${postId}`, { method: 'DELETE' });
+      // In a real app: await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
     }
   };
 
-  const postUrl = `${window.location.origin}/event/${postId}`;
+  const postUrl = `${window.location.origin}/event/${event.id}`;
 
   return (
     <>
@@ -442,37 +506,50 @@ export default function PostCard({
             className="flex items-center gap-3 mb-3 cursor-pointer hover:opacity-80 transition-opacity w-fit"
             onClick={handleUserClick}
           >
-            <div className="w-10 h-10 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full" />
+            {organizerProfilePic ? (
+              <img 
+                src={organizerProfilePic} 
+                alt={organizerUsername} 
+                className="w-10 h-10 rounded-full object-cover" 
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+            ) : null}
+            <div className={`w-10 h-10 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full ${organizerProfilePic ? 'hidden' : ''}`} />
             <div>
-              <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">{username}</p>
-              <p className="text-sm text-[var(--text-secondary)]">{timestamp}</p>
+              <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">{organizerUsername || 'Loading...'}</p>
+              <p className="text-sm text-[var(--text-secondary)]">{timeAgo}</p>
             </div>
           </div>
 
           {/* Event Name */}
           <h3 className="text-lg font-semibold text-[var(--text)] mb-3 hover:text-[var(--primary)] transition-colors">
-            {eventName}
+            {event.title}
           </h3>
 
           {/* Event Info */}
           <div className="flex flex-wrap items-center gap-4 mb-2 text-sm text-[var(--text-secondary)]">
             <div className="flex items-center gap-1">
               <MapPin size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-              <span>{location}</span>
+              <span>{event.building || 'Location TBD'}</span>
             </div>
 
             <div className="flex items-center gap-1">
               <Clock size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-              <span>{time}</span>
+              <span>{new Date(event.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
             </div>
           </div>
 
           {/* Post Image */}
-          <div className="w-full h-48 bg-gradient-to-br from-[var(--menucard)] to-[var(--background)] rounded-lg overflow-hidden group">
-            {imageUrl ? (
-              <img src={imageUrl} alt={eventName} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+          <div className="w-full h-48 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden group">
+            {event.post_picture_url ? (
+              <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             ) : (
-              <div className="w-full h-full group-hover:scale-105 transition-transform duration-300" />
+              <div className="w-full h-full bg-gradient-to-br from-[var(--primary)]/30 via-[var(--secondary)]/30 to-[var(--tertiary)]/30 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
+                <div className="text-[var(--text-secondary)] text-4xl font-bold opacity-20">📸</div>
+              </div>
             )}
           </div>
 
@@ -614,33 +691,50 @@ export default function PostCard({
               className="flex items-center gap-4 mb-4 cursor-pointer hover:opacity-80 transition-opacity w-fit"
               onClick={handleUserClick}
             >
-              <div className="w-12 h-12 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full" />
+              {organizerProfilePic ? (
+                <img 
+                  src={organizerProfilePic} 
+                  alt={organizerUsername} 
+                  className="w-12 h-12 rounded-full object-cover" 
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                  }}
+                />
+              ) : null}
+              <div className={`w-12 h-12 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full ${organizerProfilePic ? 'hidden' : ''}`} />
               <div>
-                <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">{username}</p>
-                <p className="text-sm text-[var(--text-secondary)]">{timestamp}</p>
+                <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">{organizerUsername || 'Loading...'}</p>
+                <p className="text-sm text-[var(--text-secondary)]">{timeAgo}</p>
               </div>
             </div>
 
             {/* Big Event Name */}
             <h2 className="text-2xl font-bold text-[var(--text)] mb-3">
-              {eventName}
+              {event.title}
             </h2>
 
             {/* Event Info */}
             <div className="flex flex-wrap items-center gap-4 mb-4 text-sm text-[var(--text-secondary)]">
               <div className="flex items-center gap-1">
                 <MapPin size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-                <span>{location}</span>
+                <span>{event.building || 'Location TBD'}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-                <span>{time}</span>
+                <span>{new Date(event.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
               </div>
             </div>
 
             {/* Image */}
-            <div className="w-full h-64 bg-gradient-to-br from-[var(--menucard)] to-[var(--background)] rounded-lg mb-4 overflow-hidden">
-              {imageUrl && <img src={imageUrl} alt={eventName} className="w-full h-full object-cover" />}
+            <div className="w-full h-64 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg mb-4 overflow-hidden">
+              {event.post_picture_url ? (
+                <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-gradient-to-br from-[var(--primary)]/30 via-[var(--secondary)]/30 to-[var(--tertiary)]/30 flex items-center justify-center">
+                  <div className="text-[var(--text-secondary)] text-6xl font-bold opacity-20">📸</div>
+                </div>
+              )}
             </div>
 
             {/* Buttons Row */}
@@ -684,17 +778,17 @@ export default function PostCard({
 
             {/* Description */}
             <p className="text-[var(--text)] mb-3">
-              {description}
+              {event.body}
             </p>
 
             {/* Tags */}
             <div className="flex flex-wrap gap-2 mb-6">
-              {tags.map((tag) => (
+              {postTags.map((tag) => (
                 <span
-                  key={tag}
+                  key={tag.id}
                   className="px-3 py-1 bg-[var(--menucard)] text-[var(--text)] text-sm rounded-full hover:bg-[var(--primary)] hover:text-white cursor-pointer transition-all duration-200 hover:scale-105"
                 >
-                  {tag}
+                  #{tag.code}
                 </span>
               ))}
             </div>
@@ -930,9 +1024,9 @@ export default function PostCard({
                       className="px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
                     >
                       <option value="">Select Building</option>
-                      {FIU_BUILDINGS.map(building => (
-                        <option key={building.code} value={building.code}>
-                          {building.code} - {building.name}
+                      {buildings.map(building => (
+                        <option key={building.building_code} value={building.building_code}>
+                          {building.building_code} - {building.building_name}
                         </option>
                       ))}
                     </select>
@@ -992,36 +1086,46 @@ export default function PostCard({
               <div>
                 <label className="block text-sm font-bold text-[var(--text)] mb-2">Tags</label>
                 <div className="flex flex-wrap gap-2 mb-3">
-                  {editedTags.map((tag, index) => (
-                    <span
-                      key={index}
-                      className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--primary)] text-white rounded-full text-sm"
-                    >
-                      {tag}
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveTag(tag)}
-                        className="hover:bg-white/20 rounded-full p-0.5 transition-colors cursor-pointer"
-                        aria-label={`Remove ${tag}`}
+                  {editedTags.map((tagId) => {
+                    const tag = availableTags.find(t => t.id === tagId);
+                    return (
+                      <span
+                        key={tagId}
+                        className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--primary)] text-white rounded-full text-sm"
                       >
-                        <X size={14} />
-                      </button>
-                    </span>
-                  ))}
+                        #{tag?.code || tagId}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveTag(tagId)}
+                          className="hover:bg-white/20 rounded-full p-0.5 transition-colors cursor-pointer"
+                          aria-label={`Remove ${tag?.code}`}
+                        >
+                          <X size={14} />
+                        </button>
+                      </span>
+                    );
+                  })}
                 </div>
                 <div className="flex gap-2">
-                  <input
-                    type="text"
+                  <select
                     value={newTag}
                     onChange={(e) => setNewTag(e.target.value)}
-                    onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddTag())}
-                    placeholder="Add a tag (e.g., Volleyball)"
-                    className="flex-1 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none"
-                  />
+                    className="flex-1 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+                  >
+                    <option value="">Select a tag...</option>
+                    {availableTags
+                      .filter(tag => !editedTags.includes(tag.id))
+                      .map((tag) => (
+                        <option key={tag.id} value={tag.id}>
+                          {tag.code}
+                        </option>
+                      ))}
+                  </select>
                   <button
                     type="button"
                     onClick={handleAddTag}
-                    className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors flex items-center gap-2 cursor-pointer"
+                    disabled={!newTag}
+                    className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:bg-[var(--primary-hover)] transition-colors flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <Plus size={18} />
                     Add

@@ -3,12 +3,21 @@
 -- ============================================
 
 DROP POLICY IF EXISTS users_select_self ON public.users;
+DROP POLICY IF EXISTS users_select_public_profile ON public.users;
 DROP POLICY IF EXISTS users_update_self ON public.users;
--- Read: only your own user row
+
+-- Read: your own complete user row
 CREATE POLICY users_select_self
 ON public.users
 FOR SELECT
 USING (id = (select auth.uid()));
+
+-- Read: anyone can view basic public profile info (username, profile picture)
+-- This allows PostCard to display organizer information
+CREATE POLICY users_select_public_profile
+ON public.users
+FOR SELECT
+USING (true);
 
 -- Update: only your own user row
 CREATE POLICY users_update_self

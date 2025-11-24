@@ -17,9 +17,9 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
     // Get auth token if available
     const token = await getAuthToken();
     
-    const headers: HeadersInit = {
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options?.headers,
+      ...(options?.headers as Record<string, string>),
     };
     
     // Add auth token if available
@@ -75,6 +75,7 @@ export interface CreatePostData {
   is_private?: boolean;
   organizer_id: string;
   post_picture_url?: string | null;
+  tag_ids?: string[];
 }
 
 export interface Attendee {
