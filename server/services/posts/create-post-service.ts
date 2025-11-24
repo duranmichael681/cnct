@@ -2,27 +2,38 @@ import { supabaseAdmin } from '../../config/supabase';
 
 export interface postData {
     title: string;
-    content: string;
+    body: string;
     userId: string;
-    building: string;
+    building?: string;
+    start_date?: string;
+    end_date?: string;
     postPictureUrl?: string;
     isPrivate?: boolean;
 }
 
-export interface postResponse{
+export interface postResponse {
     success: boolean;
     message: string;
-    id: number;
+    id: string;         // id is uuid, not number
     title: string;
-    content: string;
+    body: string;       // was content
     created_at: string;
 }
 export async function createPostService(postData: postData): Promise<postResponse> {
     try {
-
+        // Map camelCase fields to snake_case database columns
         const { data, error } = await supabaseAdmin
             .from('posts')
-            .insert([postData])
+            .insert([{
+                title: postData.title,
+                body: postData.body,
+                organizer_id: postData.userId,
+                building: postData.building,
+                start_date: postData.start_date,
+                end_date: postData.end_date,
+                post_picture_url: postData.postPictureUrl,
+                is_private: postData.isPrivate ?? false
+            }])
             .select()
             .single();
 
@@ -39,7 +50,7 @@ export async function createPostService(postData: postData): Promise<postRespons
             message: 'Post created successfully',
             id: data.id,
             title: data.title,
-            content: data.content,
+            body: data.body,       // was content
             created_at: data.created_at,
         }
 

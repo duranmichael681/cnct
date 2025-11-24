@@ -39,8 +39,8 @@ export const supabase = createClient(
 // ==================== MIDDLEWARE ====================
 
 app.use(cors()); // Enable CORS for frontend requests (allows cross-origin API calls)
-app.use(express.json()); // Parse JSON request bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded form data
+app.use(express.json({ limit: '50mb' })); // Parse JSON request bodies with 50MB limit for image uploads
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Parse URL-encoded form data with 50MB limit
 
 // ==================== HEALTH CHECK ROUTES ====================
 

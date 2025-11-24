@@ -1,5 +1,6 @@
 import express from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -56,7 +57,7 @@ router.get('/:id', async (req, res) => {
  * Body: { title, body, building, start_date, end_date, is_private, post_picture_url }
  * Note: organizer_id is taken from authenticated user (req.user)
  */
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
     try {
         const { title, body, building, start_date, end_date, is_private = false, post_picture_url } = req.body;
         const organizerId = req.user?.id;
