@@ -58,10 +58,14 @@ router.post('/upload', async (req, res) => {
 
         if (error) throw error;
 
-        // Get public URL
+        // Get public URL - Supabase automatically generates this
         const { data: urlData } = supabaseAdmin.storage
             .from(bucket)
             .getPublicUrl(data.path);
+
+        console.log('📤 File uploaded successfully:');
+        console.log('   Path:', data.path);
+        console.log('   Public URL:', urlData.publicUrl);
 
         res.json({
             success: true,
