@@ -13,27 +13,34 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import { createClient } from "@supabase/supabase-js" // Placeholder for until we refactor to ./config/supabase.js
 import { supabaseAdmin } from "./config/supabase.js";
 import { authMiddleware } from "./middleware/auth.js";
-
-// Import API route handlers
-import postsRouter from "./routes/posts.js";
-import usersRouter from "./routes/users.js";
-import notificationsRouter from "./routes/notifications.js";
-import tagsRouter from "./routes/tags.js";
-import storageRouter from "./routes/storage.js";
+import { mainRouter } from "./routes/index.ts";
 
 // Load environment variables from .env file
+/*
+    To run this server:
+
+    Install tsx (npm install --run-dev tsx)
+    Run this file using the command "npx tsx server.js"
+*/
 dotenv.config();
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Initialize Supabase client
+export const supabase = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_ROLE_KEY
+);
 
 // ==================== MIDDLEWARE ====================
 
 app.use(cors()); // Enable CORS for frontend requests (allows cross-origin API calls)
-app.use(express.json()); // Parse JSON request bodies
-app.use(express.urlencoded({ extended: true })); // Parse URL-encoded form data
+app.use(express.json({ limit: '50mb' })); // Parse JSON request bodies with 50MB limit for image uploads
+app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Parse URL-encoded form data with 50MB limit
 
 // ==================== HEALTH CHECK ROUTES ====================
 
@@ -77,25 +84,8 @@ app.get("/test-db", async (req, res) => {
     }
 });
 
-// ==================== API ROUTES ====================
-
-/**
- * All routes are prefixed with their respective paths.
- * authMiddleware is applied to routes that require user authentication.
- * 
- * Route Structure:
- * - /api/posts        - Post management (CREATE, READ, attendance)
- * - /api/users        - User profile operations
- * - /api/notifications - User notification management
- * - /api/tags         - Tag/category operations
- * - /api/storage      - File upload/download (images)
- */
-
-app.use("/api/posts", authMiddleware, postsRouter);         // Protected: requires auth token
-app.use("/api/users", usersRouter);                          // Public: user profile reads
-app.use("/api/notifications", authMiddleware, notificationsRouter); // Protected: user-specific
-app.use("/api/tags", tagsRouter);                            // Public: tag browsing
-app.use("/api/storage", authMiddleware, storageRouter);      // Protected: file uploads
+// Connect main router to the app.
+app.use(mainRouter);
 
 // ==================== ERROR HANDLERS ====================
 

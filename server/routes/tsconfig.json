@@ -1,0 +1,10 @@
+{
+  "compilerOptions": {
+    "outDir": "js",
+    "module": "NodeNext",
+    "target": "ES2019",
+    "moduleResolution": "NodeNext",
+    "esModuleInterop": true
+  },
+  "include": ["*"]
+}
