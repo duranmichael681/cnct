@@ -45,6 +45,10 @@ const FIU_BUILDINGS = [
 const MAX_FILES = 3;
 
 export default function UploadPage() {
+  useEffect(() => {
+    document.title = 'CNCT | Create Event';
+  }, []);
+  
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
   const [attendees, setAttendees] = useState("");

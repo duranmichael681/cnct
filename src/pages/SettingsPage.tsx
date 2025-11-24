@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import SideBar from '../components/SideBar'
 import Footer from '../components/Footer'
 import { Settings as SettingsIcon, User, Bell, Lock, Palette, LogOut, KeyRound, Moon, Sun } from 'lucide-react'
@@ -7,6 +8,10 @@ import { useNavigate } from 'react-router-dom'
 export default function SettingsPage() {
   const { isDark, toggleTheme } = useTheme()
   const navigate = useNavigate()
+  
+  useEffect(() => {
+    document.title = 'CNCT | Settings';
+  }, []);
 
   const handleLogout = () => {
     // Clear any auth tokens/session data here when Supabase is integrated

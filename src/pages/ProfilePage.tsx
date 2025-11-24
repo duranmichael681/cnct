@@ -24,6 +24,7 @@ export default function ProfilePage() {
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   
   useEffect(() => {
+    document.title = 'CNCT | My Profile';
     // Mark that user has visited the app (for showing sidebar on info pages)
     sessionStorage.setItem('hasVisitedApp', 'true');
   }, []);

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, ArrowLeft } from 'lucide-react'
 
@@ -7,6 +7,10 @@ export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('')
   const [emailSent, setEmailSent] = useState(false)
   const [isValidEmail, setIsValidEmail] = useState(true)
+  
+  useEffect(() => {
+    document.title = 'CNCT | Forgot Password';
+  }, []);
 
   const validateEmail = (email: string) => {
     // Check basic email format

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { KeyRound, Eye, EyeOff, ArrowLeft } from 'lucide-react'
 import SideBar from '../components/SideBar'
@@ -13,6 +13,10 @@ export default function ChangePasswordPage() {
   const [currentPassword, setCurrentPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
   const [confirmPassword, setConfirmPassword] = useState('')
+  
+  useEffect(() => {
+    document.title = 'CNCT | Change Password';
+  }, []);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()

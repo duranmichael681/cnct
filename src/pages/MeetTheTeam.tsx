@@ -1,4 +1,5 @@
 import { useLocation } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Linkedin } from 'lucide-react';
 import SideBar from '../components/SideBar';
 import Footer from '../components/Footer';
@@ -93,6 +94,10 @@ const teamMembers: TeamMember[] = [
 
 export default function MeetTheTeam() {
   const location = useLocation();
+  
+  useEffect(() => {
+    document.title = 'CNCT | Meet The Team';
+  }, []);
   
   // Show navbar if user is logged in, UNLESS explicitly coming from landing page footer
   const fromLanding = location.state?.fromLanding === true;

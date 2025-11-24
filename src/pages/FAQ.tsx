@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import SideBar from '../components/SideBar';
@@ -75,6 +75,10 @@ const faqs: FAQItem[] = [
 export default function FAQ() {
   const location = useLocation();
   const [openIndex, setOpenIndex] = useState<number | null>(null);
+  
+  useEffect(() => {
+    document.title = 'CNCT | FAQ';
+  }, []);
   
   // Show navbar if user is logged in, UNLESS explicitly coming from landing page footer
   const fromLanding = location.state?.fromLanding === true;

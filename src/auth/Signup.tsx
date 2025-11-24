@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { User, Mail, Lock } from 'lucide-react'
 import TermsModal from '../components/TermsModal'
@@ -13,6 +13,9 @@ import CollageImg8 from '../assets/placeholder_event_8.png'
 import { Link } from 'react-router-dom'
 
 export default function SignUp() {
+  useEffect(() => {
+    document.title = 'CNCT | Sign Up';
+  }, []);
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')

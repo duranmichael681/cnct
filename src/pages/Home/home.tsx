@@ -9,6 +9,7 @@ export default function Home() {
   const [width, setWidth] = useState(window.innerWidth)
 
   useEffect(() => {
+    document.title = 'CNCT | Home';
     // Mark that user has visited the app (for showing sidebar on info pages)
     sessionStorage.setItem('hasVisitedApp', 'true');
     

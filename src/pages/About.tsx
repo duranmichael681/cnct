@@ -1,4 +1,5 @@
 import { useLocation, useNavigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { Users, Calendar, MessageSquare, Sparkles, Link as LinkIcon } from 'lucide-react';
 import SideBar from '../components/SideBar';
 import Footer from '../components/Footer';
@@ -6,6 +7,10 @@ import Footer from '../components/Footer';
 export default function About() {
   const location = useLocation();
   const navigate = useNavigate();
+  
+  useEffect(() => {
+    document.title = 'CNCT | About';
+  }, []);
   
   // Show navbar if user is logged in, UNLESS explicitly coming from landing page footer
   const fromLanding = location.state?.fromLanding === true;

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import SideBar from '../components/SideBar'
 import PostCard from '../components/PostCard'
 import Footer from '../components/Footer'
@@ -7,6 +7,10 @@ import SortFilter from '../components/SortFilter'
 import CategoryFilter from '../components/CategoryFilter'
 
 export default function DiscoverPage() {
+  useEffect(() => {
+    document.title = 'CNCT | Discover';
+  }, []);
+  
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null)
   const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [selectedCategory, setSelectedCategory] = useState('All Categories')

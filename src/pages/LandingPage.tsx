@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link as LinkIcon, Unlink, Sparkles } from 'lucide-react';
 // import { Search, Users } from 'lucide-react';
 // import SideBar from '../components/SideBar';
@@ -11,6 +11,10 @@ import HowItWorks from '../assets/how-it-works.jpg';
 export default function LandingPage() {
   const [isConnected, setIsConnected] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  
+  useEffect(() => {
+    document.title = 'CNCT | Connect. Plan. Show Up.';
+  }, []);
 
   const handleConnect = () => {
     setIsConnected(!isConnected);
