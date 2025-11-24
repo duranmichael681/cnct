@@ -59,5 +59,5 @@ export default function App() {
       {/* Legacy/Mobile Nav Route */}
       <Route path='/MobileNav' element={<MobileNavBar />} />
     </Routes>
-  )
+  );
 }

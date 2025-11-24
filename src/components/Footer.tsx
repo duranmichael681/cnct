@@ -14,7 +14,7 @@ export default function Footer() {
                      location.pathname.includes('/profile');
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleLogoClick = () => {
