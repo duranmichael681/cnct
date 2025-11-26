@@ -4,12 +4,20 @@ import { Linkedin } from 'lucide-react';
 import SideBar from '../components/SideBar';
 import Footer from '../components/Footer';
 
+// Import profile pictures
+import marioCasasPfp from '../assets/pfps/MarioCasas.png';
+import nicholasUlloaPfp from '../assets/pfps/NicholasUlloa.jpeg';
+import joseUribePfp from '../assets/pfps/JoseUribe.jpg';
+import cristianMantillaPfp from '../assets/pfps/CristianMantilla.png';
+import jaylenaBurgosPfp from '../assets/pfps/JaylenaBurgos.jpeg';
+
 interface TeamMember {
   name: string;
   role: string;
   description: string[];
   linkedin: string;
   imagePlaceholder: string;
+  image?: string;
 }
 
 const teamMembers: TeamMember[] = [
@@ -30,6 +38,7 @@ const teamMembers: TeamMember[] = [
     ],
     linkedin: 'https://www.linkedin.com/in/cristian-mantilla-8560a3293/',
     imagePlaceholder: 'CM',
+    image: cristianMantillaPfp,
   },
   {
     name: 'Matthew Fortes',
@@ -54,10 +63,11 @@ const teamMembers: TeamMember[] = [
     ],
     linkedin: 'https://www.linkedin.com/in/jose-uribe-26965a241/',
     imagePlaceholder: 'JU',
+    image: joseUribePfp,
   },
   {
     name: 'Mario Casas',
-    role: 'Frontend Lead',
+    role: 'Full Stack Developer',
     description: [
       'Built core frontend features including profile pages (guest and admin views)',
       'Developed onboarding flows with sign-up questionnaire form',
@@ -67,6 +77,7 @@ const teamMembers: TeamMember[] = [
     ],
     linkedin: 'https://www.linkedin.com/in/mario-casas-08491b21b/',
     imagePlaceholder: 'MC',
+    image: marioCasasPfp,
   },
   {
     name: 'Nicholas Ulloa',
@@ -79,6 +90,7 @@ const teamMembers: TeamMember[] = [
     ],
     linkedin: 'https://www.linkedin.com/in/nicholas-ulloa/',
     imagePlaceholder: 'NU',
+    image: nicholasUlloaPfp,
   },
   {
     name: 'Jaylena Burgos',
@@ -89,6 +101,7 @@ const teamMembers: TeamMember[] = [
     ],
     linkedin: 'https://www.linkedin.com/in/jaylena-burgos-062043280',
     imagePlaceholder: 'JB',
+    image: jaylenaBurgosPfp,
   },
 ];
 
@@ -134,8 +147,16 @@ export default function MeetTheTeam() {
                 {/* Mobile Layout */}
                 <div className="flex flex-col items-center gap-6 sm:hidden">
                   {/* Profile Picture */}
-                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] flex items-center justify-center text-white text-4xl font-bold shadow-lg">
-                    {member.imagePlaceholder}
+                  <div className="w-32 h-32 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] flex items-center justify-center text-white text-4xl font-bold shadow-lg overflow-hidden">
+                    {member.image ? (
+                      <img 
+                        src={member.image} 
+                        alt={member.name}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      member.imagePlaceholder
+                    )}
                   </div>
 
                   {/* Name & Role */}
@@ -170,8 +191,16 @@ export default function MeetTheTeam() {
                 <div className="hidden sm:flex items-start gap-8">
                   {/* Left: Profile Picture */}
                   <div className="flex-shrink-0">
-                    <div className="w-40 h-40 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] flex items-center justify-center text-white text-5xl font-bold shadow-lg">
-                      {member.imagePlaceholder}
+                    <div className="w-40 h-40 rounded-full bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] flex items-center justify-center text-white text-5xl font-bold shadow-lg overflow-hidden">
+                      {member.image ? (
+                        <img 
+                          src={member.image} 
+                          alt={member.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        member.imagePlaceholder
+                      )}
                     </div>
                   </div>
 
