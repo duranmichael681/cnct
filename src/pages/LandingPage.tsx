@@ -1,17 +1,29 @@
 import { Link } from 'react-router-dom';
-import { Search, Users } from 'lucide-react';
-import SideBar from '../components/SideBar';
+import { useState, useEffect } from 'react';
+import { Link as LinkIcon, Unlink, Sparkles } from 'lucide-react';
+// import { Search, Users } from 'lucide-react';
+// import SideBar from '../components/SideBar';
 import Footer from '../components/Footer';
-import HeroImage from '../assets/hero.jpg';
-import WhatIsCNCT from '../assets/image1.jpg';
-import HowItWorks from '../assets/how-it-works.jpg';
+import HeroImage from '../assets/hero.jpg?url';
+import WhatIsCNCT from '../assets/image1.jpg?url';
+import HowItWorks from '../assets/how-it-works.jpg?url';
 
 export default function LandingPage() {
+  const [isConnected, setIsConnected] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
+  
+  useEffect(() => {
+    document.title = 'CNCT | Connect. Plan. Show Up.';
+  }, []);
+
+  const handleConnect = () => {
+    setIsConnected(!isConnected);
+  };
+
   return (
     <div className="flex min-h-screen bg-[var(--background)]">
-      <SideBar />
-      
-      <div className="flex-1 overflow-y-auto pb-24 md:pb-0 md:ml-[70px]">
+      {/* No SideBar on landing page for unauthenticated users */}
+      <div className="flex-1 overflow-y-auto pb-24 md:pb-0">
         <div className="max-w-[1440px] mx-auto">
           {/* Hero Section */}
           <section className="relative px-6 sm:px-12 lg:px-20 py-12 sm:py-16 lg:py-20 mt-8 md:mt-0">
@@ -25,8 +37,27 @@ export default function LandingPage() {
                 <p className="text-lg sm:text-xl font-bold text-[var(--text)] mb-8">
                   Join activities, sports, events and more.
                 </p>
+                
+                {/* Animated Connect Icon - Logo */}
+                <div className="flex items-center gap-4 mb-8">
+                  <button
+                    onClick={handleConnect}
+                    onMouseEnter={() => setIsHovered(true)}
+                    onMouseLeave={() => setIsHovered(false)}
+                    className="flex items-center justify-center transition-all transform hover:scale-110 duration-200 cursor-pointer bg-transparent border-none p-0"
+                  >
+                    {isConnected && isHovered ? (
+                      <Unlink size={40} className="animate-pulse text-[var(--primary)]" />
+                    ) : isConnected ? (
+                      <Sparkles size={40} className="animate-spin-slow text-[var(--primary)]" />
+                    ) : (
+                      <LinkIcon size={40} className="text-[var(--primary)]" />
+                    )}
+                  </button>
+                </div>
+
                 <Link
-                  to="/home"
+                  to="/questionnaire/start"
                   className="inline-block px-8 sm:px-12 py-3 sm:py-4 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-text)] dark:text-[var(--background)] text-lg sm:text-xl font-bold rounded-tl-[20px] rounded-tr-[60px] rounded-bl-[20px] rounded-br-[20px] transition-all cursor-pointer shadow-lg hover:shadow-xl"
                 >
                   Get Started Now
@@ -111,21 +142,12 @@ export default function LandingPage() {
             <h2 className="text-3xl sm:text-4xl font-semibold text-[var(--primary)] mb-12">
               What are you waiting for?
             </h2>
-            
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
               <Link
-                to="/discover"
-                className="flex items-center gap-2 px-6 sm:px-8 py-3 bg-[var(--secondary)] dark:bg-[var(--card-bg)] text-[var(--background)] dark:text-[var(--text)] border-2 border-[var(--border)] rounded-xl hover:opacity-90 hover:scale-105 transition-all cursor-pointer text-sm font-bold shadow-lg"
+                to="/questionnaire/start"
+                className="flex items-center gap-2 px-12 sm:px-16 py-4 sm:py-5 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-text)] dark:text-[var(--background)] border-2 border-[var(--primary)] rounded-xl hover:scale-105 transition-all cursor-pointer text-xl sm:text-2xl font-bold shadow-lg"
               >
-                <Search size={24} />
-                Join a Plan
-              </Link>
-              <Link
-                to="/create"
-                className="flex items-center gap-2 px-6 sm:px-8 py-3 bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-text)] dark:text-[var(--background)] border-2 border-[var(--primary)] rounded-xl hover:scale-105 transition-all cursor-pointer text-sm font-bold shadow-lg"
-              >
-                <Users size={24} />
-                Create a Plan
+                <span>Get Started</span>
               </Link>
             </div>
           </section>

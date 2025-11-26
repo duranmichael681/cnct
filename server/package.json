@@ -14,10 +14,13 @@
   "description": "",
   "dependencies": {
     "@supabase/supabase-js": "^2.74.0",
+    "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.1.0"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10"
+    "@types/express": "^5.0.3",
+    "nodemon": "^3.1.10",
+    "tsx": "^4.20.6"
   }
 }

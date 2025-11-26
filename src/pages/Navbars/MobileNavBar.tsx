@@ -1,10 +1,10 @@
 import { Moon, Sun } from 'lucide-react'
-import HomeIcon from '../../../components/icons/HomeIcon.tsx'
-import ExploreIcon from '../../../components/icons/ExploreIcon.tsx'
-import ProfileIcon from '../../../components/icons/ProfileIcon.tsx'
-import CreateIcon from '../../../components/icons/CreateIcon.tsx'
+import HomeIcon from '../../components/icons/HomeIcon.tsx'
+import ExploreIcon from '../../components/icons/ExploreIcon.tsx'
+import ProfileIcon from '../../components/icons/ProfileIcon.tsx'
+import CreateIcon from '../../components/icons/CreateIcon.tsx'
 import { Outlet, Link } from 'react-router-dom'
-import { useTheme } from '../../../contexts/ThemeContext'
+import { useTheme } from '../../contexts/ThemeContext'
 
 export default function MobileNavBar() {
   const { isDark, toggleTheme } = useTheme()

@@ -1,22 +1,35 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useDropzone } from 'react-dropzone'
 import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
 import uploadIcon from '../assets/icons/upload_24dp_F3F3F3_FILL0_wght400_GRAD0_opsz24.svg'
-import { Link } from 'react-router-dom'
-
-// NOTE: You must uncomment this line and ensure your supabaseClient is correctly configured.
-// import { supabase } from '../supabaseClient';
+import { uploadFileToStorage, createPost } from '../services/api'
+import { getCurrentUser } from '../lib/supabaseClient'
+import { supabase } from '../lib/supabaseClient'
+import { motion, Reorder } from "framer-motion";
+import { X, Plus } from "lucide-react";
+import SideBar from "../components/SideBar";
+import Footer from "../components/Footer";
 
 interface FileWithPreview extends File {
   preview: string
 }
 
+interface Building {
+  building_code: string
+  building_name: string
+}
+
+interface Tag {
+  id: string
+  code: string
+}
+
 const MAX_FILES = 3
-// For unauthenticated testing, use the correct bucket name you confirmed earlier.
-const STORAGE_BUCKET = 'posts_picture'
+// Use bucket name from env or fallback to actual project bucket
+const STORAGE_BUCKET = (import.meta.env.VITE_POSTS_BUCKET as string) || 'posts_picture'
 
 export default function UploadPage() {
   // --- Form State Variables ---
@@ -24,12 +37,77 @@ export default function UploadPage() {
   const [description, setDescription] = useState('')
   const [attendees, setAttendees] = useState('')
   const [date, setDate] = useState<Dayjs | null>(dayjs())
-
-  // --- Image Upload State ---
-  const [files, setFiles] = useState<FileWithPreview[]>([])
-  const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [buildings, setBuildings] = useState<Building[]>([])
+  const [buildingCode, setBuildingCode] = useState("");
+  const [roomNumber, setRoomNumber] = useState("");
+  const [timeHour, setTimeHour] = useState("12");
+  const [timeMinute, setTimeMinute] = useState("00");
+  const [timePeriod, setTimePeriod] = useState("PM");
+  const [availableTags, setAvailableTags] = useState<Tag[]>([]);
+  const [selectedTags, setSelectedTags] = useState<string[]>([]); // Store tag IDs
+  const [newTag, setNewTag] = useState("");
+  const [files, setFiles] = useState<FileWithPreview[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
 
   const fileRef = useRef<FileWithPreview[]>([])
+
+  // --- Load Draft and Buildings on Mount ---
+
+  useEffect(() => {
+    document.title = 'CNCT | Create Event';
+    
+    // Fetch buildings and tags from Supabase
+    const fetchData = async () => {
+      // Fetch buildings
+      const { data: buildingsData, error: buildingsError } = await supabase
+        .from('fiu_buildings')
+        .select('building_code, building_name')
+        .order('building_code', { ascending: true });
+      
+      if (buildingsError) {
+        console.error('Error fetching buildings:', buildingsError);
+      } else {
+        setBuildings(buildingsData || []);
+      }
+
+      // Fetch tags
+      const { data: tagsData, error: tagsError } = await supabase
+        .from('tags')
+        .select('id, code')
+        .order('code', { ascending: true });
+      
+      if (tagsError) {
+        console.error('Error fetching tags:', tagsError);
+      } else {
+        setAvailableTags(tagsData || []);
+      }
+    };
+    
+    fetchData();
+
+    // Load saved draft
+    const savedDraft = localStorage.getItem('eventDraft');
+    if (savedDraft) {
+      try {
+        const draft = JSON.parse(savedDraft);
+        setTitle(draft.title || "");
+        setDescription(draft.description || "");
+        setAttendees(draft.attendees || "");
+        if (draft.date) {
+          setDate(dayjs(draft.date));
+        }
+        setBuildingCode(draft.buildingCode || "");
+        setRoomNumber(draft.roomNumber || "");
+        setTimeHour(draft.timeHour || "12");
+        setTimeMinute(draft.timeMinute || "00");
+        setTimePeriod(draft.timePeriod || "PM");
+        setSelectedTags(draft.selectedTags || []);
+        // Note: Files can't be restored from localStorage for security reasons
+      } catch (error) {
+        console.error("Failed to load draft:", error);
+      }
+    }
+  }, []);
 
   // --- Dropzone Logic ---
 
@@ -63,12 +141,17 @@ export default function UploadPage() {
 
   // --- Cleanup Logic ---
 
+  // Keep a ref of current files for unmount cleanup only
   useEffect(() => {
     fileRef.current = files
+  }, [files])
+
+  // Revoke object URLs only on unmount to avoid StrictMode double-invoke issues
+  useEffect(() => {
     return () => {
       fileRef.current.forEach((file) => URL.revokeObjectURL(file.preview))
     }
-  }, [files])
+  }, [])
 
   // --- Carousel Navigation & Removal ---
 
@@ -96,75 +179,190 @@ export default function UploadPage() {
     }
   }
 
-  // --- 💾 Submission Handler (Using Supabase structure for testing) ---
+  // --- Tag Management ---
+
+  const handleAddTag = () => {
+    if (newTag && !selectedTags.includes(newTag)) {
+      setSelectedTags([...selectedTags, newTag]);
+      setNewTag("");
+    }
+  };
+
+  const handleRemoveTag = (tagId: string) => {
+    setSelectedTags(selectedTags.filter(id => id !== tagId));
+  };
+
+  // --- Submission Handler ---
+
+  const clearDraft = () => {
+    const confirmed = window.confirm("Are you sure you want to clear the draft? This action cannot be undone.");
+    if (confirmed) {
+      localStorage.removeItem('eventDraft');
+      
+      // Revoke object URLs to free memory
+      files.forEach((file) => URL.revokeObjectURL(file.preview));
+      
+      // Clear all fields
+      setTitle("");
+      setDescription("");
+      setAttendees("");
+      setDate(dayjs());
+      setBuildingCode("");
+      setRoomNumber("");
+      setTimeHour("12");
+      setTimeMinute("00");
+      setTimePeriod("PM");
+      setSelectedTags([]);
+      setFiles([]);
+      setCurrentImageIndex(0);
+      
+      alert("Draft cleared successfully!");
+    }
+  };
+
+  const saveDraft = () => {
+    const draft = {
+      title,
+      description,
+      attendees,
+      date: date ? date.toISOString() : null,
+      buildingCode,
+      roomNumber,
+      timeHour,
+      timeMinute,
+      timePeriod,
+      selectedTags,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem('eventDraft', JSON.stringify(draft));
+    alert("Draft saved successfully!");
+  };
+
+  // Check if form has any content
+  const hasFormContent = () => {
+    return (
+      title.trim() !== "" ||
+      description.trim() !== "" ||
+      attendees.trim() !== "" ||
+      buildingCode !== "" ||
+      roomNumber !== "" ||
+      selectedTags.length > 0 ||
+      files.length > 0
+    );
+  };
 
   const handleSave = async () => {
-    if (files.length === 0) {
-      alert('Please upload at least one picture.')
-      return
-    }
-    if (!title || !description || !date) {
-      alert('Please fill out all required fields (Title, Description, Date).')
-      return
+    // Validation checks
+    const missingFields: string[] = [];
+    
+    if (!title.trim()) missingFields.push("Title");
+    if (!description.trim()) missingFields.push("Description");
+    if (!date) missingFields.push("Event Date");
+    if (!buildingCode) missingFields.push("Building Location");
+    if (files.length === 0) missingFields.push("At least 1 image");
+
+    if (missingFields.length > 0) {
+      alert(`Please complete the following required fields:\n\n${missingFields.join("\n")}`);
+      return;
     }
 
-    // 🛑 TEMPORARY: Hardcode the Organizer ID
-    const TEST_USER_ID = '00000000-0000-0000-0000-000000000001'
-    let imageUrls: string[] = []
-    alert('Starting upload and insertion...')
+    // Check if user is logged in
+    console.log('🔍 DEBUG - Checking current user...');
+    const { user, error: userError } = await getCurrentUser();
+    
+    if (userError || !user) {
+      console.error('❌ User not logged in:', userError);
+      alert('You must be logged in to create a post. Please sign in first.');
+      return;
+    }
+    
+    console.log('✅ User authenticated:', user.email, 'ID:', user.id);
+    
+    let imageUrls: string[] = [];
 
     try {
-      // 3. Upload Pictures to Supabase Storage
-      for (const file of files) {
-        const filePath = `${TEST_USER_ID}/${Date.now()}-${file.name.replace(/\s/g, '_')}`
 
-        // 🚨 Supabase code omitted for brevity
+      // Upload Pictures to Supabase Storage via backend
+      for (const file of files) {
+        const { url } = await uploadFileToStorage(file, STORAGE_BUCKET);
+        imageUrls.push(url);
       }
 
-      // 4. Insert Post Data into the 'post' table (Assuming structure is simple)
-      const postData = {
-        uidD: TEST_USER_ID,
+      console.log('📸 Uploaded images:', imageUrls);
+
+      // Insert Post Data into the 'posts' table via backend
+      // Note: organizer_id will come from the auth token, not from the request body
+      const created = await createPost({
         title: title,
         body: description,
-        organizer_id: TEST_USER_ID,
-        date: date ? date.toISOString() : null,
+        start_date: date ? date.toISOString() : new Date().toISOString(),
         post_picture_url: imageUrls.length > 0 ? imageUrls[0] : null,
-      }
+        building: buildingCode || null,
+        tag_ids: selectedTags, // Send array of tag IDs
+      } as any);
 
-      // 🚨 Supabase code omitted for brevity
-
-      alert('Listing saved successfully!')
+      console.log('✅ Post created:', created);
+      alert('Listing saved successfully!');
 
       // Cleanup and Reset
-      files.forEach((file) => URL.revokeObjectURL(file.preview))
-      setTitle('')
-      setDescription('')
-      setAttendees('')
-      setDate(dayjs())
-      setFiles([])
-      setCurrentImageIndex(0)
+      files.forEach((file) => URL.revokeObjectURL(file.preview));
+      
+      // Clear draft from localStorage
+      localStorage.removeItem('eventDraft');
+      
+      setTitle('');
+      setDescription('');
+      setAttendees('');
+      setDate(dayjs());
+      setBuildingCode("");
+      setRoomNumber("");
+      setTimeHour("12");
+      setTimeMinute("00");
+      setTimePeriod("PM");
+      setSelectedTags([]);
+      setFiles([]);
+      setCurrentImageIndex(0);
     } catch (error) {
-      console.error('Submission Error:', error)
-      alert(`Error saving data. Please check console. Error: ${(error as Error).message}`)
+      console.error('Submission Error:', error);
+      alert(`Error saving data. ${(error as Error).message}`);
     }
   }
 
   // --- Rendered Previews (Small Upload Box) ---
-  const smallPreviews = files.map((file) => (
-    <div key={file.name} className='relative w-[8vh] h-[8vh] rounded overflow-hidden'>
-      <img src={file.preview} className='object-cover w-full h-full' alt={`Preview of ${file.name}`} />
-      <button
-        onClick={(e) => {
-          e.stopPropagation()
-          removeFile(file.name)
-        }}
-        className='absolute top-[-5px] right-[-5px] bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold z-10'
-        aria-label={`Remove ${file.name}`}
+
+  const smallPreviews = files.map((file, index) => (
+    <Reorder.Item
+      key={file.name}
+      value={file}
+      className="relative w-[8vh] h-[8vh] rounded overflow-hidden cursor-grab active:cursor-grabbing"
+      whileHover={{ scale: 1.05 }}
+      whileDrag={{ scale: 1.1, zIndex: 10 }}
+      onClick={() => setCurrentImageIndex(index)}
+    >
+      <motion.div
+        className="w-full h-full"
+        initial={{ opacity: 0, scale: 0.8 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.8 }}
       >
-        &times;
-      </button>
-    </div>
-  ))
+        <img
+          src={file.preview}
+          className="object-cover w-full h-full pointer-events-none"
+          alt={`Preview of ${file.name}`}
+        />
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            removeFile(file.name);
+          }}
+          className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold z-10 hover:bg-red-700 transition-colors"
+          aria-label={`Remove ${file.name}`}
+        >
+          &times;
+        </button>
+      </motion.div>
+    </Reorder.Item>
+  ));
 
   // --- Main Carousel Preview (Large Display Area) ---
   const mainCarouselPreview =
@@ -181,15 +379,15 @@ export default function UploadPage() {
           <>
             <button
               onClick={goToPreviousImage}
-              className='absolute left-2 bg-black bg-opacity-50 text-white p-2 rounded-full text-2xl z-10 hover:bg-opacity-75 transition-opacity'
-              aria-label='Previous image'
+              className="absolute left-2 bg-black bg-opacity-50 text-white p-2 rounded-full text-2xl z-10 hover:bg-opacity-75 transition-opacity cursor-pointer"
+              aria-label="Previous image"
             >
               &#10094;
             </button>
             <button
               onClick={goToNextImage}
-              className='absolute right-2 bg-black bg-opacity-50 text-white p-2 rounded-full text-2xl z-10 hover:bg-opacity-75 transition-opacity'
-              aria-label='Next image'
+              className="absolute right-2 bg-black bg-opacity-50 text-white p-2 rounded-full text-2xl z-10 hover:bg-opacity-75 transition-opacity cursor-pointer"
+              aria-label="Next image"
             >
               &#10095;
             </button>
@@ -204,100 +402,434 @@ export default function UploadPage() {
     ) : (
       // Default content when no files are uploaded
       <>
-        <h2 className='font-semibold text-2xl text-white'>Your Listing Preview</h2>
-        <p className='mt-5 w-full px-4 text-center text-white lg:w-1/3'>
-          As you create your listing, you can preview how it will appear to others on Marketplace.
+        <h2 className="font-semibold text-2xl text-[var(--primary)]">
+          Your Listing Preview
+        </h2>
+        <p className="mt-5 w-full md:w-1/3 break-words text-center text-[var(--primary)] opacity-70 px-4">
+          As you create your listing, you can preview how it will appear to
+          others on Marketplace.
         </p>
       </>
     )
 
   // --- Main Component Render ---
   return (
-    // 1. Main Container: Stacked column on mobile, switches to row on large screens
-    <div className='w-full min-h-screen flex flex-col lg:flex-row'>
-      {/* 2. Left Column: Form Inputs (Full width mobile, 1/3 desktop) */}
-      <div className='flex flex-col w-full px-4 py-6 lg:w-1/3 lg:m-10'>
-        {/* ⬅️ CORRECTED BACK BUTTON STYLING */}
-        <Link to='/home' className='w-fit mb-6 text-xl font-semibold text-gray-700 hover:text-[var(--primary)] transition-colors'>
-          &larr; Back to Home
-        </Link>
+    <motion.div 
+      initial={{ opacity: 0 }} 
+      animate={{ opacity: 1 }} 
+      transition={{ duration: 0.5 }}
+      className="flex flex-col min-h-screen bg-[var(--background)]"
+    >
+      <div className="flex flex-1">
+        <SideBar />
+        <div className="flex-1 w-full min-h-screen flex flex-col lg:flex-row md:ml-[70px] pb-24 md:pb-6">
+        
+        {/* Left Column - Form Inputs */}
+        <div className="flex w-full max-w-2xl mx-auto lg:max-w-none lg:w-full lg:flex-1 flex-col mt-4 md:mt-10 px-4 md:px-6 lg:px-8">
+          
+          {/* Mobile: Title and Date Preview */}
+          <div className="lg:hidden mb-6">
+            <h2 className="font-bold text-2xl text-center text-[var(--text)] mb-4">
+              {title || "Title"}
+            </h2>
+            {date && (
+              <p className="font-semibold text-lg text-center text-[var(--text)]">
+                Event Date: {date.format("MMMM D, YYYY")}
+              </p>
+            )}
+          </div>
 
-        {/* Dropzone Area: Full width on mobile, fixed width on desktop for consistent look */}
-        <div
-          {...getRootProps()}
-          className='bg-[var(--secondary)] rounded-xl w-full max-w-sm mx-auto h-[20vh] flex flex-row items-center justify-start flex-wrap gap-2 cursor-pointer border-2 border-dashed border-gray-400 p-2 lg:w-[40vh]'
-        >
-          <input {...getInputProps()} />
-          {files.length > 0 ? (
-            <div className='flex flex-wrap gap-2 w-full h-full'>
-              {smallPreviews}
-              {files.length < MAX_FILES && (
-                <div className='bg-[var(--primary)] text-white w-[8vh] h-[8vh] flex items-center justify-center rounded text-xs'>Add More</div>
-              )}
+          {/* Dropzone Area */}
+          <div className="bg-[var(--secondary)] rounded-xl w-full max-w-2xl mx-auto h-48 lg:h-56 flex flex-col items-center justify-center border-2 border-dashed border-[var(--border)] p-2">
+            {files.length === 0 ? (
+              <div
+                {...getRootProps()}
+                className="w-full h-full flex flex-col items-center justify-center cursor-pointer"
+              >
+                <input {...getInputProps()} />
+                <img
+                  src={uploadIcon}
+                  className="h-10 w-10"
+                  style={{
+                    filter: 'brightness(0) saturate(100%) invert(63%) sepia(45%) saturate(451%) hue-rotate(0deg) brightness(94%) contrast(87%)'
+                  }}
+                  alt="Upload Icon"
+                />
+                <h2 className="text-xl m-2 text-[var(--primary)] text-center">
+                  {isDragActive ? "Drop files here" : (
+                    <>
+                      Upload Pictures (Max {MAX_FILES}) <span className="text-red-600">*</span>
+                    </>
+                  )}
+                </h2>
+                <p className="text-xs text-[var(--primary)] mt-1">(.jpg, .png, .jpeg)</p>
+              </div>
+            ) : (
+              <div
+                {...getRootProps({ onClick: (e) => e.stopPropagation() })}
+                className="w-full h-full flex flex-row items-center justify-start flex-wrap gap-2"
+              >
+                <input {...getInputProps()} />
+                <Reorder.Group
+                  axis="x"
+                  values={files}
+                  onReorder={setFiles}
+                  className="flex flex-wrap gap-2"
+                >
+                  {smallPreviews}
+                </Reorder.Group>
+                {files.length < MAX_FILES && (
+                  <motion.div
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const input = document.querySelector('input[type="file"]') as HTMLInputElement;
+                      if (input) input.click();
+                    }}
+                    className="bg-[var(--primary)] text-white w-[8vh] h-[8vh] flex items-center justify-center rounded text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    Add More
+                  </motion.div>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Title Input */}
+          <div className="flex flex-col mt-6">
+            <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
+              Title <span className="text-red-600">*</span>
+            </h2>
+            <input
+              placeholder="Event Title"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              className="w-full border-2 border-[var(--border)] rounded p-2 bg-[var(--card-bg)] text-[var(--text)] placeholder:text-[var(--text-secondary)]"
+            />
+          </div>
+
+          {/* Description Input */}
+          <div className="flex flex-col mt-6">
+            <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
+              Description <span className="text-red-600">*</span>
+            </h2>
+            <textarea
+              placeholder="Event description..."
+              className="w-full border-2 border-[var(--border)] rounded p-2 h-32 lg:h-40 resize-none text-sm placeholder:text-[var(--text-secondary)] overflow-y-auto bg-[var(--card-bg)] text-[var(--text)]"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+            ></textarea>
+          </div>
+
+          {/* Date Picker */}
+          <div className="w-full mt-6">
+            <LocalizationProvider dateAdapter={AdapterDayjs}>
+              <DatePicker
+                label={
+                  <span>
+                    Event Date <span className="text-red-600">*</span>
+                  </span>
+                }
+                value={date}
+                onChange={(newValue) => setDate(newValue)}
+                slotProps={{
+                  textField: {
+                    fullWidth: true,
+                    InputProps: {
+                      style: { color: 'var(--text)', borderColor: 'var(--border)', borderWidth: '2px'}
+                    },
+                    InputLabelProps: {
+                      style: { 
+                        color: 'var(--primary)',
+                        fontWeight: 'bold',
+                        backgroundColor: 'var(--background)',
+                        paddingLeft: '4px',
+                        paddingRight: '4px'
+                      }
+                    },
+                    sx: {
+                      '& .MuiInputLabel-root': { 
+                        color: 'var(--primary)',
+                        fontWeight: 'bold',
+                      },
+                      '& .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--border) !important', borderWidth: '2px' },
+                      '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--primary)' },
+                      '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { borderColor: 'var(--primary)' },
+                      '& .MuiIconButton-root': { color: 'var(--primary)' },
+                    },
+                  },
+                  layout: {
+                    sx: {
+                      // Calendar popup styling
+                      backgroundColor: 'var(--card-bg)',
+                      color: 'var(--text)',
+                      // Calendar elements
+                      '.MuiPickersDay-root': {
+                        color: 'var(--text)',
+                        '&.Mui-selected': {
+                          backgroundColor: 'var(--primary)',
+                          color: 'var(--primary-text)',
+                        },
+                      },
+                      '.MuiPickersCalendarHeader-label': { color: 'var(--text)' },
+                      '.MuiIconButton-root': { color: 'var(--primary)' },
+                      '.MuiDayCalendar-weekDayLabel': { color: 'var(--text)' },
+                      // Mobile toolbar
+                      '.MuiPickersToolbar-root': { 
+                        backgroundColor: 'var(--primary)',
+                        color: 'var(--primary-text)',
+                      },
+                      '.MuiPickersToolbarText-root': { color: 'var(--primary-text)' },
+                    },
+                  },
+                }}
+              />
+            </LocalizationProvider>
+          </div>
+
+          {/* Location Input */}
+          <div className="flex flex-col mt-6">
+            <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
+              Location <span className="text-red-600">*</span>
+            </h2>
+            <div className="flex flex-col md:flex-row gap-2">
+              <select
+                value={buildingCode}
+                onChange={(e) => setBuildingCode(e.target.value)}
+                className="w-full md:flex-1 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+              >
+                <option value="">Select Building</option>
+                {buildings.map(building => (
+                  <option key={building.building_code} value={building.building_code}>
+                    {building.building_code} - {building.building_name}
+                  </option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Room #"
+                value={roomNumber}
+                onChange={(e) => setRoomNumber(e.target.value)}
+                className="w-full md:w-24 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none"
+              />
             </div>
-          ) : (
-            <div className='flex flex-col items-center justify-center w-full h-full'>
-              <img src={uploadIcon} className='h-10 w-10 text-white' alt='Upload Icon' />
-              <h2 className='font-semibold text-xl m-2 text-white text-center'>
-                {isDragActive ? 'Drop files here' : `Upload Pictures (Max ${MAX_FILES})`}
-              </h2>
-              <p className='text-xs text-gray-300'>(.jpg, .png, .jpeg)</p>
+          </div>
+
+          {/* Time Picker */}
+          <div className="flex flex-col mt-6">
+            <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
+              Time (EST) <span className="text-red-600">*</span>
+            </h2>
+            <div className="flex gap-2">
+              <select
+                value={timeHour}
+                onChange={(e) => setTimeHour(e.target.value)}
+                className="flex-1 px-3 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map(hour => (
+                  <option key={hour} value={hour}>{hour}</option>
+                ))}
+              </select>
+              <span className="flex items-center text-[var(--text)] font-bold">:</span>
+              <select
+                value={timeMinute}
+                onChange={(e) => setTimeMinute(e.target.value)}
+                className="flex-1 px-3 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+              >
+                {['00', '15', '30', '45'].map(minute => (
+                  <option key={minute} value={minute}>{minute}</option>
+                ))}
+              </select>
+              <select
+                value={timePeriod}
+                onChange={(e) => setTimePeriod(e.target.value)}
+                className="flex-1 px-3 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
             </div>
-          )}
+          </div>
+
+          {/* Tags Selection */}
+          <div className="flex flex-col mt-6">
+            <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
+              Tags
+            </h2>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {selectedTags.map((tagId) => {
+                const tag = availableTags.find(t => t.id === tagId);
+                return (
+                  <span
+                    key={tagId}
+                    className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--primary)] text-white rounded-full text-sm"
+                  >
+                    #{tag?.code || tagId}
+                    <button
+                      onClick={() => handleRemoveTag(tagId)}
+                      className="hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors cursor-pointer"
+                    >
+                      <X size={14} />
+                    </button>
+                  </span>
+                );
+              })}
+            </div>
+            <div className="flex gap-2">
+              <select
+                value={newTag}
+                onChange={(e) => setNewTag(e.target.value)}
+                className="flex-1 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
+              >
+                <option value="">Select a tag...</option>
+                {availableTags
+                  .filter(tag => !selectedTags.includes(tag.id))
+                  .map((tag) => (
+                    <option key={tag.id} value={tag.code}>
+                      {tag.code}
+                    </option>
+                  ))}
+              </select>
+              <button
+                onClick={handleAddTag}
+                disabled={!newTag}
+                className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus size={18} />
+                Add
+              </button>
+            </div>
+          </div>
+
+          {/* Attendees Input */}
+          <div className="flex flex-col mt-6">
+            <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
+              Attendees <span className="text-red-600">*</span>
+            </h2>
+            <input
+              placeholder="Amount of People"
+              className="w-full border-2 border-[var(--border)] rounded p-2 bg-[var(--card-bg)] text-[var(--text)] placeholder:text-[var(--text-secondary)]"
+              value={attendees}
+              onChange={(e) => setAttendees(e.target.value)}
+            />
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-col gap-3 mt-6 mb-6 lg:mb-0 w-full max-w-md mx-auto">
+            <div className="flex flex-col md:flex-row gap-3">
+              <button
+                onClick={saveDraft}
+                disabled={!hasFormContent()}
+                className={`w-full md:flex-1 rounded p-3 text-white font-bold transition-opacity ${
+                  hasFormContent()
+                    ? 'bg-[var(--tertiary)] cursor-pointer hover:opacity-90'
+                    : 'bg-gray-400 cursor-not-allowed opacity-50'
+                }`}
+              >
+                Save Draft
+              </button>
+              <button
+                onClick={handleSave}
+                className="bg-[var(--primary-hover)] w-full md:flex-1 rounded cursor-pointer p-3 text-white font-bold hover:opacity-90 transition-opacity"
+              >
+                Submit
+              </button>
+            </div>
+            <button
+              onClick={clearDraft}
+              disabled={!hasFormContent()}
+              className={`w-full rounded p-2 text-white text-sm font-semibold transition-opacity ${
+                hasFormContent()
+                  ? 'bg-[var(--danger)] cursor-pointer hover:opacity-90'
+                  : 'bg-gray-400 cursor-not-allowed opacity-50'
+              }`}
+            >
+              Clear Draft
+            </button>
+          </div>
         </div>
 
-        {/* Form Fields - Mobile friendly stacking */}
-        <div className=' flex flex-col mt-8 '>
-          <h2 className='text-xl font-semibold mb-3'>Title</h2>
-          <input placeholder='Event Title' value={title} onChange={(e) => setTitle(e.target.value)} className=' border-2 rounded p-2' />
-        </div>
-        <div className=' flex flex-col mt-8 '>
-          <h2 className='text-xl font-semibold mb-3'>Description</h2>
-          <textarea
-            placeholder='Event description...'
-            className=' border-2 rounded p-2 h-[20vh] resize-none text-sm placeholder:text-gray-400 overflow-y-auto'
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          ></textarea>
-        </div>
-        <div className='w-full mt-8 flex justify-start'>
-          <LocalizationProvider dateAdapter={AdapterDayjs}>
-            <DatePicker label='Event Date' value={date} onChange={(newValue) => setDate(newValue)} />
-          </LocalizationProvider>
-        </div>
-        <div className=' flex flex-col mt-8 '>
-          <h2 className='text-xl font-semibold mb-3'>Attendees</h2>
-          <input placeholder='Amount of People' className='border-2 rounded p-2' value={attendees} onChange={(e) => setAttendees(e.target.value)} />
-        </div>
-
-        <div className='flex flex-col justify-center items-center w-full lg:w-1/2'>
-          <button onClick={handleSave} className='bg-[var(--primary-hover)] w-full mt-10 rounded cursor-pointer p-3 text-white font-bold'>
-            Submit
-          </button>
-        </div>
-      </div>
-
-      {/* 3. Right Column: Preview and Details (Stacks below form on mobile, columns on desktop) */}
-      <div className='w-full px-4 py-6 flex flex-col lg:w-2/3 lg:flex-row lg:m-10 lg:pl-0'>
-        {/* Carousel Preview (Full width mobile, 3/4 of the right column on desktop) */}
-        <div className='w-full flex-col mb-6 lg:w-3/4'>
-          <h1 className='font-semibold'>
+        {/* Middle Column - Preview Image */}
+        <div className="w-full max-w-2xl mx-auto lg:max-w-none lg:w-full lg:flex-1 flex flex-col mt-6 lg:mt-10 px-4 md:px-6 lg:px-8">
+          <h1 className="font-semibold text-base text-center lg:text-left text-[var(--text)] mb-2">
             Preview ({files.length} / {MAX_FILES} Pictures)
           </h1>
-          <div className='w-full bg-[var(--secondary-hover)] h-[50vh] flex items-center justify-center flex-col overflow-hidden rounded-xl relative mt-2 lg:h-[80vh]'>
+          <div className="w-full bg-[var(--secondary-hover)] h-96 lg:h-[600px] xl:h-[700px] flex items-center justify-center flex-col overflow-hidden rounded-xl relative">
             {mainCarouselPreview}
           </div>
         </div>
 
-        {/* Details Preview (Full width mobile, 1/4 of the right column on desktop) */}
-        <div className='w-full flex-col flex lg:w-1/4 lg:pl-6'>
-          <h2 className='font-bold text-3xl break-words lg:text-4xl'>{title || 'Title'}</h2>
-          {date && <p className='font-semibold text-xl mt-4 lg:mt-10'>Event Date: {date.format('MMMM D, YYYY')}</p>}
-          <h2 className='font-semibold text-base mt-4 break-words lg:text-lg '>{description || 'Description'}</h2>
-          {attendees && <h2 className='font-bold text-xl mt-6 lg:mt-10'>Attendees </h2>}
-          {attendees && <h2 className='font-bold text-xl mt-2'>{attendees || 'Limit'}</h2>}
+        {/* Right Column - Preview Details (Large Screens Only) */}
+        <div className="hidden xl:flex xl:w-full xl:max-w-sm flex-col mt-10 px-6 xl:px-8">
+          <h2 className="font-bold text-3xl xl:text-4xl break-words text-[var(--text)]">{title || "Title"}</h2>
+          
+          {(buildingCode || roomNumber) && (
+            <div className="mt-6">
+              <h3 className="font-bold text-xl text-[var(--text)] mb-2">Location</h3>
+              <p className="font-semibold text-lg text-[var(--text)]">
+                {buildingCode && buildings.find(b => b.building_code === buildingCode)?.building_name}
+                {roomNumber && ` - Room ${roomNumber}`}
+              </p>
+            </div>
+          )}
+          
+          {date && (
+            <div className="mt-6">
+              <h3 className="font-bold text-xl text-[var(--text)] mb-2">Event Date</h3>
+              <p className="font-semibold text-lg text-[var(--text)]">
+                {date.format("MMMM D, YYYY")}
+              </p>
+            </div>
+          )}
+          
+          {(timeHour || timeMinute || timePeriod) && (
+            <div className="mt-6">
+              <h3 className="font-bold text-xl text-[var(--text)] mb-2">Time</h3>
+              <p className="font-semibold text-lg text-[var(--text)]">
+                {timeHour}:{timeMinute} {timePeriod} EST
+              </p>
+            </div>
+          )}
+          
+          <div className="mt-6">
+            <h3 className="font-bold text-xl text-[var(--text)] mb-2">Description</h3>
+            <p className="font-semibold text-base break-words text-[var(--text)]">
+              {description || "No description yet"}
+            </p>
+          </div>
+          
+          {selectedTags.length > 0 && (
+            <div className="mt-6">
+              <h3 className="font-bold text-xl text-[var(--text)] mb-2">Tags</h3>
+              <div className="flex flex-wrap gap-2">
+                {selectedTags.map((tagId) => {
+                  const tag = availableTags.find(t => t.id === tagId);
+                  return (
+                    <span
+                      key={tagId}
+                      className="inline-block px-3 py-1 bg-[var(--primary)] text-white rounded-full text-sm"
+                    >
+                      #{tag?.code || tagId}
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+          
+          <div className="mt-6">
+            <h3 className="font-bold text-xl text-[var(--text)] mb-2">Attendees</h3>
+            <p className="font-semibold text-lg text-[var(--text)]">
+              {attendees || "Not specified"}
+            </p>
+          </div>
+        </div>
+
         </div>
       </div>
-    </div>
-  )
+      <Footer />
+    </motion.div>
+  );
 }
+  

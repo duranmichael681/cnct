@@ -17,6 +17,7 @@
   --text-secondary: #665027;
   --border: #c8a35c;
   --card-bg: #ffffff;
+  --comment-highlight: #fef3c7;
 }
 
 [data-theme='dark'] {
@@ -35,6 +36,7 @@
   --text-secondary: #d4a574;
   --border: #665027;
   --card-bg: #081e3f;
+  --comment-highlight: #1e293b;
 }
 
 body {
@@ -83,4 +85,18 @@ img {
 .animate-fade-in-delay-4 {
   animation: fadeIn 0.6s ease-out 0.4s forwards;
   opacity: 0;
+}
+
+/* Slow spin animation for sparkles */
+@keyframes spin-slow {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.animate-spin-slow {
+  animation: spin-slow 3s linear infinite;
 }
