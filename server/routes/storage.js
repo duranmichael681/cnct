@@ -3,6 +3,10 @@ import { supabaseAdmin } from '../config/supabase.js';
 
 const router = express.Router();
 
+// Max upload size (5MB)
+const MAX_FILE_SIZE_MB = 5;
+const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
+
 /**
  * GET /api/storage/buckets
  * List available storage buckets (admin)
@@ -33,6 +37,24 @@ router.post('/upload', async (req, res) => {
                 error: 'Missing required fields: file, bucket, fileName'
             });
         }
+
+        /* */
+        // Handle both raw base64 and data URLs like "data:image/png;base64,AAAA..."
+        const base64Data = file.includes('base64,')
+            ? file.split('base64,')[1]
+            : file;
+
+        // Estimate file size from base64
+        const fileSizeInBytes = Buffer.byteLength(base64Data, 'base64');
+
+        if (fileSizeInBytes > MAX_FILE_SIZE_BYTES) {
+            return res.status(400).json({
+                success: false,
+                error: `Image too large. Maximum size is ${MAX_FILE_SIZE_MB}MB.`,
+                maxSizeBytes: MAX_FILE_SIZE_BYTES,
+            });
+        }
+        /* */
 
         // Verify bucket exists first (clearer errors than storage SDK default)
         const { data: buckets, error: listErr } = await supabaseAdmin.storage.listBuckets();

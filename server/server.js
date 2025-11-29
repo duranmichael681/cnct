@@ -22,6 +22,8 @@ import usersRouter from "./routes/users.js";
 import notificationsRouter from "./routes/notifications.js";
 import tagsRouter from "./routes/tags.js";
 import storageRouter from "./routes/storage.js";
+import { notFound } from "./middleware/notFound.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 // Load environment variables from .env file
 dotenv.config();
@@ -118,6 +120,10 @@ app.use((err, req, res, next) => {
     });
 });
 
+// 404 and error handling middleware
+app.use(notFound);
+app.use(errorHandler);
+
 // ==================== SERVER STARTUP ====================
 
 // Start the Express server and listen on the configured port
@@ -128,3 +134,6 @@ app.listen(PORT, () => {
 📚 API Docs: http://localhost:${PORT}/
     `);
 });
+
+
+

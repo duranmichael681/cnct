@@ -7,6 +7,8 @@ import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
 import uploadIcon from '../../assets/icons/upload_24dp_F3F3F3_FILL0_wght400_GRAD0_opsz24.svg'
+import { uploadFileToStorage, createPost } from '../../services/api'
+import { getCurrentUser } from '../../lib/supabaseClient'
 
 interface FileWithPreview extends File {
   preview: string
@@ -14,6 +16,8 @@ interface FileWithPreview extends File {
 
 // Define the maximum file limit
 const MAX_FILES = 3
+const MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024 // 5MB
+
 
 export default function UploadPage() {
   const [title, setTitle] = useState('')
@@ -22,6 +26,8 @@ export default function UploadPage() {
   const [date, setDate] = useState<Dayjs | null>(dayjs())
   const [files, setFiles] = useState<FileWithPreview[]>([])
   const [currentImageIndex, setCurrentImageIndex] = useState(0)
+  const [uploadError, setUploadError] = useState<string | null>(null)
+
 
   const fileRef = useRef<FileWithPreview[]>([])
 
@@ -29,6 +35,20 @@ export default function UploadPage() {
 
   const onDrop = useCallback(
     (acceptedFiles: File[]) => {
+
+      // reset previous upload errors
+      setUploadError(null)
+
+      // Filter out files that are too big
+      const tooBig = acceptedFiles.find((file) => file.size > MAX_FILE_SIZE_BYTES)
+      if (tooBig) {
+        setUploadError('Image too large. Maximum size is 5MB.')
+        // You can still allow smaller ones in the same drop if you want:
+        // acceptedFiles = acceptedFiles.filter(f => f.size <= MAX_FILE_SIZE_BYTES)
+        // but for now we’ll just block and show the error
+        return
+      }
+
       // Calculate slots available
       const remainingSlots = MAX_FILES - files.length
       if (remainingSlots <= 0) return // Prevent processing if limit is reached
@@ -97,47 +117,60 @@ export default function UploadPage() {
 
   // --- Submission Handler ---
 
+  // Use bucket name from env or fallback to actual project bucket
+  const STORAGE_BUCKET = (import.meta.env.VITE_POSTS_BUCKET as string) || 'posts_picture'
+
   const handleSave = async () => {
     if (files.length === 0) {
       alert('Please upload at least one picture.')
       return
     }
 
-    const formData = new FormData()
+    if (!title || !description || !date) {
+      alert('Please fill out all required fields (Title, Description, Date).')
+      return
+    }
 
-    formData.append('title', title)
-    formData.append('description', description)
-    formData.append('attendees', attendees)
-    formData.append('date', date ? date.toISOString() : '')
-
-    files.forEach((file, index) => {
-      formData.append(`picture-${index}`, file)
-    })
+    // Ensure user is logged in (backend expects auth token)
+    const { user, error: userError } = await getCurrentUser()
+    if (userError || !user) {
+      console.error('User not logged in or error:', userError)
+      alert('You must be logged in to create a post. Please sign in first.')
+      return
+    }
 
     try {
-      const response = await fetch('/api/upload-listing', {
-        method: 'POST',
-        body: formData,
-      })
+      // Upload files via backend storage endpoint (will trigger size check there)
+      const imageUrls: string[] = []
 
-      if (response.ok) {
-        alert('Listing and pictures saved successfully!')
-
-        files.forEach((file) => URL.revokeObjectURL(file.preview))
-
-        setTitle('')
-        setDescription('')
-        setAttendees('')
-        setDate(dayjs())
-        setFiles([])
-        setCurrentImageIndex(0)
-      } else {
-        const errorData = await response.json()
-        alert(`Failed to save. ${errorData.message || ''}`)
+      for (const file of files) {
+        const resp = await uploadFileToStorage(file, STORAGE_BUCKET)
+        imageUrls.push(resp.url)
       }
-    } catch (error) {
-      console.error(error)
-      alert('Error saving data.')
+
+      // Create the post (backend will take organizer from auth middleware)
+      await createPost({
+        title: title,
+        body: description,
+        start_date: date ? date.toISOString() : new Date().toISOString(),
+        post_picture_url: imageUrls.length > 0 ? imageUrls[0] : null,
+      } as any)
+
+      alert('Listing and pictures saved successfully!')
+
+      files.forEach((file) => URL.revokeObjectURL(file.preview))
+
+      setTitle('')
+      setDescription('')
+      setAttendees('')
+      setDate(dayjs())
+      setFiles([])
+      setCurrentImageIndex(0)
+    } catch (err) {
+      console.error('Error saving data:', err)
+      // Surface the backend message when available
+      const message = (err as Error).message || 'Error saving data.'
+      alert(`Error saving data: ${message}`)
     }
   }
 
@@ -241,6 +274,12 @@ export default function UploadPage() {
           )}
         </div>
         {/* End Dropzone Integration */}
+
+        {uploadError && (
+          <p className='mt-2 text-sm text-red-500'>
+            {uploadError}
+          </p>
+        )}
 
         <div className=' flex flex-col mt-10 '>
           <h2 className='text-xl font-semibold mb-5'>Title</h2>
