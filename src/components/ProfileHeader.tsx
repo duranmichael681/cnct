@@ -69,7 +69,11 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
           >
             {profileImage ? (
               <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-            ) : (
+            ) :
+             userProfile ? (
+              <img src={profileImage as string} alt="Profile" className="w-full h-full object-cover" />
+            ) :
+             (
               <div className="w-full h-full" />
             )}
           </div>
@@ -96,13 +100,13 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
 
         <div>
           <h1 className="text-3xl font-bold text-[var(--card-bg)] animate-fade-in">
-            {userProfile.first_name} {userProfile.last_name}
+            {userProfile?.first_name} {userProfile?.last_name}
           </h1>
           <p className="text-lg font-semibold text-[var(--card-bg)] animate-fade-in-delay-1">
-            {userProfile.pronouns} • {userProfile.degree_program}
+            {userProfile?.pronouns} • {userProfile?.degree_program}
           </p>
           <p className="mt-2 max-w-2xl text-[var(--card-bg)] opacity-80 animate-fade-in-delay-2">
-            {userProfile.description}
+            {userProfile?.description}
           </p>
 
           {/* Buttons */}

@@ -160,7 +160,7 @@ export interface UserTag {
 // Get user profile
 export async function getUserProfile(userId: string): Promise<UserProfile> {
   const response = await fetchAPI<{ success: boolean; data: UserProfile }>(
-    `/users/${userId}`
+    `/profile/${userId}`
   );
   return response.data;
 }
@@ -168,7 +168,7 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
 // Get posts created by user
 export async function getUserPosts(userId: string): Promise<Post[]> {
   const response = await fetchAPI<{ success: boolean; data: Post[] }>(
-    `/users/${userId}/posts`
+    `/profile/${userId}}/posts`
   );
   return response.data;
 }

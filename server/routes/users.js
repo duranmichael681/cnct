@@ -2,7 +2,8 @@ import express from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
 
 const router = express.Router();
-
+//TODO: Some functions will deprecated soon, implemented within profiles.ts
+//I.E getting user profile by id
 /**
  * GET /api/users/:id
  * Get user profile by ID

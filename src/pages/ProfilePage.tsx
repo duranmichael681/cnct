@@ -101,8 +101,8 @@ export default function ProfilePage() {
         <SideBar />
 
         <main className="flex-1 p-6 pb-24 md:pb-6 md:ml-[70px]">
-          {/* Profile Header */}
-          <ProfileHeader />
+          {/* Profile Header, needs ownership checking */}
+          <ProfileHeader isOwnProfile={false} userProfile={userProfile} />
 
           {/* Sort Filter */}
           <section className="mt-6 flex justify-end">
