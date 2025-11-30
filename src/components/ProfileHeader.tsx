@@ -22,7 +22,6 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
     { id: 2, name: "Art Club" },
     { id: 3, name: "Tech Talks" },
   ]);
-  console.log(userProfile);
   const [newGroupName, setNewGroupName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -71,8 +70,8 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
             {profileImage ? (
               <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
             ) :
-             userProfile ? (
-              <img src={profileImage as string} alt="Profile" className="w-full h-full object-cover" />
+             userProfile?.profile_picture_url ? (
+              <img src={userProfile.profile_picture_url} alt="Profile" className="w-full h-full object-cover" />
             ) :
              (
               <div className="w-full h-full" />

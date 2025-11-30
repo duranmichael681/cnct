@@ -7,6 +7,7 @@ import { getUserPosts, getUserProfile, type Post, type UserProfile } from "../se
 import { LoadingSpinner, ErrorMessage, EmptyState } from "../components/ui/UIComponents";
 import { formatEventDate } from "../utils/helpers";
 import { useParams, useNavigate } from "react-router-dom";
+import { supabase } from "../supabase/client";
 
 export default function ProfilePage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null);
@@ -16,19 +17,32 @@ export default function ProfilePage() {
   const [filteredEvents, setFilteredPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
 
   const navigate = useNavigate();
 
   const userId = useParams().userId || "";
   useEffect(() => {
     let mounted = true;
-
+    async function emptyUserIdRedirect() {
+      if(!userId) {
+        const user = await (await supabase.auth.getUser()).data.user;
+        if (!user) {
+          //enable when auth is required
+          navigate('/SignIn');
+          return;
+        }
+        const userId = user.id;
+        setIsOwnProfile(true);
+        navigate(`/profile/${userId}`);
+      }
+    }
+    emptyUserIdRedirect();
     async function fetchUserPosts() {
       try {
         setLoading(true);
         const data = await getUserPosts(userId);
         if (mounted) {
-          console.log(data);
           setUserPosts(data);
           setFilteredPosts(data);
           setError(null);
@@ -102,8 +116,8 @@ export default function ProfilePage() {
         <SideBar />
 
         <main className="flex-1 p-6 pb-24 md:pb-6 md:ml-[70px]">
-          {/* Profile Header, needs ownership checking */}
-          <ProfileHeader isOwnProfile={false} userProfile={userProfile} />
+          {/* Profile Header */}
+          <ProfileHeader isOwnProfile={isOwnProfile} userProfile={userProfile} />
 
           {/* Sort Filter */}
           <section className="mt-6 flex justify-end">
@@ -120,6 +134,14 @@ export default function ProfilePage() {
 
             {/* Empty State */}
             {!loading && !error && (filteredEvents?.length === 0 || filteredEvents?.length === null) && (
+              <EmptyState
+                icon="📝"
+                title="No posts yet"
+                message="This user hasn't created any posts yet."
+              />
+            )}
+            {/* Empty State */}
+            {!loading && !error && (filteredEvents?.length === 0 || filteredEvents?.length === null) && isOwnProfile && (
               <EmptyState
                 icon="📝"
                 title="No posts yet"
