@@ -8,6 +8,7 @@ export default async function fetchProfileData(userId : string) {
         if(error) {
             console.log("Supabase error retrieving user data. Error: ");
             console.log(error);
+            throw new Error("Error retrieving user data");
         }
     return data;
 }

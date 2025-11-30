@@ -2,6 +2,6 @@ import profileEventsService from "../../services/profiles/fetch-profile-events-s
 
 export default async function returnProfileEvents(userId: string) {
     if (false)
-        throw Error("Inputted ID not valid");
+        throw new Error("Inputted ID not valid");
     return await profileEventsService(userId);
 }

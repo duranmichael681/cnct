@@ -8,6 +8,7 @@ export default async function fetchProfileEvents(userId: string) {
         if(error) {
             console.log("Supabase error retrieving post data. Error: ");
             console.log(error);
+            throw new Error("Error retrieving post data");
         }
     return data;
 }

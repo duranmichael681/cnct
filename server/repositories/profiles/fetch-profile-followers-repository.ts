@@ -8,6 +8,7 @@ export default async function fetchProfileFollowers(userId : string) {
         if(error) {
             console.log("Supabase error retrieving followers data. Error: ");
             console.log(error);
+            throw Error("Error retrieving followers data");
         }
     return data;
 }

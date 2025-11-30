@@ -22,6 +22,7 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
     { id: 2, name: "Art Club" },
     { id: 3, name: "Tech Talks" },
   ]);
+  console.log(userProfile);
   const [newGroupName, setNewGroupName] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 

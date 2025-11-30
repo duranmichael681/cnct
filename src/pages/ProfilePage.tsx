@@ -28,6 +28,7 @@ export default function ProfilePage() {
         setLoading(true);
         const data = await getUserPosts(userId);
         if (mounted) {
+          console.log(data);
           setUserPosts(data);
           setFilteredPosts(data);
           setError(null);
@@ -118,7 +119,7 @@ export default function ProfilePage() {
             {error && <ErrorMessage message={error} actionText="Retry" onAction={() => window.location.reload()} />}
 
             {/* Empty State */}
-            {!loading && !error && filteredEvents.length === 0 && (
+            {!loading && !error && (filteredEvents?.length === 0 || filteredEvents?.length === null) && (
               <EmptyState
                 icon="📝"
                 title="No posts yet"
@@ -129,7 +130,7 @@ export default function ProfilePage() {
             )}
 
             {/* Posts Grid */}
-            {!loading && !error && filteredEvents.length > 0 && (
+            {!loading && !error && filteredEvents?.length > 0 && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 {filteredEvents.map((event) => (
                   <div key={event.id} className="bg-[var(--menucard)] rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow">
