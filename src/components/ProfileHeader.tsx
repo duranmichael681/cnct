@@ -2,13 +2,15 @@ import { useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreVertical, Flag, Ban, Share2, Edit, UserPlus, UserMinus, Settings, X, Plus } from "lucide-react";
 import GroupList from "./GroupList";
+import { type UserProfile } from "../services/api";
 
 interface ProfileHeaderProps {
   isOwnProfile?: boolean;
   userId?: string;
+  userProfile : UserProfile;
 }
 
-export default function ProfileHeader({ isOwnProfile = true, userId }: ProfileHeaderProps) {
+export default function ProfileHeader({ isOwnProfile = true, userId, userProfile  }: ProfileHeaderProps) {
   const navigate = useNavigate();
   const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -94,13 +96,13 @@ export default function ProfileHeader({ isOwnProfile = true, userId }: ProfileHe
 
         <div>
           <h1 className="text-3xl font-bold text-[var(--card-bg)] animate-fade-in">
-            Person's Name
+            {userProfile.first_name} {userProfile.last_name}
           </h1>
           <p className="text-lg font-semibold text-[var(--card-bg)] animate-fade-in-delay-1">
-            Pronouns • Major
+            {userProfile.pronouns} • {userProfile.degree_program}
           </p>
           <p className="mt-2 max-w-2xl text-[var(--card-bg)] opacity-80 animate-fade-in-delay-2">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit. Ut enim ad minim veniam...
+            {userProfile.description}
           </p>
 
           {/* Buttons */}

@@ -144,6 +144,7 @@ export interface UserProfile {
   degree_program: string | null;
   created_at: string;
   profile_picture_url: string | null;
+  description: string | null;
 }
 
 export interface UserTag {
