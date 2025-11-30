@@ -6,6 +6,7 @@ import SortFilter from "../components/SortFilter";
 import { getUserPosts, type Event } from "../services/api";
 import { LoadingSpinner, ErrorMessage, EmptyState } from "../components/ui/UIComponents";
 import { formatEventDate } from "../utils/helpers";
+import { useParams, useNavigate } from "react-router-dom";
 
 export default function ProfilePage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null);
@@ -15,9 +16,9 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // TODO: Get real user ID from auth context
-  const userId = "temp-user-id"; // Replace with actual auth user ID
+  const navigate = useNavigate();
 
+  const userId = useParams().userId || "";
   useEffect(() => {
     let mounted = true;
 
