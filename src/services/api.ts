@@ -52,7 +52,7 @@ async function fetchAPI<T>(endpoint: string, options?: RequestInit): Promise<T> 
 
 // ==================== POSTS API ====================
 
-export interface Event {
+export interface Post {
   id: string;
   organizer_id: string;
   title: string;
@@ -93,20 +93,20 @@ export interface Attendee {
 }
 
 // Get all posts
-export async function getAllPosts(): Promise<Event[]> {
-  const response = await fetchAPI<{ success: boolean; data: Event[] }>('/posts');
+export async function getAllPosts(): Promise<Post[]> {
+  const response = await fetchAPI<{ success: boolean; data: Post[] }>('/posts');
   return response.data;
 }
 
 // Get single post by ID
-export async function getPostById(id: string): Promise<Event> {
-  const response = await fetchAPI<{ success: boolean; data: Event }>(`/posts/${id}`);
+export async function getPostById(id: string): Promise<Post> {
+  const response = await fetchAPI<{ success: boolean; data: Post }>(`/posts/${id}`);
   return response.data;
 }
 
 // Create a new post
-export async function createPost(postData: CreatePostData): Promise<Event> {
-  const response = await fetchAPI<{ success: boolean; data: Event }>('/posts', {
+export async function createPost(postData: CreatePostData): Promise<Post> {
+  const response = await fetchAPI<{ success: boolean; data: Post }>('/posts', {
     method: 'POST',
     body: JSON.stringify(postData),
   });
@@ -165,8 +165,8 @@ export async function getUserProfile(userId: string): Promise<UserProfile> {
 }
 
 // Get posts created by user
-export async function getUserPosts(userId: string): Promise<Event[]> {
-  const response = await fetchAPI<{ success: boolean; data: Event[] }>(
+export async function getUserPosts(userId: string): Promise<Post[]> {
+  const response = await fetchAPI<{ success: boolean; data: Post[] }>(
     `/users/${userId}/posts`
   );
   return response.data;

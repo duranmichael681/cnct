@@ -4,7 +4,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { MoreVertical, Flag, Ban, Share2, MapPin, Clock, MessageCircle, Link, Send, EyeOff, Unlink, Pencil, Trash2, ThumbsUp, ThumbsDown, Edit3, Plus, X } from "lucide-react";
 import ShareModal from "./ShareModal";
 import { supabase } from "../lib/supabaseClient";
-import type { Event } from "../services/api";
+import type { Post } from "../services/api";
 
 interface Tag {
   id: string;
@@ -28,7 +28,7 @@ interface Comment {
 }
 
 interface PostCardProps {
-  event: Event;
+  event: Post;
   isOwnProfile?: boolean;
   onUpdate?: (postId: string, updatedData: {
     eventName: string;

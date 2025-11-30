@@ -10,12 +10,12 @@ import {
   togglePostAttendance,
   getAllTags,
   getUserProfile,
-  type Event,
+  type Post,
   type Tag,
 } from '../services/api';
 
 export default function APIExamples() {
-  const [posts, setPosts] = useState<Event[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
   const [tags, setTags] = useState<Tag[]>([]);
   const [loading, setLoading] = useState(false);
 

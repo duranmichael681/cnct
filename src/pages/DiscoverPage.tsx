@@ -4,7 +4,7 @@ import SideBar from "../components/SideBar";
 import Footer from "../components/Footer";
 import SortFilter from "../components/SortFilter";
 import CategoryFilter from "../components/CategoryFilter";
-import { getAllPosts, type Event } from "../services/api";
+import { getAllPosts, type Post } from "../services/api";
 import {
   LoadingSpinner,
   ErrorMessage,
@@ -19,8 +19,8 @@ export default function DiscoverPage() {
   );
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
-  const [posts, setPosts] = useState<Event[]>([]);
-  const [filteredPosts, setFilteredPosts] = useState<Event[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -109,7 +109,7 @@ export default function DiscoverPage() {
     console.log("Selected category:", category);
   };
 
-  const getAttendeeCount = (event: Event) => {
+  const getAttendeeCount = (event: Post) => {
     return event.attendees && event.attendees.length > 0
       ? event.attendees[0].count
       : 0;

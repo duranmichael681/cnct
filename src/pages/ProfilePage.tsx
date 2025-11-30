@@ -3,7 +3,7 @@ import ProfileHeader from "../components/ProfileHeader";
 import SideBar from "../components/SideBar";
 import Footer from "../components/Footer";
 import SortFilter from "../components/SortFilter";
-import { getUserPosts, type Event } from "../services/api";
+import { getUserPosts, getUserProfile, type Post, type UserProfile } from "../services/api";
 import { LoadingSpinner, ErrorMessage, EmptyState } from "../components/ui/UIComponents";
 import { formatEventDate } from "../utils/helpers";
 import { useParams, useNavigate } from "react-router-dom";
@@ -11,8 +11,9 @@ import { useParams, useNavigate } from "react-router-dom";
 export default function ProfilePage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [userEvents, setUserPosts] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredPosts] = useState<Event[]>([]);
+  const [userPosts, setUserPosts] = useState<Post[]>([]);
+  const [userProfile, setUserProfile] = useState<UserProfile>({} as UserProfile);
+  const [filteredEvents, setFilteredPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,7 +41,24 @@ export default function ProfilePage() {
         if (mounted) setLoading(false);
       }
     }
-
+    async function fetchUserProfile() {
+      try {
+        setLoading(true);
+        const data = await getUserProfile(userId);
+        if (mounted) {
+          setUserProfile(data);
+          setError(null);
+        }
+      } catch (err) {
+        if (mounted) {
+          console.error('Error fetching user profile:', err);
+          setError('Failed to load the user.');
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    fetchUserProfile();
     fetchUserPosts();
     return () => { mounted = false };
   }, [userId]);
@@ -53,7 +71,7 @@ export default function ProfilePage() {
 
   // Sort posts when sortBy changes
   useEffect(() => {
-    let result = [...userEvents];
+    let result = [...userPosts];
 
     if (sortBy === 'newest') {
       result.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -63,7 +81,7 @@ export default function ProfilePage() {
     // Note: 'tags' sorting would require tag filtering logic
 
     setFilteredPosts(result);
-  }, [sortBy, userEvents]);
+  }, [sortBy, userPosts]);
 
   const handleSortChange = (sort: 'newest' | 'oldest' | 'tags', tags?: string[]) => {
     setSortBy(sort);
