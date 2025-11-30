@@ -34,8 +34,8 @@ export default function App() {
       
       {/* Protected Routes (require auth when Supabase is integrated) */}
       <Route path='/home' element={<Home />} />
-      <Route path='/profile' element={<ProfilePage />} />
-      <Route path='/profile/:userId' element={<GuestProfilePage />} />
+      <Route path='/profile' element={<ProfilePage />} />  {/* Should render own profile, needs integration */}
+      <Route path='/profile/:userId' element={<ProfilePage />} />
       <Route path='/discover' element={<DiscoverPage />} />
       <Route path='/create' element={<CreatePage />} />
       <Route path='/settings' element={<SettingsPage />} />
