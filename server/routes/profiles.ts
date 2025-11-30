@@ -19,9 +19,10 @@ profileRouter.get('/profile/:userId', async function(req: Request, res: Response
         //Controller
         const data = await fetchProfileData(req.params.userId);
 
-        res.send(data);
+        res.json({ success: true, data });
     } catch (error: any) {
-        res.send("Error retrieving user data!");
+        console.log("Error fetching user profile!", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 })
 
@@ -32,9 +33,10 @@ profileRouter.get('/profile/:userId/posts', /*middleware, controller*/ async fun
         //Controller
         const data = await fetchProfileEvents(req.params.userId);
 
-        res.send(data);
+        res.json({ success: true, data });
     } catch (error: any) {
-        res.send("Posts not found");
+        console.log("Error fetching user posts!", error);
+        res.status(500).json({ success: false, error: error.message });
     }
     
 })
@@ -45,9 +47,10 @@ profileRouter.get('/profile/:userId/following', /*middleware, controller*/ async
         //Controller
         const data = await fetchProfileFollowing(req.params.userId);
 
-        res.send(data);
+        res.json({ success: true, data });
     } catch (error: any) {
-        res.send("Followings not found");
+        console.log("Error fetching user follwings!", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 })
 profileRouter.get('/profile/:userId/followers', /*middleware, controller*/ async function(req: Request, res: Response) {
@@ -57,9 +60,10 @@ profileRouter.get('/profile/:userId/followers', /*middleware, controller*/ async
         //Controller
         const data = await fetchProfileFollowers(req.params.userId)
         
-        res.send(data);
+        res.json({ success: true, data });
     } catch (error: any) {
-        res.send("Followers not found");
+        console.log("Error fetching user followers!", error);
+        res.status(500).json({ success: false, error: error.message });
     }
 })
 
