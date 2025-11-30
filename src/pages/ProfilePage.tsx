@@ -11,8 +11,8 @@ import { useParams, useNavigate } from "react-router-dom";
 export default function ProfilePage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [userEvents, setUserEvents] = useState<Event[]>([]);
-  const [filteredEvents, setFilteredEvents] = useState<Event[]>([]);
+  const [userEvents, setUserPosts] = useState<Event[]>([]);
+  const [filteredEvents, setFilteredPosts] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -22,13 +22,13 @@ export default function ProfilePage() {
   useEffect(() => {
     let mounted = true;
 
-    async function fetchUserEvents() {
+    async function fetchUserPosts() {
       try {
         setLoading(true);
         const data = await getUserPosts(userId);
         if (mounted) {
-          setUserEvents(data);
-          setFilteredEvents(data);
+          setUserPosts(data);
+          setFilteredPosts(data);
           setError(null);
         }
       } catch (err) {
@@ -41,7 +41,7 @@ export default function ProfilePage() {
       }
     }
 
-    fetchUserEvents();
+    fetchUserPosts();
     return () => { mounted = false };
   }, [userId]);
   
@@ -62,7 +62,7 @@ export default function ProfilePage() {
     }
     // Note: 'tags' sorting would require tag filtering logic
 
-    setFilteredEvents(result);
+    setFilteredPosts(result);
   }, [sortBy, userEvents]);
 
   const handleSortChange = (sort: 'newest' | 'oldest' | 'tags', tags?: string[]) => {
