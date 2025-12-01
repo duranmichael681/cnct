@@ -1,4 +1,4 @@
-import profileEventsService from "../../services/profiles/fetch-profile-events-service.js"
+import profileEventsService from "../../services/profiles/fetch-profile-events-service.ts"
 
 export default async function returnProfileEvents(userId: string) {
     if (false)

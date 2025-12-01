@@ -1,9 +1,9 @@
 import { Request, Response, Router } from 'express';
 
-import fetchProfileData from '../controllers/profiles/fetch-profile-data-controller.js'
-import fetchProfileEvents from '../controllers/profiles/fetch-profile-events-controller.js'
-import fetchProfileFollowing from '../controllers/profiles/fetch-profile-following-controller.js'
-import fetchProfileFollowers from '../controllers/profiles/fetch-profile-following-controller.js'
+import fetchProfileData from '../controllers/profiles/fetch-profile-data-controller.ts'
+import fetchProfileEvents from '../controllers/profiles/fetch-profile-events-controller.ts'
+import fetchProfileFollowing from '../controllers/profiles/fetch-profile-following-controller.ts'
+import fetchProfileFollowers from '../controllers/profiles/fetch-profile-followers-controller.ts'
 //import other necessary middlewares and controllrs here
 
 const profileRouter = Router();

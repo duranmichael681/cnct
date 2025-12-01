@@ -6,10 +6,53 @@ const router = express.Router();
 
 /**
  * GET /api/posts
- * Fetch all public posts
+ * Fetch all public posts, optionally filtered by user's tag preferences
+ * Query params: ?userId=xxx to filter by user preferences
  */
 router.get('/', async (req, res) => {
     try {
+        const { userId } = req.query;
+
+        if (userId) {
+            // Fetch user's tag preferences
+            const { data: userPrefs, error: prefsError } = await supabaseAdmin
+                .from('user_tag_preferences')
+                .select('tag_id')
+                .eq('user_id', userId);
+
+            if (prefsError) throw prefsError;
+
+            if (userPrefs && userPrefs.length > 0) {
+                // Fetch posts that match user's tag preferences
+                const tagIds = userPrefs.map(pref => pref.tag_id);
+
+                const { data: postTags, error: postTagsError } = await supabaseAdmin
+                    .from('post_tags')
+                    .select('post_id')
+                    .in('tag_id', tagIds);
+
+                if (postTagsError) throw postTagsError;
+
+                const postIds = [...new Set(postTags.map(pt => pt.post_id))];
+
+                if (postIds.length > 0) {
+                    const { data, error } = await supabaseAdmin
+                        .from('posts')
+                        .select(`
+                            *,
+                            attendees(count)
+                        `)
+                        .in('id', postIds)
+                        .eq('is_private', false)
+                        .order('start_date', { ascending: true });
+
+                    if (error) throw error;
+                    return res.json({ success: true, data });
+                }
+            }
+        }
+
+        // Default: fetch all public posts
         const { data, error } = await supabaseAdmin
             .from('posts')
             .select(`
@@ -221,6 +264,133 @@ router.get('/:id/attendees', async (req, res) => {
         res.json({ success: true, data });
     } catch (error) {
         console.error('Error fetching attendees:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * PUT /api/posts/:id
+ * Update an existing post
+ * Body: { title, body, building, start_date, end_date, is_private, post_picture_url }
+ * Note: Only the post organizer can update their post
+ */
+router.put('/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, body, building, start_date, end_date, is_private, post_picture_url } = req.body;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'User not authenticated. Please log in to update a post.'
+            });
+        }
+
+        // Check if post exists and user is the organizer
+        const { data: post, error: fetchError } = await supabaseAdmin
+            .from('posts')
+            .select('organizer_id')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !post) {
+            return res.status(404).json({
+                success: false,
+                error: 'Post not found.'
+            });
+        }
+
+        if (post.organizer_id !== userId) {
+            return res.status(403).json({
+                success: false,
+                error: 'You do not have permission to update this post.'
+            });
+        }
+
+        // Update the post
+        const updateData = {};
+        if (title !== undefined) updateData.title = title.trim();
+        if (body !== undefined) updateData.body = body.trim();
+        if (building !== undefined) updateData.building = building;
+        if (start_date !== undefined) updateData.start_date = start_date;
+        if (end_date !== undefined) updateData.end_date = end_date;
+        if (is_private !== undefined) updateData.is_private = is_private;
+        if (post_picture_url !== undefined) updateData.post_picture_url = post_picture_url;
+
+        const { data, error } = await supabaseAdmin
+            .from('posts')
+            .update(updateData)
+            .eq('id', id)
+            .select()
+            .single();
+
+        if (error) throw error;
+
+        console.log('✅ Post updated successfully:', id);
+        res.json({ success: true, data });
+    } catch (error) {
+        console.error('❌ Error updating post:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
+ * DELETE /api/posts/:id
+ * Delete a post
+ * Note: Only the post organizer can delete their post
+ */
+router.delete('/:id', authMiddleware, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user?.id;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'User not authenticated. Please log in to delete a post.'
+            });
+        }
+
+        // Check if post exists and user is the organizer
+        const { data: post, error: fetchError } = await supabaseAdmin
+            .from('posts')
+            .select('organizer_id')
+            .eq('id', id)
+            .single();
+
+        if (fetchError || !post) {
+            return res.status(404).json({
+                success: false,
+                error: 'Post not found.'
+            });
+        }
+
+        if (post.organizer_id !== userId) {
+            return res.status(403).json({
+                success: false,
+                error: 'You do not have permission to delete this post.'
+            });
+        }
+
+        // Delete related records first (attendees, comments, etc.)
+        // Note: If you have CASCADE DELETE set up in your database, this may not be necessary
+        await supabaseAdmin.from('attendees').delete().eq('posts_id', id);
+        await supabaseAdmin.from('comments').delete().eq('posts_id', id);
+        await supabaseAdmin.from('post_tags').delete().eq('post_id', id);
+
+        // Delete the post
+        const { error } = await supabaseAdmin
+            .from('posts')
+            .delete()
+            .eq('id', id);
+
+        if (error) throw error;
+
+        console.log('✅ Post deleted successfully:', id);
+        res.json({ success: true, message: 'Post deleted successfully' });
+    } catch (error) {
+        console.error('❌ Error deleting post:', error);
         res.status(500).json({ success: false, error: error.message });
     }
 });

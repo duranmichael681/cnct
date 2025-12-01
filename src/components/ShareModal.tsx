@@ -46,7 +46,7 @@ export default function ShareModal({ isOpen, onClose, postUrl, isInModal = false
       >
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text)]"
+          className="absolute top-4 right-4 text-[var(--text-secondary)] hover:text-[var(--text)] cursor-pointer transition-colors"
           aria-label="Close share modal"
         >
           <X size={24} />
@@ -57,7 +57,7 @@ export default function ShareModal({ isOpen, onClose, postUrl, isInModal = false
         <div className="space-y-3">
           <button
             onClick={handleCopyLink}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--menucard)] transition-colors text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--menucard)] transition-colors text-left cursor-pointer"
           >
             <Link2 size={20} className="text-[var(--primary)]" />
             <div className="flex-1">
@@ -72,7 +72,7 @@ export default function ShareModal({ isOpen, onClose, postUrl, isInModal = false
 
           <button
             onClick={handleShareTwitter}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--menucard)] transition-colors text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--menucard)] transition-colors text-left cursor-pointer"
           >
             <MessageCircle size={20} className="text-[var(--primary)]" />
             <div className="flex-1">
@@ -85,7 +85,7 @@ export default function ShareModal({ isOpen, onClose, postUrl, isInModal = false
 
           <button
             onClick={handleShareInstagram}
-            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--menucard)] transition-colors text-left"
+            className="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-[var(--menucard)] transition-colors text-left cursor-pointer"
           >
             <Instagram size={20} className="text-[var(--primary)]" />
             <div className="flex-1">

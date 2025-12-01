@@ -56,9 +56,8 @@ export default function UploadPage() {
   useEffect(() => {
     document.title = 'CNCT | Create Event';
     
-    // Fetch buildings and tags from Supabase
-    const fetchData = async () => {
-      // Fetch buildings
+    // Fetch buildings from Supabase
+    const fetchBuildings = async () => {
       const { data: buildingsData, error: buildingsError } = await supabase
         .from('fiu_buildings')
         .select('building_code, building_name')
@@ -69,21 +68,18 @@ export default function UploadPage() {
       } else {
         setBuildings(buildingsData || []);
       }
-
-      // Fetch tags
-      const { data: tagsData, error: tagsError } = await supabase
-        .from('tags')
-        .select('id, code')
-        .order('code', { ascending: true });
-      
-      if (tagsError) {
-        console.error('Error fetching tags:', tagsError);
-      } else {
-        setAvailableTags(tagsData || []);
-      }
     };
     
-    fetchData();
+    fetchBuildings();
+
+    // Set predefined tags matching questionnaire event types
+    setAvailableTags([
+      { id: '1', code: 'Academic & Career' },
+      { id: '2', code: 'Arts & Culture' },
+      { id: '3', code: 'Athletics & Recreation' },
+      { id: '4', code: 'Campus Life & Community' },
+      { id: '5', code: 'Information Sessions & Fairs' }
+    ]);
 
     // Load saved draft
     const savedDraft = localStorage.getItem('eventDraft');
@@ -181,15 +177,34 @@ export default function UploadPage() {
 
   // --- Tag Management ---
 
-  const handleAddTag = () => {
-    if (newTag && !selectedTags.includes(newTag)) {
-      setSelectedTags([...selectedTags, newTag]);
+  const handleToggleTag = (tagId: string) => {
+    if (selectedTags.includes(tagId)) {
+      setSelectedTags(selectedTags.filter(id => id !== tagId));
+    } else {
+      setSelectedTags([...selectedTags, tagId]);
+    }
+  };
+
+  const handleAddCustomTag = () => {
+    if (newTag.trim() && !selectedTags.includes(newTag.trim())) {
+      // For custom tags, we'll use the tag text as both ID and code
+      // Add it to availableTags so it can be displayed
+      const customTag = { id: newTag.trim(), code: newTag.trim() };
+      setAvailableTags([...availableTags, customTag]);
+      setSelectedTags([...selectedTags, newTag.trim()]);
       setNewTag("");
     }
   };
 
   const handleRemoveTag = (tagId: string) => {
     setSelectedTags(selectedTags.filter(id => id !== tagId));
+  };
+
+  const handleCustomTagKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleAddCustomTag();
+    }
   };
 
   // --- Submission Handler ---
@@ -657,49 +672,72 @@ export default function UploadPage() {
             <h2 className="text-lg font-semibold mb-3 text-[var(--text)]">
               Tags
             </h2>
-            <div className="flex flex-wrap gap-2 mb-3">
-              {selectedTags.map((tagId) => {
-                const tag = availableTags.find(t => t.id === tagId);
-                return (
-                  <span
-                    key={tagId}
-                    className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--primary)] text-white rounded-full text-sm"
-                  >
-                    #{tag?.code || tagId}
-                    <button
-                      onClick={() => handleRemoveTag(tagId)}
-                      className="hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors cursor-pointer"
+            
+            {/* Predefined tag checkboxes */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+              {availableTags.slice(0, 5).map((tag) => (
+                <label
+                  key={tag.id}
+                  className="flex items-center gap-3 px-4 py-3 border-2 border-[var(--border)] rounded-lg cursor-pointer hover:bg-[var(--card-bg)] transition-colors"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedTags.includes(tag.id)}
+                    onChange={() => handleToggleTag(tag.id)}
+                    className="w-5 h-5 rounded border-2 border-[var(--border)] text-[var(--primary)] focus:ring-2 focus:ring-[var(--primary)] cursor-pointer"
+                  />
+                  <span className="text-[var(--text)]">{tag.code}</span>
+                </label>
+              ))}
+            </div>
+
+            {/* Custom tag input */}
+            <div className="flex flex-col gap-2">
+              <label className="text-sm text-[var(--text)] opacity-70">
+                Add custom tag
+              </label>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Type your own tag and press Enter"
+                  value={newTag}
+                  onChange={(e) => setNewTag(e.target.value)}
+                  onKeyPress={handleCustomTagKeyPress}
+                  className="flex-1 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none"
+                />
+                <button
+                  onClick={handleAddCustomTag}
+                  disabled={!newTag.trim()}
+                  className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Plus size={18} />
+                  Add
+                </button>
+              </div>
+            </div>
+
+            {/* Selected tags display */}
+            {selectedTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-4">
+                {selectedTags.map((tagId) => {
+                  const tag = availableTags.find(t => t.id === tagId);
+                  return (
+                    <span
+                      key={tagId}
+                      className="inline-flex items-center gap-1 px-3 py-1 bg-[var(--primary)] text-white rounded-full text-sm"
                     >
-                      <X size={14} />
-                    </button>
-                  </span>
-                );
-              })}
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={newTag}
-                onChange={(e) => setNewTag(e.target.value)}
-                className="flex-1 px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--card-bg)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none cursor-pointer"
-              >
-                <option value="">Select a tag...</option>
-                {availableTags
-                  .filter(tag => !selectedTags.includes(tag.id))
-                  .map((tag) => (
-                    <option key={tag.id} value={tag.code}>
-                      {tag.code}
-                    </option>
-                  ))}
-              </select>
-              <button
-                onClick={handleAddTag}
-                disabled={!newTag}
-                className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90 transition-opacity flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <Plus size={18} />
-                Add
-              </button>
-            </div>
+                      #{tag?.code || tagId}
+                      <button
+                        onClick={() => handleRemoveTag(tagId)}
+                        className="hover:bg-white hover:bg-opacity-20 rounded-full p-0.5 transition-colors cursor-pointer"
+                      >
+                        <X size={14} />
+                      </button>
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Attendees Input */}

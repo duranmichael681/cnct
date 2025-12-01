@@ -3,7 +3,6 @@ import Home from './pages/Home/home'
 import SignUp from './auth/Signup'
 import SignIn from './auth/Signin'
 import ProfilePage from './pages/ProfilePage'
-import GuestProfilePage from './pages/GuestProfilePage'
 import DiscoverPage from './pages/DiscoverPage'
 import CreatePage from './pages/CreatePage'
 import SettingsPage from './pages/SettingsPage'
@@ -11,6 +10,7 @@ import ChangePasswordPage from './pages/ChangePasswordPage'
 import ForgotPasswordPage from './pages/ForgotPasswordPage'
 import LandingPage from './pages/LandingPage'
 import AuthCallback from './pages/AuthCallback'
+import EventDetailPage from './pages/EventDetailPage'
 import QuestionnaireStart from './pages/Questionnaire/QuestionnaireStart'
 import QuestionnairePage from './pages/Questionnaire/QuestionnairePage'
 import QuestionnaireComplete from './pages/Questionnaire/QuestionnaireComplete'
@@ -36,6 +36,7 @@ export default function App() {
       <Route path='/home' element={<Home />} />
       <Route path='/profile' element={<ProfilePage />} />  {/* Should render own profile, needs integration */}
       <Route path='/profile/:userId' element={<ProfilePage />} />
+      <Route path='/event/:eventId' element={<EventDetailPage />} />
       <Route path='/discover' element={<DiscoverPage />} />
       <Route path='/create' element={<CreatePage />} />
       <Route path='/settings' element={<SettingsPage />} />

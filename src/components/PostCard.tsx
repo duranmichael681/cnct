@@ -56,6 +56,31 @@ export default function PostCard({
   const [organizerUsername, setOrganizerUsername] = useState<string>("");
   const [organizerProfilePic, setOrganizerProfilePic] = useState<string | null>(null);
   const [timeAgo, setTimeAgo] = useState<string>("");
+  const [locationDisplay, setLocationDisplay] = useState<string>("");
+  
+  // Format location display helper
+  const formatLocationDisplay = (buildingStr: string | null, buildingsList: Building[]): string => {
+    if (!buildingStr) return 'Location TBD';
+    
+    // Check if there's a room number (e.g., "PG6 123" or "PG6-123")
+    const match = buildingStr.match(/^([A-Z0-9]+)[\s-]*([\d]+)?$/i);
+    
+    if (match) {
+      const buildingCode = match[1].toUpperCase();
+      const roomNumber = match[2];
+      
+      // Find the full building name
+      const building = buildingsList.find(b => b.building_code === buildingCode);
+      const fullBuildingName = building ? `${buildingCode} - ${building.building_name}` : buildingCode;
+      
+      // Add room number if it exists
+      return roomNumber ? `${fullBuildingName}, Room ${roomNumber}` : fullBuildingName;
+    }
+    
+    // If format doesn't match, try to find just the building code
+    const building = buildingsList.find(b => b.building_code === buildingStr.toUpperCase());
+    return building ? `${building.building_code} - ${building.building_name}` : buildingStr;
+  };
   
   // UI State
   const [isOpen, setIsOpen] = useState(false);
@@ -104,7 +129,11 @@ export default function PostCard({
         .from('fiu_buildings')
         .select('building_code, building_name')
         .order('building_code', { ascending: true });
-      if (buildingsData) setBuildings(buildingsData);
+      if (buildingsData) {
+        setBuildings(buildingsData);
+        // Set location display once buildings are loaded
+        setLocationDisplay(formatLocationDisplay(event.building, buildingsData));
+      }
 
       // Fetch all tags
       const { data: tagsData } = await supabase
@@ -179,14 +208,14 @@ export default function PostCard({
     }
 
     fetchData();
-  }, [event.id, event.organizer_id, event.created_at]);
+  }, [event.id, event.organizer_id, event.created_at, event.building]);
 
   // Determine if we're on home or discover page
   const isHomeOrDiscover = location_route.pathname === '/home' || location_route.pathname === '/discover';
 
   const handleUserClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/profile/${mockUserId}`);
+    navigate(`/profile/${event.organizer_id}`);
   };
 
   const handleCommentUserClick = (e: React.MouseEvent, userId: string) => {
@@ -382,23 +411,58 @@ export default function PostCard({
     setShowEditModal(true);
   };
 
-  const handleSavePostEdit = () => {
-    const formattedTime = `${editedTimeHour}:${editedTimeMinute} ${editedTimePeriod} EST`;
-    const formattedLocation = editedRoomNumber 
-      ? `${editedBuildingCode} ${editedRoomNumber}`
-      : editedBuildingCode;
-    
-    if (onUpdate) {
-      onUpdate(event.id, {
-        eventName: editedEventName,
-        location: formattedLocation,
-        time: formattedTime,
-        description: editedDescription,
-        tags: editedTags,
+  const handleSavePostEdit = async () => {
+    try {
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('You must be logged in to edit a post');
+        return;
+      }
+
+      // Format location
+      const formattedLocation = editedRoomNumber 
+        ? `${editedBuildingCode} ${editedRoomNumber}`
+        : editedBuildingCode;
+
+      // Format time into ISO string (keeping the original date)
+      const startDate = new Date(event.start_date);
+      let hours = parseInt(editedTimeHour);
+      if (editedTimePeriod === 'PM' && hours !== 12) hours += 12;
+      if (editedTimePeriod === 'AM' && hours === 12) hours = 0;
+      startDate.setHours(hours, parseInt(editedTimeMinute), 0, 0);
+
+      const updatePayload = {
+        title: editedEventName,
+        body: editedDescription,
+        building: formattedLocation,
+        start_date: startDate.toISOString(),
+        // Note: Tags update would require separate API call to post_tags table
+      };
+
+      const response = await fetch(`http://localhost:5000/api/posts/${event.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatePayload)
       });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        alert('Post updated successfully!');
+        setShowEditModal(false);
+        // Refresh the page to show updated data
+        window.location.reload();
+      } else {
+        alert(`Failed to update post: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating post:', error);
+      alert('An error occurred while updating the post');
     }
-    
-    setShowEditModal(false);
   };
 
   const handleAddTag = () => {
@@ -413,14 +477,43 @@ export default function PostCard({
     setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleDeletePost = (e: React.MouseEvent) => {
+  const handleDeletePost = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowMenu(false);
     if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      if (onDelete) {
-        onDelete(event.id);
+      try {
+        // Get auth token
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          alert('You must be logged in to delete a post');
+          return;
+        }
+
+        const response = await fetch(`http://localhost:5000/api/posts/${event.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          alert('Post deleted successfully!');
+          // Call the parent onDelete callback if provided
+          if (onDelete) {
+            onDelete(event.id);
+          }
+          // Refresh the page or navigate away
+          window.location.reload();
+        } else {
+          alert(`Failed to delete post: ${result.error || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('An error occurred while deleting the post');
       }
-      // In a real app: await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
     }
   };
 
@@ -430,7 +523,7 @@ export default function PostCard({
     <>
       {/* Compact Card (preview) */}
       <div
-        className="cursor-pointer bg-[var(--card-bg)] rounded-lg shadow-md p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.99] border border-transparent hover:border-[var(--primary)] relative"
+        className="cursor-pointer bg-[var(--card-bg)] rounded-lg shadow-md p-3 md:p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.99] border border-transparent hover:border-[var(--primary)] relative"
       >
         {/* Three-dot menu button */}
         <div className="absolute top-4 right-4">
@@ -455,13 +548,15 @@ export default function PostCard({
                 <Flag size={16} />
                 Report
               </button>
-              <button
-                onClick={handleBlockUser}
-                className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
-              >
-                <Ban size={16} />
-                Block User
-              </button>
+              {!isOwnProfile && (
+                <button
+                  onClick={handleBlockUser}
+                  className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
+                >
+                  <Ban size={16} />
+                  Block User
+                </button>
+              )}
               {isHomeOrDiscover ? (
                 <button
                   onClick={handleNotInterested}
@@ -503,49 +598,50 @@ export default function PostCard({
         <div onClick={() => setIsOpen(true)}>
           {/* User + Timestamp */}
           <div 
-            className="flex items-center gap-3 mb-3 cursor-pointer hover:opacity-80 transition-opacity w-fit"
+            className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3 cursor-pointer hover:opacity-80 transition-opacity max-w-full"
             onClick={handleUserClick}
           >
-            {organizerProfilePic ? (
-              <img 
-                src={organizerProfilePic} 
-                alt={organizerUsername} 
-                className="w-10 h-10 rounded-full object-cover" 
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-            ) : null}
-            <div className={`w-10 h-10 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full ${organizerProfilePic ? 'hidden' : ''}`} />
-            <div>
-              <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">{organizerUsername || 'Loading...'}</p>
-              <p className="text-sm text-[var(--text-secondary)]">{timeAgo}</p>
+            {/* Circular profile picture container */}
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)]">
+              {organizerProfilePic ? (
+                <img 
+                  src={organizerProfilePic} 
+                  alt={organizerUsername} 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-sm md:text-base text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate">{organizerUsername || 'Loading...'}</p>
+              <p className="text-xs md:text-sm text-[var(--text-secondary)]">{timeAgo}</p>
             </div>
           </div>
 
           {/* Event Name */}
-          <h3 className="text-lg font-semibold text-[var(--text)] mb-3 hover:text-[var(--primary)] transition-colors">
+          <h3 className="text-base md:text-lg font-semibold text-[var(--text)] mb-2 md:mb-3 hover:text-[var(--primary)] transition-colors line-clamp-2">
             {event.title}
           </h3>
 
           {/* Event Info */}
-          <div className="flex flex-wrap items-center gap-4 mb-2 text-sm text-[var(--text-secondary)]">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-2 text-xs md:text-sm text-[var(--text-secondary)]">
             <div className="flex items-center gap-1">
-              <MapPin size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-              <span>{event.building || 'Location TBD'}</span>
+              <MapPin size={14} className="md:w-4 md:h-4 fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)] flex-shrink-0" />
+              <span className="truncate">{locationDisplay || 'Location TBD'}</span>
             </div>
 
             <div className="flex items-center gap-1">
-              <Clock size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-              <span>{new Date(event.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+              <Clock size={14} className="md:w-4 md:h-4 fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)] flex-shrink-0" />
+              <span className="truncate">{new Date(event.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
             </div>
           </div>
 
           {/* Post Image */}
-          <div className="w-full h-48 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden group">
+          <div className="w-full h-48 md:h-56 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden group flex items-center justify-center">
             {event.post_picture_url ? (
-              <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[var(--primary)]/30 via-[var(--secondary)]/30 to-[var(--tertiary)]/30 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
                 <div className="text-[var(--text-secondary)] text-4xl font-bold opacity-20">📸</div>
@@ -554,7 +650,7 @@ export default function PostCard({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-6 mt-3 text-[var(--text-secondary)]">
+          <div className="flex items-center gap-4 md:gap-6 mt-2 md:mt-3 text-[var(--text-secondary)]">
             <button
               onClick={handleRsvp}
               disabled={isRsvpLoading}
@@ -566,11 +662,11 @@ export default function PostCard({
               aria-label={isRsvpd ? 'Cancel RSVP' : 'RSVP to event'}
             >
               {isRsvpd && isRsvpHovered ? (
-                <Unlink size={20} className="stroke-[var(--danger)]" />
+                <Unlink size={16} className="md:w-5 md:h-5 stroke-[var(--danger)]" />
               ) : (
-                <Link size={20} className={`${isRsvpd ? 'fill-[var(--primary)]' : 'fill-transparent'} stroke-[var(--primary)]`} />
+                <Link size={16} className={`md:w-5 md:h-5 ${isRsvpd ? 'fill-[var(--primary)]' : 'fill-transparent'} stroke-[var(--primary)]`} />
               )}
-              <span className="text-sm">{rsvpCount}</span>
+              <span className="text-xs md:text-sm">{rsvpCount}</span>
             </button>
 
             <button
@@ -578,8 +674,8 @@ export default function PostCard({
               className="flex items-center gap-1 cursor-pointer hover:text-[var(--primary)] transition-colors hover:scale-110 transform duration-200"
               aria-label={showComments ? "Hide comments" : "Show comments"}
             >
-              <MessageCircle size={20} className="fill-transparent stroke-[var(--primary)]" />
-              <span className="text-sm">{comments.length}</span>
+              <MessageCircle size={16} className="md:w-5 md:h-5 fill-transparent stroke-[var(--primary)]" />
+              <span className="text-xs md:text-sm">{comments.length}</span>
             </button>
 
             <button
@@ -587,8 +683,8 @@ export default function PostCard({
               className="flex items-center gap-1 cursor-pointer hover:text-[var(--primary)] transition-colors hover:scale-110 transform duration-200"
               aria-label="Share event"
             >
-              <Share2 size={20} className="fill-transparent stroke-[var(--primary)]" />
-              <span className="text-sm">Share</span>
+              <Share2 size={16} className="md:w-5 md:h-5 fill-transparent stroke-[var(--primary)]" />
+              <span className="text-xs md:text-sm">Share</span>
             </button>
           </div>
         </div>
@@ -621,7 +717,10 @@ export default function PostCard({
               </button>
               
               {showMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] border border-[var(--border)] rounded-lg shadow-lg z-10">
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] border border-[var(--border)] rounded-lg shadow-lg z-10"
+                >
                   <button
                     onClick={handleReport}
                     className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--text)] cursor-pointer rounded-t-lg"
@@ -629,13 +728,15 @@ export default function PostCard({
                     <Flag size={16} />
                     Report
                   </button>
-                  <button
-                    onClick={handleBlockUser}
-                    className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
-                  >
-                    <Ban size={16} />
-                    Block User
-                  </button>
+                  {!isOwnProfile && (
+                    <button
+                      onClick={handleBlockUser}
+                      className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
+                    >
+                      <Ban size={16} />
+                      Block User
+                    </button>
+                  )}
                   {isHomeOrDiscover ? (
                     <button
                       onClick={handleNotInterested}
@@ -688,23 +789,24 @@ export default function PostCard({
 
             {/* Event Header */}
             <div 
-              className="flex items-center gap-4 mb-4 cursor-pointer hover:opacity-80 transition-opacity w-fit"
+              className="flex items-center gap-4 mb-4 cursor-pointer hover:opacity-80 transition-opacity w-fit max-w-full"
               onClick={handleUserClick}
             >
-              {organizerProfilePic ? (
-                <img 
-                  src={organizerProfilePic} 
-                  alt={organizerUsername} 
-                  className="w-12 h-12 rounded-full object-cover" 
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : null}
-              <div className={`w-12 h-12 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full ${organizerProfilePic ? 'hidden' : ''}`} />
-              <div>
-                <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">{organizerUsername || 'Loading...'}</p>
+              {/* Circular profile picture container */}
+              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)]">
+                {organizerProfilePic ? (
+                  <img 
+                    src={organizerProfilePic} 
+                    alt={organizerUsername} 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : null}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate">{organizerUsername || 'Loading...'}</p>
                 <p className="text-sm text-[var(--text-secondary)]">{timeAgo}</p>
               </div>
             </div>
@@ -718,7 +820,7 @@ export default function PostCard({
             <div className="flex flex-wrap items-center gap-4 mb-4 text-sm text-[var(--text-secondary)]">
               <div className="flex items-center gap-1">
                 <MapPin size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-                <span>{event.building || 'Location TBD'}</span>
+                <span>{locationDisplay || 'Location TBD'}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
@@ -727,9 +829,9 @@ export default function PostCard({
             </div>
 
             {/* Image */}
-            <div className="w-full h-64 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg mb-4 overflow-hidden">
+            <div className="w-full aspect-video bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg mb-4 overflow-hidden">
               {event.post_picture_url ? (
-                <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-cover" />
+                <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-contain" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-[var(--primary)]/30 via-[var(--secondary)]/30 to-[var(--tertiary)]/30 flex items-center justify-center">
                   <div className="text-[var(--text-secondary)] text-6xl font-bold opacity-20">📸</div>

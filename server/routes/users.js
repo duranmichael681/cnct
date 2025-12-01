@@ -162,4 +162,134 @@ router.get('/:id/tags', async (req, res) => {
     }
 });
 
+/**
+ * DELETE /api/users/:id
+ * Delete user account and all associated data
+ * Body: { email, password }
+ */
+router.delete('/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { email, password } = req.body;
+
+        // Validate required fields
+        if (!email || !password) {
+            return res.status(400).json({
+                success: false,
+                error: 'Email and password are required for account deletion'
+            });
+        }
+
+        // Verify the user exists
+        const { data: userData, error: userError } = await supabaseAdmin
+            .from('users')
+            .select('email')
+            .eq('id', id)
+            .single();
+
+        if (userError || !userData) {
+            return res.status(404).json({
+                success: false,
+                error: 'User not found'
+            });
+        }
+
+        // Verify email matches
+        if (userData.email !== email) {
+            return res.status(403).json({
+                success: false,
+                error: 'Email does not match account'
+            });
+        }
+
+        // Delete all user's posts (cascade will handle related data like attendees, comments, etc.)
+        const { error: postsError } = await supabaseAdmin
+            .from('posts')
+            .delete()
+            .eq('organizer_id', id);
+
+        if (postsError) {
+            console.error('Error deleting user posts:', postsError);
+            throw postsError;
+        }
+
+        // Delete user's attendee records
+        const { error: attendeesError } = await supabaseAdmin
+            .from('attendees')
+            .delete()
+            .eq('user_id', id);
+
+        if (attendeesError) {
+            console.error('Error deleting user attendees:', attendeesError);
+        }
+
+        // Delete user's follow relationships
+        const { error: followsError } = await supabaseAdmin
+            .from('follows')
+            .delete()
+            .or(`follower_id.eq.${id},following_id.eq.${id}`);
+
+        if (followsError) {
+            console.error('Error deleting user follows:', followsError);
+        }
+
+        // Delete user's notifications
+        const { error: notificationsError } = await supabaseAdmin
+            .from('notifications')
+            .delete()
+            .eq('user_id', id);
+
+        if (notificationsError) {
+            console.error('Error deleting user notifications:', notificationsError);
+        }
+
+        // Delete user's tag preferences
+        const { error: tagsError } = await supabaseAdmin
+            .from('user_tag_preferences')
+            .delete()
+            .eq('user_id', id);
+
+        if (tagsError) {
+            console.error('Error deleting user tag preferences:', tagsError);
+        }
+
+        // Delete user's settings
+        const { error: settingsError } = await supabaseAdmin
+            .from('user_settings')
+            .delete()
+            .eq('user_id', id);
+
+        if (settingsError) {
+            console.error('Error deleting user settings:', settingsError);
+        }
+
+        // Finally, delete the user record
+        const { error: deleteUserError } = await supabaseAdmin
+            .from('users')
+            .delete()
+            .eq('id', id);
+
+        if (deleteUserError) {
+            console.error('Error deleting user:', deleteUserError);
+            throw deleteUserError;
+        }
+
+        // Delete from Supabase Auth
+        const { error: authDeleteError } = await supabaseAdmin.auth.admin.deleteUser(id);
+
+        if (authDeleteError) {
+            console.error('Error deleting user from auth:', authDeleteError);
+            // Continue anyway since the database record is deleted
+        }
+
+        res.json({ 
+            success: true, 
+            message: 'Account and all associated data deleted successfully' 
+        });
+    } catch (error) {
+        console.error('Error deleting user account:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 export default router;

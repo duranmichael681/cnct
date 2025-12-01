@@ -8,6 +8,8 @@ import { LoadingSpinner, ErrorMessage, EmptyState } from "../components/ui/UICom
 import { formatEventDate } from "../utils/helpers";
 import { useParams, useNavigate } from "react-router-dom";
 import { supabase } from "../supabase/client";
+import PostCard from "../components/PostCard";
+import { motion } from "framer-motion";
 
 export default function ProfilePage() {
   const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null);
@@ -18,6 +20,7 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isOwnProfile, setIsOwnProfile] = useState(false);
+  const [pageTitle, setPageTitle] = useState('Profile');
 
   const navigate = useNavigate();
 
@@ -33,11 +36,24 @@ export default function ProfilePage() {
           return;
         }
         const userId = user.id;
-        setIsOwnProfile(true);
         navigate(`/profile/${userId}`);
       }
     }
     emptyUserIdRedirect();
+
+    // Don't make API calls if userId is empty
+    if (!userId) return;
+
+    async function checkIfOwnProfile() {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user && user.id === userId) {
+        setIsOwnProfile(true);
+      } else {
+        setIsOwnProfile(false);
+      }
+    }
+    checkIfOwnProfile();
+
     async function fetchUserPosts() {
       try {
         setLoading(true);
@@ -50,7 +66,7 @@ export default function ProfilePage() {
       } catch (err) {
         if (mounted) {
           console.error('Error fetching user posts:', err);
-          setError('Failed to load your posts.');
+          setError('Failed to load posts.');
         }
       } finally {
         if (mounted) setLoading(false);
@@ -76,13 +92,23 @@ export default function ProfilePage() {
     fetchUserProfile();
     fetchUserPosts();
     return () => { mounted = false };
-  }, [userId]);
+  }, [userId, navigate]);
   
   useEffect(() => {
-    document.title = 'CNCT | My Profile';
+    if (userProfile?.first_name && userProfile?.last_name) {
+      if (isOwnProfile) {
+        setPageTitle('My Profile');
+      } else {
+        setPageTitle(`${userProfile.first_name} ${userProfile.last_name}`);
+      }
+    }
+  }, [userProfile, isOwnProfile]);
+  
+  useEffect(() => {
+    document.title = `${pageTitle} | CNCT`;
     // Mark that user has visited the app (for showing sidebar on info pages)
     sessionStorage.setItem('hasVisitedApp', 'true');
-  }, []);
+  }, [pageTitle]);
 
   // Sort posts when sortBy changes
   useEffect(() => {
@@ -117,7 +143,19 @@ export default function ProfilePage() {
 
         <main className="flex-1 p-6 pb-24 md:pb-6 md:ml-[70px]">
           {/* Profile Header */}
-          <ProfileHeader isOwnProfile={isOwnProfile} userProfile={userProfile} />
+          <ProfileHeader 
+            isOwnProfile={isOwnProfile} 
+            userProfile={userProfile}
+            onProfileUpdate={async () => {
+              // Refetch user profile after image upload
+              try {
+                const data = await getUserProfile(userId);
+                setUserProfile(data);
+              } catch (err) {
+                console.error('Error refetching profile:', err);
+              }
+            }}
+          />
 
           {/* Sort Filter */}
           <section className="mt-6 flex justify-end">
@@ -153,17 +191,16 @@ export default function ProfilePage() {
 
             {/* Posts Grid */}
             {!loading && !error && filteredEvents?.length > 0 && (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {filteredEvents.map((event) => (
-                  <div key={event.id} className="bg-[var(--menucard)] rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow">
-                    <h3 className="text-[var(--text)] font-semibold text-xl mb-2">{event.title}</h3>
-                    <p className="text-[var(--text)] opacity-80 mb-4 line-clamp-2">{event.body}</p>
-                    <div className="flex flex-col gap-2 text-sm text-[var(--text)] opacity-70">
-                      {event.building && <span>📍 {event.building}</span>}
-                      <span>📅 {formatEventDate(event.start_date)}</span>
-                      {event.is_private && <span className="text-yellow-500">🔒 Private Event</span>}
-                    </div>
-                  </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {filteredEvents.map((event, index) => (
+                  <motion.div
+                    key={event.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: index * 0.1 }}
+                  >
+                    <PostCard event={event} isOwnProfile={isOwnProfile} />
+                  </motion.div>
                 ))}
               </div>
             )}
