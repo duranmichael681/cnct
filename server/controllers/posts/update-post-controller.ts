@@ -1,6 +1,7 @@
 import { updatePostService } from '../../services/posts/update-post-service';
 import { Post } from '../../services/posts/fetch-post-by-id-service';
 import { Request, Response } from 'express';
+import { moderateImage } from '../../middleware/moderate';
 
 export async function updatePostController(req: Request, res: Response) {
     try {
@@ -18,6 +19,10 @@ export async function updatePostController(req: Request, res: Response) {
             isPrivate: req.body.is_private,
             rsvp: req.body.rsvp
         }
+
+        if(!moderateImage(eventData.postPictureUrl))
+            throw Error("New image does not pass moderation.");
+
         const updatedEvent = await updatePostService(eventId, eventData);
         res.json({ success: true, data: updatedEvent });
     } catch (error) {
