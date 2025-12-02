@@ -3,8 +3,8 @@ import { Request, Response } from "express";
 
 export async function fetchPostByIdController(req: Request, res: Response) {
     try {
-        const eventId = req.params.id;
-        const post = await fetchPostByIdService(eventId);
+        const postId = req.params.id;
+        const post = await fetchPostByIdService(postId);
         res.json({ success: true, data: post });
     } catch (error) {
         console.error('Error in fetchPostByIdController:', error);

@@ -4,9 +4,9 @@ import { Request, Response } from 'express';
 
 export async function updatePostController(req: Request, res: Response) {
     try {
-        const eventId = req.params.id;
-        const eventData: Partial<Post> = {
-            id: eventId,
+        const postId = req.params.id;
+        const postData: Partial<Post> = {
+            id: postId,
             title: req.body.title,
             body: req.body.body,
             organizerId: req.body.organizer_id,
@@ -18,8 +18,8 @@ export async function updatePostController(req: Request, res: Response) {
             isPrivate: req.body.is_private,
             rsvp: req.body.rsvp
         }
-        const updatedEvent = await updatePostService(eventId, eventData);
-        res.json({ success: true, data: updatedEvent });
+        const updatedPost = await updatePostService(postId, postData);
+        res.json({ success: true, data: updatedPost });
     } catch (error) {
         console.error('Error in updatePostController:', error);
         res.status(500).json({ success: false, error: String(error) });

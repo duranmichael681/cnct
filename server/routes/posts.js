@@ -1,6 +1,7 @@
 import express from 'express';
 import { supabaseAdmin } from '../config/supabase.js';
 import { authMiddleware } from '../middleware/auth.js';
+import { PostControllerModule } from '../controllers/controller-module.js';
 
 const router = express.Router();
 
@@ -23,9 +24,10 @@ router.get('/', async (req, res) => {
             if (prefsError) throw prefsError;
 
             if (userPrefs && userPrefs.length > 0) {
-                // Fetch posts that match user's tag preferences
+                // User has tag preferences - show posts matching those tags OR posts with no tags
                 const tagIds = userPrefs.map(pref => pref.tag_id);
 
+                // Get posts that match user's tag preferences
                 const { data: postTags, error: postTagsError } = await supabaseAdmin
                     .from('post_tags')
                     .select('post_id')
@@ -33,26 +35,39 @@ router.get('/', async (req, res) => {
 
                 if (postTagsError) throw postTagsError;
 
-                const postIds = [...new Set(postTags.map(pt => pt.post_id))];
+                const taggedPostIds = [...new Set(postTags.map(pt => pt.post_id))];
 
-                if (postIds.length > 0) {
-                    const { data, error } = await supabaseAdmin
-                        .from('posts')
-                        .select(`
-                            *,
-                            attendees(count)
-                        `)
-                        .in('id', postIds)
-                        .eq('is_private', false)
-                        .order('start_date', { ascending: true });
+                // Get all posts
+                const { data: allPosts, error: allPostsError } = await supabaseAdmin
+                    .from('posts')
+                    .select(`
+                        *,
+                        attendees(count)
+                    `)
+                    .eq('is_private', false)
+                    .order('start_date', { ascending: true });
 
-                    if (error) throw error;
-                    return res.json({ success: true, data });
-                }
+                if (allPostsError) throw allPostsError;
+
+                // Get all post IDs that have tags
+                const { data: allPostTags, error: allPostTagsError } = await supabaseAdmin
+                    .from('post_tags')
+                    .select('post_id');
+
+                if (allPostTagsError) throw allPostTagsError;
+
+                const postsWithTags = new Set(allPostTags.map(pt => pt.post_id));
+
+                // Filter: show posts that match user's tags OR posts with no tags
+                const filteredPosts = allPosts.filter(post => 
+                    taggedPostIds.includes(post.id) || !postsWithTags.has(post.id)
+                );
+
+                return res.json({ success: true, data: filteredPosts });
             }
         }
 
-        // Default: fetch all public posts
+        // Default: fetch all public posts (no preferences or no userId)
         const { data, error } = await supabaseAdmin
             .from('posts')
             .select(`
@@ -102,7 +117,7 @@ router.get('/:id', async (req, res) => {
  */
 router.post('/', authMiddleware, async (req, res) => {
     try {
-        const { title, body, building, start_date, end_date, is_private = false, post_picture_url } = req.body;
+        const { title, body, building, start_date, end_date, is_private = false, post_picture_url, tag_ids } = req.body;
         const organizerId = req.user?.id;
 
         console.log('🔍 DEBUG - Create Post Request:');
@@ -110,6 +125,7 @@ router.post('/', authMiddleware, async (req, res) => {
         console.log('  User ID:', organizerId);
         console.log('  Post data:', { title, building, start_date, end_date });
         console.log('  Picture URL:', post_picture_url);
+        console.log('  Tag IDs:', tag_ids);
 
         // Validate user is authenticated
         if (!organizerId) {
@@ -178,6 +194,26 @@ router.post('/', authMiddleware, async (req, res) => {
         }
 
         console.log('✅ Post created successfully:', data.id);
+
+        // Insert tags if provided
+        if (tag_ids && Array.isArray(tag_ids) && tag_ids.length > 0) {
+            const postTags = tag_ids.map(tagId => ({
+                post_id: data.id,
+                tag_id: parseInt(tagId)
+            }));
+
+            const { error: tagError } = await supabaseAdmin
+                .from('post_tags')
+                .insert(postTags);
+
+            if (tagError) {
+                console.error('⚠️ Error inserting tags (post created):', tagError);
+                // Don't fail the request if tags fail
+            } else {
+                console.log('✅ Tags added to post:', tag_ids);
+            }
+        }
+
         res.status(201).json({ success: true, data });
     } catch (error) {
         console.error('❌ Error creating post:', error);
@@ -190,83 +226,13 @@ router.post('/', authMiddleware, async (req, res) => {
  * Toggle attendance for a post
  * Note: user_id is taken from authenticated user (req.user)
  */
-router.post('/:id/toggle-attendance', async (req, res) => {
-    try {
-        const { id } = req.params;
-        const userId = req.user?.id;
-
-        if (!userId) {
-            return res.status(401).json({
-                success: false,
-                error: 'User not authenticated. Please log in to toggle attendance.'
-            });
-        }
-
-        // Check if already attending
-        const { data: existing } = await supabaseAdmin
-            .from('attendees')
-            .select('id')
-            .eq('posts_id', id)
-            .eq('user_id', userId)
-            .single();
-
-        if (existing) {
-            // Remove attendance
-            const { error } = await supabaseAdmin
-                .from('attendees')
-                .delete()
-                .eq('posts_id', id)
-                .eq('user_id', userId);
-
-            if (error) throw error;
-            res.json({ success: true, action: 'left', data: null });
-        } else {
-            // Add attendance
-            const { data, error } = await supabaseAdmin
-                .from('attendees')
-                .insert([{ posts_id: id, user_id: userId }])
-                .select()
-                .single();
-
-            if (error) throw error;
-            res.json({ success: true, action: 'joined', data });
-        }
-    } catch (error) {
-        console.error('Error toggling attendance:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+router.post('/:id/toggle-attendance', authMiddleware, PostControllerModule.toggleAttendanceController);
 
 /**
  * GET /api/posts/:id/attendees
  * Get all attendees for a specific post
  */
-router.get('/:id/attendees', async (req, res) => {
-    try {
-        const { id } = req.params;
-
-        const { data, error } = await supabaseAdmin
-            .from('attendees')
-            .select(`
-                *,
-                users(
-                    id,
-                    username_email,
-                    first_name,
-                    last_name,
-                    profile_picture_url
-                )
-            `)
-            .eq('posts_id', id);
-
-        if (error) throw error;
-
-        res.json({ success: true, data });
-    } catch (error) {
-        console.error('Error fetching attendees:', error);
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
+router.get('/:id/attendees', PostControllerModule.fetchPostAttendeesController);
 
 /**
  * PUT /api/posts/:id
@@ -373,13 +339,8 @@ router.delete('/:id', authMiddleware, async (req, res) => {
             });
         }
 
-        // Delete related records first (attendees, comments, etc.)
-        // Note: If you have CASCADE DELETE set up in your database, this may not be necessary
-        await supabaseAdmin.from('attendees').delete().eq('posts_id', id);
-        await supabaseAdmin.from('comments').delete().eq('posts_id', id);
-        await supabaseAdmin.from('post_tags').delete().eq('post_id', id);
-
-        // Delete the post
+        // Delete the post (CASCADE will automatically handle related records:
+        // attendees, comments, comment_votes, post_tags)
         const { error } = await supabaseAdmin
             .from('posts')
             .delete()

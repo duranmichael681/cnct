@@ -1,4 +1,4 @@
-import { supabaseAdmin } from '../../config/supabase.js';
+import { supabaseAdmin } from '../../config/supabase.ts';
 
 export default async function fetchProfileData(userId : string) {
     const {data, error} = await supabaseAdmin

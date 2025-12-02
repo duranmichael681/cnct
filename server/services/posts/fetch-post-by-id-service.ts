@@ -1,4 +1,5 @@
 import { supabase } from '../../server';
+import { supabaseAdmin } from '../../config/supabase';
 
 export interface Post {
     id: string;
@@ -14,12 +15,12 @@ export interface Post {
     rsvp: number;
 }
 
-export async function fetchPostByIdService(eventId: string): Promise<Post> {
+export async function fetchPostByIdService(postId: string): Promise<Post> {
     try {
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from('posts')
             .select('*')
-            .eq('id', eventId)
+            .eq('id', postId)
             .single();
             
         if (error) {
@@ -28,8 +29,8 @@ export async function fetchPostByIdService(eventId: string): Promise<Post> {
         if (!data) {
             throw new Error('No data returned from fetch');
         }
-        
-        const event: Post = {
+
+        const post: Post = {
             id: data.id,
             title: data.title,
             body: data.body,
@@ -43,7 +44,7 @@ export async function fetchPostByIdService(eventId: string): Promise<Post> {
             rsvp: data.rsvp
         };
         
-        return event;
+        return post;
     } catch (error) {
         console.error('Error in fetchPostById:', error);
         throw error;

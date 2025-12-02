@@ -1,7 +1,7 @@
 import { supabaseAdmin } from '../../config/supabase';
 import { Post } from './fetch-post-by-id-service';
 
-export async function updatePostService(eventId: string, updatedData: Partial<Post>): Promise<Post> {
+export async function updatePostService(postId: string, updatedData: Partial<Post>): Promise<Post> {
     try {
         const { data, error } = await supabaseAdmin
             .from('posts')
@@ -16,17 +16,17 @@ export async function updatePostService(eventId: string, updatedData: Partial<Po
                 is_private: updatedData.isPrivate,
                 rsvp: updatedData.rsvp
             })
-            .eq('id', eventId)
+            .eq('id', postId)
             .single();
-        
+
         if (error) {
-            throw new Error(`Error updating event: ${error.message}`);
+            throw new Error(`Error updating post: ${error.message}`);
         }
         if (!data) {
             throw new Error('No data returned from update');
         }
         
-        const updatedEvent: Post = {
+        const updatedPost: Post = {
             id: data.id,
             title: data.title,
             body: data.body,
@@ -40,9 +40,9 @@ export async function updatePostService(eventId: string, updatedData: Partial<Po
             rsvp: data.rsvp
         };
         
-        return updatedEvent;
+        return updatedPost;
     } catch (error) {
-        console.error('Error in updateEvent:', error);
+        console.error('Error in updatePost:', error);
         throw error;
     }
 }

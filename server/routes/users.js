@@ -109,6 +109,63 @@ router.post('/:id/settings', async (req, res) => {
 });
 
 /**
+ * POST /api/users/:id/follow
+ * Toggle follow/unfollow for a user
+ * Body: { follower_id } - ID of user who is following
+ */
+router.post('/:id/follow', async (req, res) => {
+    try {
+        const { id: followedUserId } = req.params;
+        const { follower_id: followingUserId } = req.body;
+
+        if (!followingUserId) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required field: follower_id'
+            });
+        }
+
+        // Check if already following
+        const { data: existing, error: checkError } = await supabaseAdmin
+            .from('follows')
+            .select('*')
+            .eq('following_user_id', followingUserId)
+            .eq('followed_user_id', followedUserId)
+            .maybeSingle();
+
+        if (checkError) throw checkError;
+
+        if (existing) {
+            // Unfollow
+            const { error: deleteError } = await supabaseAdmin
+                .from('follows')
+                .delete()
+                .eq('following_user_id', followingUserId)
+                .eq('followed_user_id', followedUserId);
+
+            if (deleteError) throw deleteError;
+
+            res.json({ success: true, action: 'unfollowed' });
+        } else {
+            // Follow
+            const { error: insertError } = await supabaseAdmin
+                .from('follows')
+                .insert({
+                    following_user_id: followingUserId,
+                    followed_user_id: followedUserId
+                });
+
+            if (insertError) throw insertError;
+
+            res.json({ success: true, action: 'followed' });
+        }
+    } catch (error) {
+        console.error('Error toggling follow:', error);
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+/**
  * POST /api/users/:id/tags/toggle
  * Toggle user interest tag using the toggle_user_tag function
  * Body: { tag_id }
@@ -202,68 +259,16 @@ router.delete('/:id', async (req, res) => {
             });
         }
 
-        // Delete all user's posts (cascade will handle related data like attendees, comments, etc.)
-        const { error: postsError } = await supabaseAdmin
-            .from('posts')
-            .delete()
-            .eq('organizer_id', id);
-
-        if (postsError) {
-            console.error('Error deleting user posts:', postsError);
-            throw postsError;
-        }
-
-        // Delete user's attendee records
-        const { error: attendeesError } = await supabaseAdmin
-            .from('attendees')
-            .delete()
-            .eq('user_id', id);
-
-        if (attendeesError) {
-            console.error('Error deleting user attendees:', attendeesError);
-        }
-
-        // Delete user's follow relationships
-        const { error: followsError } = await supabaseAdmin
-            .from('follows')
-            .delete()
-            .or(`follower_id.eq.${id},following_id.eq.${id}`);
-
-        if (followsError) {
-            console.error('Error deleting user follows:', followsError);
-        }
-
-        // Delete user's notifications
-        const { error: notificationsError } = await supabaseAdmin
-            .from('notifications')
-            .delete()
-            .eq('user_id', id);
-
-        if (notificationsError) {
-            console.error('Error deleting user notifications:', notificationsError);
-        }
-
-        // Delete user's tag preferences
-        const { error: tagsError } = await supabaseAdmin
-            .from('user_tag_preferences')
-            .delete()
-            .eq('user_id', id);
-
-        if (tagsError) {
-            console.error('Error deleting user tag preferences:', tagsError);
-        }
-
-        // Delete user's settings
-        const { error: settingsError } = await supabaseAdmin
-            .from('user_settings')
-            .delete()
-            .eq('user_id', id);
-
-        if (settingsError) {
-            console.error('Error deleting user settings:', settingsError);
-        }
-
-        // Finally, delete the user record
+        // Delete the user record
+        // CASCADE will automatically handle all related data:
+        // - posts (and their attendees, comments, comment_votes, post_tags)
+        // - attendees records
+        // - follows relationships (both follower and following)
+        // - notifications
+        // - user_tag_preferences
+        // - user_settings
+        // - groups created by user
+        // - user_groups memberships
         const { error: deleteUserError } = await supabaseAdmin
             .from('users')
             .delete()

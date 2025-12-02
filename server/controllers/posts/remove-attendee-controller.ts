@@ -3,9 +3,9 @@ import { Request, Response } from "express";
 
 export async function removeAttendeeController(req: Request, res: Response) {
     try {
-        const eventId = req.params.id;
-        const userId = req.query.userId;
-        const response = await removeAttendeeService(Number(eventId), Number(userId));
+        const postId = req.params.id;
+        const userId = req.params.userId;
+        const response = await removeAttendeeService(Number(postId), Number(userId));
         res.json({ success: true, data: response });
     } catch (error) {
         console.error('Error in removeAttendeeController:', error);
