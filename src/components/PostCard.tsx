@@ -2,6 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MoreVertical, Flag, Ban, Share2, MapPin, Clock, MessageCircle, Link, Send, EyeOff, Unlink, Pencil, Trash2, ThumbsUp, ThumbsDown, Edit3, Plus, X } from "lucide-react";
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import ShareModal from "./ShareModal";
 import { supabase } from "../lib/supabaseClient";
 import type { Post } from "../services/api";
@@ -20,6 +24,7 @@ interface Comment {
   id: string;
   userId: string;
   username: string;
+  profilePicture: string | null;
   text: string;
   timestamp: string;
   upvotes: number;
@@ -30,6 +35,7 @@ interface Comment {
 interface PostCardProps {
   event: Post;
   isOwnProfile?: boolean;
+  initialOpen?: boolean;
   onUpdate?: (postId: string, updatedData: {
     eventName: string;
     location: string;
@@ -38,13 +44,16 @@ interface PostCardProps {
     tags: string[];
   }) => void;
   onDelete?: (postId: string) => void;
+  onClose?: () => void;
 }
 
 export default function PostCard({
   event,
   isOwnProfile = false,
+  initialOpen = false,
   onUpdate,
   onDelete,
+  onClose,
 }: PostCardProps) {
   const navigate = useNavigate();
   const location_route = useLocation();
@@ -83,13 +92,14 @@ export default function PostCard({
   };
   
   // UI State
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editedEventName, setEditedEventName] = useState("");
   const [editedBuildingCode, setEditedBuildingCode] = useState("");
   const [editedRoomNumber, setEditedRoomNumber] = useState("");
+  const [editedDate, setEditedDate] = useState<Dayjs | null>(dayjs());
   const [editedTimeHour, setEditedTimeHour] = useState("12");
   const [editedTimeMinute, setEditedTimeMinute] = useState("00");
   const [editedTimePeriod, setEditedTimePeriod] = useState("PM");
@@ -174,6 +184,69 @@ export default function PostCard({
         setOrganizerProfilePic(userData.profile_picture_url && userData.profile_picture_url.trim() ? userData.profile_picture_url : null);
       }
 
+      // Fetch RSVP status and count
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // Check if current user has RSVP'd
+        const { data: rsvpData } = await supabase
+          .from('attendees')
+          .select('id')
+          .eq('posts_id', event.id)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        setIsRsvpd(!!rsvpData);
+
+        // Get total RSVP count
+        const { count } = await supabase
+          .from('attendees')
+          .select('*', { count: 'exact', head: true })
+          .eq('posts_id', event.id);
+        
+        setRsvpCount(count || 0);
+      }
+
+      // Fetch comments
+      try {
+        const response = await fetch(`http://localhost:5000/api/comments/post/${event.id}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const formatTimeAgo = (timestamp: string) => {
+            const now = new Date();
+            const created = new Date(timestamp);
+            const diffMs = now.getTime() - created.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            
+            if (diffMins < 1) return 'just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `${diffHours}h ago`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays < 7) return `${diffDays}d ago`;
+            const diffWeeks = Math.floor(diffDays / 7);
+            if (diffWeeks < 4) return `${diffWeeks}w ago`;
+            const diffMonths = Math.floor(diffDays / 30);
+            return `${diffMonths}mo ago`;
+          };
+          
+          const formattedComments = result.data.map((c: any) => ({
+            id: c.id,
+            userId: c.user_id,
+            username: c.users ? `${c.users.first_name || ''} ${c.users.last_name || ''}`.trim() : 'Unknown',
+            profilePicture: c.users?.profile_picture_url || null,
+            text: c.text,
+            timestamp: formatTimeAgo(c.created_at),
+            upvotes: c.upvotes,
+            downvotes: c.downvotes,
+            userVote: null // TODO: Fetch user's vote from comment_votes
+          }));
+          setComments(formattedComments);
+        }
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+      }
+
       // Fetch RSVP info
       const { data: attendeesData, error: attendeesError } = await supabase
         .from('attendees')
@@ -228,42 +301,87 @@ export default function PostCard({
     setIsRsvpLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Toggle RSVP state
-      const newRsvpState = !isRsvpd;
-      setIsRsvpd(newRsvpState);
-      setRsvpCount(prev => newRsvpState ? prev + 1 : prev - 1);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to RSVP');
+        setIsRsvpLoading(false);
+        return;
+      }
 
-      // In a real app, make API call here:
-      // await fetch(`/api/events/${postId}/rsvp`, { method: newRsvpState ? 'POST' : 'DELETE' });
+      const response = await fetch(`http://localhost:5000/api/posts/${event.id}/toggle-attendance`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // Update UI based on action
+        const newRsvpState = result.action === 'joined';
+        setIsRsvpd(newRsvpState);
+        setRsvpCount(prev => newRsvpState ? prev + 1 : prev - 1);
+      } else {
+        console.error('RSVP failed:', result.error);
+        alert('Failed to update RSVP');
+      }
     } catch (error) {
       console.error('Failed to RSVP:', error);
+      alert('Failed to update RSVP');
     } finally {
       setIsRsvpLoading(false);
     }
   };
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newComment.trim()) {
-      const comment: Comment = {
-        id: Date.now().toString(),
-        userId: mockUserId,
-        username: "currentUser",
-        text: newComment,
-        timestamp: "Just now",
-        upvotes: 0,
-        downvotes: 0,
-        userVote: null,
-      };
-      setComments(prev => [comment, ...prev]); // Add to top
-      setNewComment("");
-      setShowEmojiPicker(false);
+    if (!newComment.trim()) return;
 
-      // In a real app, make API call here:
-      // await fetch(`/api/events/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text: newComment }) });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to comment');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/comments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          post_id: event.id,
+          text: newComment.trim()
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // Add new comment to top of list
+        const newCommentData: Comment = {
+          id: result.data.id,
+          userId: result.data.user_id,
+          username: result.data.users ? `${result.data.users.first_name || ''} ${result.data.users.last_name || ''}`.trim() : 'Unknown',
+          text: result.data.text,
+          timestamp: 'Just now',
+          upvotes: 0,
+          downvotes: 0,
+          userVote: null
+        };
+        setComments(prev => [newCommentData, ...prev]);
+        setNewComment('');
+        setShowEmojiPicker(false);
+      } else {
+        console.error('Comment creation failed:', result.error);
+        alert('Failed to post comment');
+      }
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      alert('Failed to post comment');
     }
   };
 
@@ -292,10 +410,34 @@ export default function PostCard({
     setEditingCommentText("");
   };
 
-  const handleDeleteComment = (commentId: string) => {
-    if (confirm('Are you sure you want to delete this comment?')) {
-      setComments(prev => prev.filter(comment => comment.id !== commentId));
-      // In a real app: await fetch(`/api/events/${postId}/comments/${commentId}`, { method: 'DELETE' });
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to delete comments');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setComments(prev => prev.filter(comment => comment.id !== commentId));
+      } else {
+        console.error('Comment deletion failed:', result.error);
+        alert(result.error || 'Failed to delete comment');
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      alert('Failed to delete comment');
     }
   };
 
@@ -315,32 +457,53 @@ export default function PostCard({
     setShowComments(!showComments);
   };
 
-  const handleCommentVote = (commentId: string, voteType: 'up' | 'down') => {
-    setComments(prev =>
-      prev.map(comment => {
-        if (comment.id !== commentId) return comment;
+  const handleCommentVote = async (commentId: string, voteType: 'up' | 'down') => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to vote');
+        return;
+      }
 
-        const currentVote = comment.userVote;
-        let newUpvotes = comment.upvotes;
-        let newDownvotes = comment.downvotes;
-        let newUserVote: 'up' | 'down' | null = voteType;
+      // Get current vote for this comment
+      const currentComment = comments.find(c => c.id === commentId);
+      const currentVote = currentComment?.userVote;
+      
+      // Determine new vote (toggle if same, otherwise switch)
+      const newVote = currentVote === voteType ? null : voteType;
 
-        // Remove previous vote if exists
-        if (currentVote === 'up') newUpvotes--;
-        if (currentVote === 'down') newDownvotes--;
+      const response = await fetch(`http://localhost:5000/api/comments/${commentId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ vote_type: newVote })
+      });
 
-        // Toggle if clicking same vote, otherwise apply new vote
-        if (currentVote === voteType) {
-          newUserVote = null;
-        } else {
-          if (voteType === 'up') newUpvotes++;
-          if (voteType === 'down') newDownvotes++;
-        }
-
-        return { ...comment, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote };
-      })
-    );
-    // In a real app: await fetch(`/api/events/${postId}/comments/${commentId}/vote`, { method: 'POST', body: JSON.stringify({ voteType }) });
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // Update local state with new vote counts
+        setComments(prev =>
+          prev.map(comment => {
+            if (comment.id !== commentId) return comment;
+            return {
+              ...comment,
+              upvotes: result.data.upvotes,
+              downvotes: result.data.downvotes,
+              userVote: newVote
+            };
+          })
+        );
+      } else {
+        console.error('Vote failed:', result.error);
+        alert('Failed to vote on comment');
+      }
+    } catch (error) {
+      console.error('Error voting on comment:', error);
+      alert('Failed to vote on comment');
+    }
   };
 
   const handleShare = (e: React.MouseEvent) => {
@@ -387,20 +550,25 @@ export default function PostCard({
     setEditedDescription(event.body);
     setEditedTags(postTags.map(t => t.id));
     
-    // Parse location into building code and room number
-    const locationMatch = event.building?.match(/^([A-Z0-9]+)\s*(\d+)?$/);
-    if (locationMatch) {
-      setEditedBuildingCode(locationMatch[1]);
-      setEditedRoomNumber(locationMatch[2] || "");
-    } else {
-      setEditedBuildingCode(event.building || "");
-      setEditedRoomNumber("");
-    }
+    // Parse location - building field now only contains building_code (FK constraint)
+    // Room numbers are not stored in the database currently
+    setEditedBuildingCode(event.building || "");
+    setEditedRoomNumber(""); // Room number feature not yet implemented in schema
     
-    // Parse time from start_date
-    const startDate = new Date(event.start_date);
-    let hours = startDate.getHours();
-    const minutes = startDate.getMinutes();
+    // Parse date and time from start_date
+    // Database stores 'timestamp without time zone', so parse it as-is without timezone conversion
+    const dateString = event.start_date.includes('T') ? event.start_date.split('T')[0] : event.start_date.split(' ')[0];
+    const timeString = event.start_date.includes('T') ? event.start_date.split('T')[1].substring(0, 5) : event.start_date.split(' ')[1].substring(0, 5);
+    
+    const startDate = new Date(event.start_date.replace('Z', ''));
+    
+    // Set the date for the date picker
+    setEditedDate(dayjs(startDate));
+    
+    // Get hours and minutes directly from the timestamp string
+    const [hourStr, minuteStr] = timeString.split(':');
+    let hours = parseInt(hourStr);
+    const minutes = parseInt(minuteStr);
     const period = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12 || 12;
     
@@ -420,23 +588,36 @@ export default function PostCard({
         return;
       }
 
-      // Format location
-      const formattedLocation = editedRoomNumber 
-        ? `${editedBuildingCode} ${editedRoomNumber}`
-        : editedBuildingCode;
+      // Format location - building field in DB only stores building_code (FK constraint)
+      // Room number is not stored separately in current schema
+      const formattedLocation = editedBuildingCode || null;
 
-      // Format time into ISO string (keeping the original date)
-      const startDate = new Date(event.start_date);
+      // Format date and time into ISO string using edited date
+      if (!editedDate) {
+        alert('Please select a date');
+        return;
+      }
+      
+      // Convert time to 24-hour format
       let hours = parseInt(editedTimeHour);
       if (editedTimePeriod === 'PM' && hours !== 12) hours += 12;
       if (editedTimePeriod === 'AM' && hours === 12) hours = 0;
-      startDate.setHours(hours, parseInt(editedTimeMinute), 0, 0);
+      
+      // Build timestamp string directly without Date constructor to avoid any timezone conversion
+      const year = editedDate.year();
+      const month = editedDate.month() + 1; // dayjs months are 0-11
+      const day = editedDate.date();
+      const minutes = parseInt(editedTimeMinute);
+      
+      // Format as 'YYYY-MM-DD HH:MM:SS' - direct string formatting
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const isoString = `${year}-${pad(month)}-${pad(day)} ${pad(hours)}:${pad(minutes)}:00`;
 
       const updatePayload = {
         title: editedEventName,
         body: editedDescription,
         building: formattedLocation,
-        start_date: startDate.toISOString(),
+        start_date: isoString,
         // Note: Tags update would require separate API call to post_tags table
       };
 
@@ -452,10 +633,49 @@ export default function PostCard({
       const result = await response.json();
 
       if (response.ok && result.success) {
+        // Update tags if they changed
+        const currentTagIds = postTags.map(t => t.id).sort();
+        const newTagIds = [...editedTags].sort();
+        const tagsChanged = JSON.stringify(currentTagIds) !== JSON.stringify(newTagIds);
+
+        if (tagsChanged) {
+          // Delete all existing tags
+          await supabase
+            .from('post_tags')
+            .delete()
+            .eq('post_id', event.id);
+
+          // Insert new tags
+          if (editedTags.length > 0) {
+            const tagInserts = editedTags.map(tagId => ({
+              post_id: event.id,
+              tag_id: parseInt(tagId)
+            }));
+
+            await supabase
+              .from('post_tags')
+              .insert(tagInserts);
+          }
+          
+          // Refetch tags to update UI immediately
+          const { data: postTagsData, error: tagsError } = await supabase
+            .from('post_tags')
+            .select('tag_id, tags!inner(id, code)')
+            .eq('post_id', event.id);
+          
+          if (!tagsError && postTagsData) {
+            const tags: Tag[] = postTagsData
+              .map((pt: any) => ({
+                id: String(pt.tags.id),
+                code: String(pt.tags.code)
+              }))
+              .filter((t: Tag) => t.id && t.code);
+            setPostTags(tags);
+          }
+        }
+
         alert('Post updated successfully!');
         setShowEditModal(false);
-        // Refresh the page to show updated data
-        window.location.reload();
       } else {
         alert(`Failed to update post: ${result.error || 'Unknown error'}`);
       }
@@ -652,7 +872,10 @@ export default function PostCard({
           {/* Action Buttons */}
           <div className="flex items-center gap-4 md:gap-6 mt-2 md:mt-3 text-[var(--text-secondary)]">
             <button
-              onClick={handleRsvp}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRsvp(e);
+              }}
               disabled={isRsvpLoading}
               onMouseEnter={() => setIsRsvpHovered(true)}
               onMouseLeave={() => setIsRsvpHovered(false)}
@@ -670,7 +893,10 @@ export default function PostCard({
             </button>
 
             <button
-              onClick={toggleComments}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleComments(e);
+              }}
               className="flex items-center gap-1 cursor-pointer hover:text-[var(--primary)] transition-colors hover:scale-110 transform duration-200"
               aria-label={showComments ? "Hide comments" : "Show comments"}
             >
@@ -679,7 +905,10 @@ export default function PostCard({
             </button>
 
             <button
-              onClick={handleShare}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleShare(e);
+              }}
               className="flex items-center gap-1 cursor-pointer hover:text-[var(--primary)] transition-colors hover:scale-110 transform duration-200"
               aria-label="Share event"
             >
@@ -697,6 +926,7 @@ export default function PostCard({
           onClick={() => {
             setIsOpen(false);
             setShowMenu(false);
+            onClose?.();
           }}
         >
           <div
@@ -780,6 +1010,7 @@ export default function PostCard({
               onClick={() => {
                 setIsOpen(false);
                 setShowMenu(false);
+                onClose?.();
               }}
               className="absolute top-5 right-5.5 text-[var(--text-secondary)] hover:text-[var(--text)] text-2xl hover:rotate-90 transition-all duration-300 cursor-pointer"
               aria-label="Close modal"
@@ -910,7 +1141,14 @@ export default function PostCard({
                       }`}
                     >
                       <div 
-                        className="w-8 h-8 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
+                        className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity overflow-hidden"
+                        style={{
+                          backgroundImage: comment.profilePicture 
+                            ? `url(${comment.profilePicture})` 
+                            : 'linear-gradient(to bottom right, var(--primary), var(--tertiary))',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center'
+                        }}
                         onClick={(e) => handleCommentUserClick(e, comment.userId)}
                         aria-label={`View ${comment.username}'s profile`}
                       />
@@ -1134,12 +1372,84 @@ export default function PostCard({
                     </select>
                     <input
                       type="text"
-                      placeholder="Room #"
+                      placeholder="Room # (not saved)"
                       value={editedRoomNumber}
                       onChange={(e) => setEditedRoomNumber(e.target.value)}
-                      className="px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none"
+                      disabled
+                      className="px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none opacity-50 cursor-not-allowed"
+                      title="Room numbers are not yet stored in the database"
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[var(--text)] mb-2">Event Date</label>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      value={editedDate}
+                      onChange={(newValue) => setEditedDate(newValue)}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          InputProps: {
+                            style: { 
+                              color: 'var(--text)', 
+                              borderColor: 'var(--border)', 
+                              borderWidth: '2px',
+                              backgroundColor: 'var(--background)',
+                              borderRadius: '0.5rem'
+                            }
+                          },
+                          InputLabelProps: {
+                            style: { 
+                              color: 'var(--primary)',
+                              fontWeight: 'bold',
+                              backgroundColor: 'var(--background)',
+                              paddingLeft: '4px',
+                              paddingRight: '4px'
+                            }
+                          },
+                          sx: {
+                            '& .MuiInputLabel-root': { 
+                              color: 'var(--primary)',
+                              fontWeight: 'bold',
+                            },
+                            '& .MuiOutlinedInput-notchedOutline': { 
+                              borderColor: 'var(--border) !important', 
+                              borderWidth: '2px' 
+                            },
+                            '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { 
+                              borderColor: 'var(--primary)' 
+                            },
+                            '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { 
+                              borderColor: 'var(--primary)' 
+                            },
+                            '& .MuiIconButton-root': { color: 'var(--primary)' },
+                          },
+                        },
+                        layout: {
+                          sx: {
+                            backgroundColor: 'var(--card-bg)',
+                            color: 'var(--text)',
+                            '.MuiPickersDay-root': {
+                              color: 'var(--text)',
+                              '&.Mui-selected': {
+                                backgroundColor: 'var(--primary)',
+                                color: 'var(--primary-text)',
+                              },
+                            },
+                            '.MuiPickersCalendarHeader-label': { color: 'var(--text)' },
+                            '.MuiIconButton-root': { color: 'var(--primary)' },
+                            '.MuiDayCalendar-weekDayLabel': { color: 'var(--text)' },
+                            '.MuiPickersToolbar-root': { 
+                              backgroundColor: 'var(--primary)',
+                              color: 'var(--primary-text)',
+                            },
+                            '.MuiPickersToolbarText-root': { color: 'var(--primary-text)' },
+                          },
+                        },
+                      }}
+                    />
+                  </LocalizationProvider>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-[var(--text)] mb-2">Time (EST)</label>

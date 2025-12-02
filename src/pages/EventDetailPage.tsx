@@ -3,9 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { supabase } from '../supabase/client'
 import SideBar from '../components/SideBar'
 import Footer from '../components/Footer'
+import PostCard from '../components/PostCard'
 import { MapPin, Calendar, User, Share2, ArrowLeft, MessageCircle, Heart } from 'lucide-react'
 import ShareModal from '../components/ShareModal'
 import { motion } from 'framer-motion'
+import type { Post } from '../services/api'
 
 interface EventDetail {
   id: string
@@ -35,6 +37,8 @@ export default function EventDetailPage() {
   const [rsvpCount, setRsvpCount] = useState(0)
   const [isRsvpLoading, setIsRsvpLoading] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+  const [showPostCard, setShowPostCard] = useState(false)
+  const [postData, setPostData] = useState<Post | null>(null)
 
   useEffect(() => {
     document.title = 'CNCT | Event Details'
@@ -106,17 +110,41 @@ export default function EventDetailPage() {
       setEvent(eventDetail)
       setRsvpCount(post.rsvps || 0)
       
-      // Check if current user has RSVP'd (implement when backend is ready)
-      // const { data: { user } } = await supabase.auth.getUser()
-      // if (user) {
-      //   const { data: rsvp } = await supabase
-      //     .from('attendees')
-      //     .select('id')
-      //     .eq('posts_id', eventId)
-      //     .eq('user_id', user.id)
-      //     .single()
-      //   setIsRsvpd(!!rsvp)
-      // }
+      // Convert to Post format for PostCard
+      setPostData({
+        id: post.id,
+        title: post.title,
+        body: post.body || '',
+        organizer_id: post.organizer_id,
+        building: post.building,
+        start_date: post.start_date,
+        end_date: post.end_date,
+        post_picture_url: post.post_picture_url,
+        created_at: post.created_at,
+        is_private: post.is_private,
+        rsvps: post.rsvps || 0
+      })
+      
+      // Check if current user has RSVP'd
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session?.user) {
+        const { data: rsvpData } = await supabase
+          .from('attendees')
+          .select('id')
+          .eq('posts_id', eventId)
+          .eq('user_id', session.user.id)
+          .maybeSingle()
+        
+        setIsRsvpd(!!rsvpData)
+
+        // Get total RSVP count
+        const { count } = await supabase
+          .from('attendees')
+          .select('*', { count: 'exact', head: true })
+          .eq('posts_id', eventId)
+        
+        setRsvpCount(count || 0)
+      }
 
     } catch (err: any) {
       console.error('Error loading event:', err)
@@ -127,24 +155,47 @@ export default function EventDetailPage() {
   }
 
   const handleRSVP = async () => {
+    if (!isLoggedIn) {
+      alert('Please log in to RSVP')
+      navigate('/signin')
+      return
+    }
+
     setIsRsvpLoading(true)
     try {
-      // Simulate API call - implement when backend is ready
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-      const newRsvpState = !isRsvpd
-      setIsRsvpd(newRsvpState)
-      setRsvpCount(prev => newRsvpState ? prev + 1 : prev - 1)
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        alert('Please log in to RSVP')
+        setIsRsvpLoading(false)
+        return
+      }
 
-      // TODO: Make actual API call
-      // const { data: { user } } = await supabase.auth.getUser()
-      // if (newRsvpState) {
-      //   await supabase.from('attendees').insert({ posts_id: eventId, user_id: user.id })
-      // } else {
-      //   await supabase.from('attendees').delete().match({ posts_id: eventId, user_id: user.id })
-      // }
+      const response = await fetch(`http://localhost:5000/api/posts/${eventId}/toggle-attendance`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      const result = await response.json()
+      
+      if (response.ok && result.success) {
+        // Update UI based on action
+        const newRsvpState = result.action === 'joined'
+        setIsRsvpd(newRsvpState)
+        setRsvpCount(result.data.rsvpCount)
+        
+        // Also update the postData to keep it in sync
+        if (postData) {
+          setPostData({ ...postData, rsvps: result.data.rsvpCount })
+        }
+      } else {
+        alert(`Failed to update RSVP: ${result.error || 'Unknown error'}`)
+      }
     } catch (error) {
       console.error('Failed to RSVP:', error)
+      alert('An error occurred while updating RSVP')
     } finally {
       setIsRsvpLoading(false)
     }
@@ -266,15 +317,15 @@ export default function EventDetailPage() {
                   className="flex items-center gap-3 mb-6 cursor-pointer hover:opacity-80 transition-opacity w-fit"
                   onClick={() => navigate(`/profile/${event.organizer_id}`)}
                 >
-                  {event.organizer_profile_pic ? (
-                    <img 
-                      src={event.organizer_profile_pic} 
-                      alt={event.organizer_name} 
-                      className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover flex-shrink-0" 
-                    />
-                  ) : (
-                    <div className="w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full flex-shrink-0" />
-                  )}
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)]">
+                    {event.organizer_profile_pic ? (
+                      <img 
+                        src={event.organizer_profile_pic} 
+                        alt={event.organizer_name} 
+                        className="w-full h-full object-cover" 
+                      />
+                    ) : null}
+                  </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs md:text-sm text-[var(--text-secondary)]">Organized by</p>
                     <p className="font-bold text-sm md:text-base text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate">
@@ -337,7 +388,7 @@ export default function EventDetailPage() {
                     className={`flex-1 min-w-[200px] flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-semibold transition-all cursor-pointer transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed ${
                       isRsvpd
                         ? 'bg-[var(--secondary)] text-[var(--text)] border-2 border-[var(--primary)]'
-                        : 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)]'
+                        : 'bg-[var(--primary)] text-[var(--primary-text)] hover:bg-[var(--primary-hover)]'
                     }`}
                   >
                     <Heart size={20} className={isRsvpd ? 'fill-current' : ''} />
@@ -353,7 +404,7 @@ export default function EventDetailPage() {
                   </button>
 
                   <button
-                    onClick={() => {/* TODO: Scroll to comments or open comments modal */}}
+                    onClick={() => setShowPostCard(true)}
                     className="flex items-center justify-center gap-2 px-6 py-3 bg-[var(--background)] border-2 border-[var(--border)] text-[var(--text)] font-semibold rounded-lg hover:bg-[var(--menucard)] transition-all cursor-pointer transform hover:scale-[1.02] active:scale-[0.98]"
                   >
                     <MessageCircle size={20} />
@@ -374,6 +425,17 @@ export default function EventDetailPage() {
         onClose={() => setShowShareModal(false)}
         postUrl={postUrl}
       />
+      
+      {/* PostCard for Comments */}
+      {showPostCard && postData && (
+        <PostCard
+          event={postData}
+          isOwnProfile={false}
+          initialOpen={true}
+          onClose={() => setShowPostCard(false)}
+          onUpdate={() => loadEventDetails()}
+        />
+      )}
     </div>
   )
 }

@@ -28,6 +28,11 @@ export default function SettingsPage() {
   const [saveError, setSaveError] = useState('')
   const [saveSuccess, setSaveSuccess] = useState(false)
   
+  // Tag preferences state
+  const [availableTags, setAvailableTags] = useState<any[]>([])
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
+  const [tagsLoading, setTagsLoading] = useState(false)
+  
   // Delete account state
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [deleteEmail, setDeleteEmail] = useState('')
@@ -39,6 +44,7 @@ export default function SettingsPage() {
   useEffect(() => {
     document.title = 'CNCT | Settings';
     loadUserData();
+    loadTags();
   }, []);
 
   const loadUserData = async () => {
@@ -87,9 +93,46 @@ export default function SettingsPage() {
         })
       }
     } catch (error) {
-      console.error('Error loading user data:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const loadTags = async () => {
+    try {
+      setTagsLoading(true)
+      
+      // Fetch all available tags
+      const tagsResponse = await fetch('http://localhost:5000/api/tags')
+      const tagsData = await tagsResponse.json()
+      
+      if (tagsData.success) {
+        setAvailableTags(tagsData.data || [])
+      }
+
+      // Fetch user's tag preferences
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        const prefsResponse = await fetch(`http://localhost:5000/api/tags/user/${user.id}/preferences`)
+        const prefsData = await prefsResponse.json()
+        
+        if (prefsData.success) {
+          const tagIds = prefsData.data.map((t: any) => t.id.toString())
+          setSelectedTags(tagIds)
+        }
+      }
+    } catch (error) {
+      console.error('Error loading tags:', error)
+    } finally {
+      setTagsLoading(false)
+    }
+  }
+
+  const handleToggleTag = (tagId: string) => {
+    if (selectedTags.includes(tagId)) {
+      setSelectedTags(selectedTags.filter(id => id !== tagId))
+    } else {
+      setSelectedTags([...selectedTags, tagId])
     }
   }
 
@@ -178,8 +221,33 @@ export default function SettingsPage() {
         }
       }
 
+      // Update tag preferences
+      const { data: { session } } = await supabase.auth.getSession()
+      if (session) {
+        const tagResponse = await fetch('http://localhost:5000/api/tags/user/preferences', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            tag_ids: selectedTags.map(id => parseInt(id))
+          })
+        })
+
+        if (!tagResponse.ok) {
+          const tagError = await tagResponse.json()
+          console.error('Error updating tag preferences:', tagError)
+        }
+      }
+
       setSaveSuccess(true)
-      setTimeout(() => setSaveSuccess(false), 3000)
+      
+      // Navigate to home after a brief delay to show success message
+      setTimeout(() => {
+        setSaveSuccess(false)
+        navigate('/') // Route back to home page
+      }, 1500)
     } catch (error: any) {
       console.error('Error saving settings:', error)
       setSaveError(error.message || 'Failed to save settings')
@@ -363,6 +431,37 @@ export default function SettingsPage() {
                       />
                     </div>
                   </div>
+                </section>
+
+                {/* Event Preferences - Tag Filtering */}
+                <section className="bg-[var(--card-bg)] rounded-lg shadow-lg p-6">
+                  <h2 className="text-xl font-bold text-[var(--text)] mb-4 flex items-center gap-2">
+                    <Bell size={20} />
+                    Event Preferences
+                  </h2>
+                  <p className="text-sm text-[var(--text-secondary)] mb-4">
+                    Select the types of events you want to see on your home feed. Leave all unchecked to see all events.
+                  </p>
+                  {tagsLoading ? (
+                    <p className="text-[var(--text-secondary)]">Loading tags...</p>
+                  ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {availableTags.map((tag) => (
+                        <label
+                          key={tag.id}
+                          className="flex items-center gap-3 p-3 bg-[var(--background)] rounded-lg border border-[var(--border)] cursor-pointer hover:bg-[var(--secondary)] transition-colors"
+                        >
+                          <input
+                            type="checkbox"
+                            checked={selectedTags.includes(tag.id.toString())}
+                            onChange={() => handleToggleTag(tag.id.toString())}
+                            className="w-5 h-5 cursor-pointer"
+                          />
+                          <span className="text-[var(--text)] font-medium">{tag.code}</span>
+                        </label>
+                      ))}
+                    </div>
+                  )}
                 </section>
 
                 {/* Notification Settings */}

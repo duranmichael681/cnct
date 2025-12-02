@@ -98,7 +98,7 @@ export function getPublicUrl(bucket: string, filePath: string): string {
  * Common storage bucket names
  */
 export const STORAGE_BUCKETS = {
-  EVENT_IMAGES: 'event-images',
-  PROFILE_PICTURES: 'profile-pictures',
-  POST_IMAGES: 'post-images',
+  EVENT_IMAGES: 'posts_picture',
+  PROFILE_PICTURES: 'profile_pictures',
+  POST_IMAGES: 'posts_picture',
 } as const;

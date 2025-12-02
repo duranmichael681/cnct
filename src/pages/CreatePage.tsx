@@ -186,14 +186,10 @@ export default function UploadPage() {
   };
 
   const handleAddCustomTag = () => {
-    if (newTag.trim() && !selectedTags.includes(newTag.trim())) {
-      // For custom tags, we'll use the tag text as both ID and code
-      // Add it to availableTags so it can be displayed
-      const customTag = { id: newTag.trim(), code: newTag.trim() };
-      setAvailableTags([...availableTags, customTag]);
-      setSelectedTags([...selectedTags, newTag.trim()]);
-      setNewTag("");
-    }
+    // Custom tags are not supported - must select from available tags
+    // This prevents the 'social' string bug
+    alert('Please select from the available tags only');
+    setNewTag("");
   };
 
   const handleRemoveTag = (tagId: string) => {
@@ -313,7 +309,7 @@ export default function UploadPage() {
         start_date: date ? date.toISOString() : new Date().toISOString(),
         post_picture_url: imageUrls.length > 0 ? imageUrls[0] : null,
         building: buildingCode || null,
-        tag_ids: selectedTags, // Send array of tag IDs
+        tag_ids: selectedTags.map(id => parseInt(id)).filter(id => !isNaN(id)), // Convert to integers, filter invalid
       } as any);
 
       console.log('✅ Post created:', created);

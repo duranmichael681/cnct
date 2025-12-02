@@ -48,4 +48,5 @@ temp/
 *.sw?
 *.md 
 !README.md
+!docs/*.md
 !docs/**/*.md
