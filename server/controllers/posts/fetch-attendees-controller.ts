@@ -3,8 +3,8 @@ import { Request, Response } from 'express';
 
 export async function fetchAttendeesController(req: Request, res: Response) {
     try {
-        const eventId = req.params.id;
-        const attendees = await fetchAttendeesService(eventId);
+        const postId = req.params.id;
+        const attendees = await fetchAttendeesService(postId);
         res.json({ success: true, data: attendees });
     }
     catch (error) {

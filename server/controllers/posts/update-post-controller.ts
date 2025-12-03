@@ -5,9 +5,9 @@ import { moderateImage } from '../../middleware/moderate';
 
 export async function updatePostController(req: Request, res: Response) {
     try {
-        const eventId = req.params.id;
-        const eventData: Partial<Post> = {
-            id: eventId,
+        const postId = req.params.id;
+        const postData: Partial<Post> = {
+            id: postId,
             title: req.body.title,
             body: req.body.body,
             organizerId: req.body.organizer_id,
@@ -20,10 +20,11 @@ export async function updatePostController(req: Request, res: Response) {
             rsvp: req.body.rsvp
         }
 
-        if(!moderateImage(eventData.postPictureUrl))
+        if(!moderateImage(postData.postPictureUrl))
             throw Error("New image does not pass moderation.");
 
-        const updatedEvent = await updatePostService(eventId, eventData);
+        const updatedEvent = await updatePostService(postId, postData
+        );
         res.json({ success: true, data: updatedEvent });
     } catch (error) {
         console.error('Error in updatePostController:', error);

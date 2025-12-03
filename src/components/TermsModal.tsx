@@ -13,7 +13,7 @@ export default function TermsModal({ isOpen, onClose }: TermsModalProps) {
       <div className="bg-white dark:bg-[var(--card-bg)] rounded-lg max-w-2xl w-full max-h-[80vh] overflow-y-auto p-6 relative">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+          className="absolute top-4 right-4 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-800 cursor-pointer"
           aria-label="Close"
         >
           <X size={24} />
@@ -74,7 +74,7 @@ export default function TermsModal({ isOpen, onClose }: TermsModalProps) {
 
         <button
           onClick={onClose}
-          className="mt-6 w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-text)] dark:text-[var(--background)] font-bold py-2 px-4 rounded"
+          className="mt-6 w-full bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-text)] dark:text-[var(--background)] font-bold py-2 px-4 rounded cursor-pointer"
         >
           Close
         </button>

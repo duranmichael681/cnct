@@ -46,3 +46,7 @@ temp/
 *.njsproj
 *.sln
 *.sw?
+*.md 
+!README.md
+!docs/*.md
+!docs/**/*.md

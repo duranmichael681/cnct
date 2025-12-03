@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
-import { User, Mail, Lock } from 'lucide-react'
+import { Eye, EyeOff } from 'lucide-react'
+import ChainIcon from '../components/icons/ChainIcon'
 import TermsModal from '../components/TermsModal'
 import CollageImg1 from '../assets/placeholder_event_1.png'
 import CollageImg2 from '../assets/placeholder_event_2.png'
@@ -10,33 +11,133 @@ import CollageImg5 from '../assets/placeholder_event_5.png'
 import CollageImg6 from '../assets/placeholder_event_6.png'
 import CollageImg7 from '../assets/placeholder_event_7.png'
 import CollageImg8 from '../assets/placeholder_event_8.png'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 
 //auth imports
-import { googleAuth } from '../supabase/auth'
+import { signUp } from '../services/auth'
 
 export default function SignUp() {
+  const navigate = useNavigate()
+  
   useEffect(() => {
     document.title = 'CNCT | Sign Up';
   }, []);
+  
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [termsAccepted, setTermsAccepted] = useState(false)
   const [termsViewed, setTermsViewed] = useState(false)
   const [isTermsModalOpen, setIsTermsModalOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [questionnaireCompleted, setQuestionnaireCompleted] = useState(false)
+
+  // Load questionnaire data on mount
+  useEffect(() => {
+    const questionnaireData = localStorage.getItem('questionnaireData')
+    const completionFlag = localStorage.getItem('questionnaireCompleted')
+    
+    if (questionnaireData && completionFlag === 'true') {
+      try {
+        const parsedData = JSON.parse(questionnaireData)
+        // Auto-fill email and name from questionnaire
+        if (parsedData.email) {
+          setEmail(parsedData.email)
+        }
+        // Combine firstName and lastName (lastName is optional)
+        if (parsedData.firstName) {
+          const fullName = parsedData.lastName && parsedData.lastName.trim() !== ''
+            ? `${parsedData.firstName} ${parsedData.lastName}` 
+            : parsedData.firstName
+          setName(fullName)
+        }
+        setQuestionnaireCompleted(true)
+      } catch (err) {
+        console.error('Failed to parse questionnaire data:', err)
+        setQuestionnaireCompleted(false)
+      }
+    } else {
+      setQuestionnaireCompleted(false)
+    }
+  }, [])
 
   const isValidFiuEmail = (email: string) => {
     return /^[a-zA-Z]{4,}[0-9]{3,}@fiu\.edu$/.test(email)
   }
 
   const isFormValid = () => {
-    return name.trim() !== '' && isValidFiuEmail(email) && password.trim() !== '' && termsViewed && termsAccepted
+    return name.trim() !== '' && isValidFiuEmail(email) && password.trim() !== '' && confirmPassword.trim() !== '' && password === confirmPassword && termsViewed && termsAccepted
   }
 
   const handleTermsClick = () => {
     setIsTermsModalOpen(true)
     setTermsViewed(true)
+  }
+
+  const handleSignUp = async (e: React.FormEvent) => {
+    e.preventDefault()
+    
+    if (!isFormValid()) return
+
+    // Check questionnaire completion first
+    if (!questionnaireCompleted) {
+      setError('Please complete the questionnaire before signing up')
+      return
+    }
+    
+    setLoading(true)
+    setError(null)
+    
+    try {
+      // Get questionnaire data from localStorage
+      const questionnaireData = localStorage.getItem('questionnaireData')
+      
+      if (!questionnaireData) {
+        throw new Error('Please complete the questionnaire before signing up')
+      }
+      
+      const parsedData = JSON.parse(questionnaireData)
+      
+      // Log questionnaire data for debugging
+      console.log('Parsed questionnaire data:', parsedData)
+      
+      // Split name into first and last
+      const nameParts = name.trim().split(' ')
+      const firstName = nameParts[0]
+      const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : ''
+      
+      const signUpPayload = {
+        email: email.trim(),
+        password,
+        firstName,
+        lastName,
+        pronouns: parsedData.pronouns || 'They/Them',
+        classStanding: parsedData.classStanding || '',
+        major: parsedData.major || '',
+        interests: parsedData.interests || []
+      }
+      
+      console.log('Sign up payload:', signUpPayload)
+      
+      // Sign up with backend
+      await signUp(signUpPayload)
+      
+      // Clear questionnaire data and completion flag after successful signup
+      localStorage.removeItem('questionnaireData')
+      localStorage.removeItem('questionnaireCompleted')
+      
+      // Navigate to home
+      navigate('/home')
+    } catch (err: any) {
+      console.error('Signup error:', err)
+      setError(err.message || 'Failed to sign up. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const images = [
@@ -71,105 +172,166 @@ export default function SignUp() {
   }
 
   return (
-    // FIX 1: Change to stack vertically on mobile (flex-col) and switch to row on desktop (md:flex-row)
     <div className='flex flex-col md:flex-row min-h-screen'>
       {/* Left Side — Sign Up Form */}
-      {/* FIX 2: Change width to full on mobile, 1/3 on desktop. Set height to auto on mobile. */}
-      {/* FIX 3: Removed h-[100vh] and replaced absolute positioning with padding/flex for clean stacking */}
-      <div className='w-full md:w-1/3 h-auto md:h-screen flex justify-center items-center'>
-        {/* Adjusted inner div for proper centering and scaling */}
+      <div className='w-full md:w-1/3 h-auto md:h-screen flex justify-center items-center bg-[var(--background)]'>
         <div className='w-full max-w-md px-6 md:px-0 mt-8 md:mt-0'>
-          <h1 className='font-bold text-2xl'>Welcome To CNCT</h1>
-
-          {/* Input fields adjusted to use full width of their parent container (max-w-md) */}
-          <div className='mt-10'>
-            <h1 className='text-lg'>Name<span className="text-red-500 ml-1">*</span></h1>
-            <div className='relative'>
-              <User className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300' size={18} />
-              <input
-                placeholder='Enter your name'
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className='pl-10 border-2 rounded-xl border-[#8f8b86] w-full p-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-300'
-              />
-            </div>
+          {/* Logo Section */}
+          <div className='flex justify-center mb-8'>
+            <motion.div
+              initial={{ scale: 0.8, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className='w-24 h-24 md:w-32 md:h-32 flex items-center justify-center'
+            >
+              <ChainIcon className='w-full h-full' />
+            </motion.div>
           </div>
 
-          <div className='mt-10'>
-            <h1 className='text-lg'>Email Address<span className="text-red-500 ml-1">*</span></h1>
+          <h1 className='font-bold text-3xl text-[var(--text)] text-center mb-2'>Welcome To CNCT</h1>
+          <p className='text-[var(--text-secondary)] text-center mb-8'>Create your account</p>
+
+          {/* Input fields */}
+          <div className='space-y-6'>
+            <div>
+              <label className='block text-sm font-semibold text-[var(--text)] mb-2'>
+                Name<span className="text-[var(--danger)] ml-1">*</span>
+              </label>
+              <div className='relative'>
+                <input
+                  placeholder='Enter your name'
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  readOnly={questionnaireCompleted}
+                  className={`w-full px-4 py-3 rounded-lg border border-[var(--border)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all placeholder:text-[var(--text-secondary)] ${
+                    questionnaireCompleted ? 'bg-[var(--card-bg)] opacity-70 cursor-not-allowed' : 'bg-[var(--background)]'
+                  }`}
+                />
+              </div>
+              {questionnaireCompleted && (
+                <p className="text-xs text-[var(--text-secondary)] mt-1">Pre-filled from questionnaire</p>
+              )}
+            </div>
+
+            <div>
+            <label className='block text-sm font-semibold text-[var(--text)] mb-2'>
+              Email Address<span className="text-[var(--danger)] ml-1">*</span>
+            </label>
             <div className='relative'>
-              <Mail className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300' size={18} />
               <input
                 placeholder='Enter your FIU email (e.g., abcd123@fiu.edu)'
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className='pl-10 border-2 rounded-xl border-[#8f8b86] w-full p-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-300'
+                readOnly={questionnaireCompleted}
+                className={`w-full px-4 py-3 rounded-lg border border-[var(--border)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all placeholder:text-[var(--text-secondary)] ${
+                  questionnaireCompleted ? 'bg-[var(--card-bg)] opacity-70 cursor-not-allowed' : 'bg-[var(--background)]'
+                }`}
               />
             </div>
-            {email && !isValidFiuEmail(email) && (
-              <p className="text-xs text-red-500 mt-2">Please enter a valid FIU email address (e.g., abcd123@fiu.edu)</p>
+            {questionnaireCompleted && (
+              <p className="text-xs text-[var(--text-secondary)] mt-1">Pre-filled from questionnaire</p>
+            )}
+            {email && !isValidFiuEmail(email) && !questionnaireCompleted && (
+              <p className="text-xs text-[var(--danger)] mt-2">Please enter a valid FIU email address (e.g., abcd123@fiu.edu)</p>
             )}
           </div>
 
-          <div className='mt-10'>
-            <h1 className='text-lg'>Password<span className="text-red-500 ml-1">*</span></h1>
+          <div>
+            <label className='block text-sm font-semibold text-[var(--text)] mb-2'>
+              Password<span className="text-[var(--danger)] ml-1">*</span>
+            </label>
             <div className='relative'>
-              <Lock className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 dark:text-gray-300' size={18} />
               <input
                 placeholder='Enter your password'
-                type='password'
+                type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className='pl-10 border-2 rounded-xl border-[#8f8b86] w-full p-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-300'
+                className='w-full px-4 py-3 pr-12 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all placeholder:text-[var(--text-secondary)]'
               />
+              <button
+                type='button'
+                onClick={() => setShowPassword(!showPassword)}
+                className='absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors cursor-pointer'
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
             </div>
           </div>
 
-          <div className='mt-5 flex row items-center'>
+          <div>
+            <label className='block text-sm font-semibold text-[var(--text)] mb-2'>
+              Confirm Password<span className="text-[var(--danger)] ml-1">*</span>
+            </label>
+            <div className='relative'>
+              <input
+                placeholder='Confirm your password'
+                type={showConfirmPassword ? 'text' : 'password'}
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                className='w-full px-4 py-3 pr-12 rounded-lg border border-[var(--border)] bg-[var(--background)] text-[var(--text)] focus:outline-none focus:ring-2 focus:ring-[var(--primary)] transition-all placeholder:text-[var(--text-secondary)]'
+              />
+              <button
+                type='button'
+                onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                className='absolute right-3 top-1/2 -translate-y-1/2 text-[var(--text-secondary)] hover:text-[var(--text)] transition-colors cursor-pointer'
+              >
+                {showConfirmPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
+            {confirmPassword && password !== confirmPassword && (
+              <p className="text-xs text-[var(--danger)] mt-2">Passwords do not match</p>
+            )}
+          </div>
+        </div>
+
+          {/* Terms Checkbox */}
+          <div className='flex items-center gap-3 mt-6'>
             <input
               type='checkbox'
               checked={termsAccepted}
               onChange={(e) => setTermsAccepted(e.target.checked)}
+              className='w-4 h-4 text-[var(--primary)] border-[var(--border)] rounded focus:ring-[var(--primary)] cursor-pointer flex-shrink-0'
             />
-            <h1 className='ml-2 text-sm'>
+            <label className='text-sm text-[var(--text)] leading-tight'>
               I agree to{' '}
               <button
                 type="button"
                 onClick={handleTermsClick}
-                className="text-[var(--primary)] underline hover:text-[var(--primary-hover)]"
+                className="text-[var(--primary)] hover:text-[var(--primary-hover)] font-semibold underline cursor-pointer"
               >
                 terms & policy
               </button>
-              <span className="text-red-500 ml-1">*</span>
-            </h1>
+              <span className="text-[var(--danger)] ml-1">*</span>
+            </label>
           </div>
 
-          <Link to='/home'>
-            <button
-              disabled={!isFormValid()}
-              className={`mt-10 border p-2 rounded-xl w-full text-white ${
-                isFormValid()
-                  ? 'bg-[#B6862C] border-[#B6862C] cursor-pointer hover:bg-[#9b7426]'
-                  : 'bg-gray-400 border-gray-400 cursor-not-allowed'
-              }`}
-            >
-              Sign up
-            </button>
-          </Link>
+          {error && (
+            <div className="mt-6 p-4 bg-[var(--danger)]/10 border border-[var(--danger)] text-[var(--danger)] rounded-lg text-sm">
+              {error}
+            </div>
+          )}
+
+          <button
+            onClick={handleSignUp}
+            disabled={!isFormValid() || loading}
+            className={`mt-6 w-full py-3 rounded-lg font-semibold transition-all ${
+              isFormValid() && !loading
+                ? 'bg-[var(--primary)] text-white hover:bg-[var(--primary-hover)] cursor-pointer'
+                : 'bg-gray-400 text-gray-200 cursor-not-allowed'
+            }`}
+          >
+            {loading ? 'Signing up...' : 'Create Account'}
+          </button>
 
           <TermsModal isOpen={isTermsModalOpen} onClose={() => setIsTermsModalOpen(false)} />
 
-          <div className='flex items-center mt-6'>
-            <div className='flex-grow h-px bg-[#8f8b86]'></div>
-            <span className='mx-4 text-gray-500'>or</span>
-            <div className='flex-grow h-px bg-[#8f8b86]'></div>
-          </div>
-
-          <div className='mt-17 flex-row gap-4 flex justify-center'>
-            <button onClick={googleAuth} className='flex items-center border border-[#8f8b86] rounded-xl p-3 mb-6 sm:mb-8 hover:bg-gray-50 transition cursor-pointer' >
-              <img src='https://www.svgrepo.com/show/475656/google-color.svg' alt='Google' className='w-6 h-6' />
-              <span className='text-gray-700 font-semibold text-base sm:text-lg ml-2'>Sign up with Google</span>
-            </button>
+          <div className='mt-6 text-center'>
+            <p className='text-sm text-[var(--text)]'>
+              Already have an account?{' '}
+              <Link to='/signin' className='text-[var(--primary)] hover:text-[var(--primary-hover)] font-semibold'>
+                Sign In
+              </Link>
+            </p>
           </div>
         </div>
       </div>

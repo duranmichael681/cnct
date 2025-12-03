@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Mail, ArrowLeft } from 'lucide-react'
+import { resetPasswordRequest } from '../services/auth'
 
 export default function ForgotPasswordPage() {
   const navigate = useNavigate()
   const [email, setEmail] = useState('')
   const [emailSent, setEmailSent] = useState(false)
   const [isValidEmail, setIsValidEmail] = useState(true)
+  const [loading, setLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
   useEffect(() => {
     document.title = 'CNCT | Forgot Password';
@@ -24,7 +27,7 @@ export default function ForgotPasswordPage() {
     return isValidFormat && isFIUEmail
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
     if (!email || !validateEmail(email)) {
@@ -33,15 +36,33 @@ export default function ForgotPasswordPage() {
     }
     
     setIsValidEmail(true)
-    // TODO: Integrate with Supabase to send password reset email
-    console.log('Sending password reset email to:', email)
-    setEmailSent(true)
+    setLoading(true)
+    setError(null)
+    
+    try {
+      await resetPasswordRequest(email)
+      setEmailSent(true)
+    } catch (err: any) {
+      console.error('Error sending reset email:', err)
+      setError(err.message || 'Failed to send reset email. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
-  const handleResend = () => {
-    // TODO: Integrate with Supabase to resend password reset email
-    console.log('Resending password reset email to:', email)
-    alert('Email sent successfully!')
+  const handleResend = async () => {
+    setLoading(true)
+    setError(null)
+    
+    try {
+      await resetPasswordRequest(email)
+      alert('Email sent successfully!')
+    } catch (err: any) {
+      console.error('Error resending reset email:', err)
+      setError(err.message || 'Failed to resend email. Please try again.')
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleCancel = () => {
@@ -100,6 +121,12 @@ export default function ForgotPasswordPage() {
                 )}
               </div>
 
+              {error && (
+                <div className="p-3 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 rounded-lg text-sm">
+                  {error}
+                </div>
+              )}
+
               <div className="flex gap-4">
                 <button
                   type="button"
@@ -110,9 +137,14 @@ export default function ForgotPasswordPage() {
                 </button>
                 <button
                   type="submit"
-                  className="flex-1 py-3 bg-[var(--primary)] text-white font-semibold rounded-lg hover:bg-[var(--primary-hover)] transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+                  disabled={loading}
+                  className={`flex-1 py-3 font-semibold rounded-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] ${
+                    loading 
+                      ? 'bg-gray-400 cursor-not-allowed' 
+                      : 'bg-[var(--primary)] hover:bg-[var(--primary-hover)] cursor-pointer'
+                  } text-white`}
                 >
-                  Send Reset Link
+                  {loading ? 'Sending...' : 'Send Reset Link'}
                 </button>
               </div>
             </form>

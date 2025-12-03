@@ -1,39 +1,159 @@
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { MoreVertical, Flag, Ban, Share2, Edit, UserPlus, UserMinus, Settings, X, Plus } from "lucide-react";
 import GroupList from "./GroupList";
 import { type UserProfile } from "../services/api";
+import { supabase } from "../supabase/client";
 
 interface ProfileHeaderProps {
   isOwnProfile?: boolean;
   userId?: string;
   userProfile : UserProfile;
+  onProfileUpdate?: () => void;
 }
 
-export default function ProfileHeader({ isOwnProfile = true, userId, userProfile  }: ProfileHeaderProps) {
+interface Group {
+  id: string;
+  name: string;
+  description?: string;
+  role?: string;
+}
+
+export default function ProfileHeader({ isOwnProfile = true, userId, userProfile, onProfileUpdate  }: ProfileHeaderProps) {
   const navigate = useNavigate();
   const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
   const [showUnfollowConfirm, setShowUnfollowConfirm] = useState(false);
-  const [profileImage, setProfileImage] = useState<string | null>(null);
   const [showEditGroups, setShowEditGroups] = useState(false);
-  const [groups, setGroups] = useState([
-    { id: 1, name: "Volleyball Events" },
-    { id: 2, name: "Art Club" },
-    { id: 3, name: "Tech Talks" },
-  ]);
+  const [groups, setGroups] = useState<Group[]>([]);
   const [newGroupName, setNewGroupName] = useState("");
+  const [eventsHostedCount, setEventsHostedCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleAddGroup = () => {
-    if (newGroupName.trim()) {
-      setGroups([...groups, { id: Date.now(), name: newGroupName.trim() }]);
-      setNewGroupName("");
+  // Fetch user stats and groups
+  useEffect(() => {
+    async function fetchUserData() {
+      if (!userProfile?.id) {
+        console.log('Skipping user data fetch - userProfile.id not available yet');
+        return;
+      }
+
+      try {
+        // Fetch events hosted count
+        const eventsResponse = await fetch(`http://localhost:5000/api/profile/${userProfile.id}/posts`);
+        const eventsData = await eventsResponse.json();
+        if (eventsData.success) {
+          setEventsHostedCount(eventsData.data?.length || 0);
+        }
+
+        // Fetch following count
+        const followingResponse = await fetch(`http://localhost:5000/api/profile/${userProfile.id}/following`);
+        const followingData = await followingResponse.json();
+        if (followingData.success) {
+          setFollowingCount(followingData.data?.length || 0);
+        }
+
+        // Fetch followers count
+        const followersResponse = await fetch(`http://localhost:5000/api/profile/${userProfile.id}/followers`);
+        const followersData = await followersResponse.json();
+        if (followersData.success) {
+          setFollowersCount(followersData.data?.length || 0);
+        }
+
+        // Fetch user groups
+        const groupsResponse = await fetch(`http://localhost:5000/api/groups/user/${userProfile.id}`);
+        const groupsData = await groupsResponse.json();
+        if (groupsData.success) {
+          setGroups(groupsData.data || []);
+        }
+
+        // Check if current user is following this profile (if not own profile)
+        if (!isOwnProfile) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            const followCheckResponse = await fetch(`http://localhost:5000/api/profile/${userProfile.id}/followers`);
+            const followCheckData = await followCheckResponse.json();
+            if (followCheckData.success) {
+              const isCurrentlyFollowing = followCheckData.data?.some((f: any) => f.following_user_id === user.id);
+              setIsFollowing(isCurrentlyFollowing || false);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      }
+    }
+
+    fetchUserData();
+  }, [userProfile?.id, isOwnProfile]);
+
+  const handleAddGroup = async () => {
+    if (!newGroupName.trim()) return;
+    if (!userProfile?.id) {
+      console.error('Cannot add group - userProfile.id not available');
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch('http://localhost:5000/api/groups', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ name: newGroupName.trim() })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Refetch groups to get updated list
+        const groupsResponse = await fetch(`http://localhost:5000/api/groups/user/${userProfile.id}`);
+        const groupsData = await groupsResponse.json();
+        if (groupsData.success) {
+          setGroups(groupsData.data || []);
+        }
+        setNewGroupName("");
+      }
+    } catch (error) {
+      console.error('Error adding group:', error);
     }
   };
 
-  const handleRemoveGroup = (groupId: number) => {
-    setGroups(groups.filter(g => g.id !== groupId));
+  const handleRemoveGroup = async (groupId: string) => {
+    if (!userProfile?.id) {
+      console.error('Cannot remove group - userProfile.id not available');
+      return;
+    }
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/leave`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        // Refetch groups to get updated list
+        const groupsResponse = await fetch(`http://localhost:5000/api/groups/user/${userProfile.id}`);
+        const groupsData = await groupsResponse.json();
+        if (groupsData.success) {
+          setGroups(groupsData.data || []);
+        }
+      }
+    } catch (error) {
+      console.error('Error removing group:', error);
+    }
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -42,14 +162,101 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
     }
   };
 
-  const handleImageUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFollowToggle = async () => {
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user || !userProfile?.id) return;
+
+      const response = await fetch(`http://localhost:5000/api/users/${userProfile.id}/follow`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ follower_id: user.id })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        setIsFollowing(result.action === 'followed');
+        // Update follower count
+        if (result.action === 'followed') {
+          setFollowersCount(prev => prev + 1);
+        } else {
+          setFollowersCount(prev => Math.max(0, prev - 1));
+        }
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    }
+  };
+
+  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
+    if (!file || !userProfile?.id) return;
+
+    try {
+      setUploading(true);
+
+      // Convert file to base64
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setProfileImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = () => resolve((reader.result as string).split(',')[1]);
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+
+      const base64File = await base64Promise;
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${userProfile.id}/avatar.${fileExt}`;
+
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to upload a profile picture');
+        setUploading(false);
+        return;
+      }
+
+      // Upload via backend API
+      const uploadResponse = await fetch('http://localhost:5000/api/storage/upload', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          file: base64File,
+          bucket: 'profile_pictures',
+          fileName: fileName,
+          contentType: file.type
+        })
+      });
+
+      const uploadResult = await uploadResponse.json();
+
+      if (!uploadResponse.ok || !uploadResult.success) {
+        throw new Error(uploadResult.error || 'Upload failed');
+      }
+
+      const publicUrl = uploadResult.data.url;
+
+      // Update user profile in database
+      const { error: updateError } = await supabase
+        .from('users')
+        .update({ profile_picture_url: publicUrl })
+        .eq('id', userProfile.id);
+
+      if (updateError) throw updateError;
+
+      // Trigger parent component to refetch profile
+      if (onProfileUpdate) {
+        onProfileUpdate();
+      }
+    } catch (error) {
+      console.error('Error uploading profile picture:', error);
+      alert('Failed to upload profile picture. Please try again.');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -58,27 +265,23 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
   };
 
   return (
-    <div className="relative bg-[var(--card-bg)] dark:bg-[var(--secondary)] border border-[var(--border)] rounded-lg p-6 flex flex-col lg:flex-row justify-between items-start gap-6">
+    <div className="relative bg-[var(--card-bg)] dark:bg-[var(--secondary)] border border-[var(--border)] rounded-lg p-6 flex flex-col lg:flex-row justify-between items-stretch gap-6">
       {/* Left Section: Profile Info */}
-      <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 flex-1 min-w-0">
-        {/* Profile Picture with Upload */}
-        <div className="relative group">
+      <div className="flex flex-col md:flex-row items-center md:items-start gap-6 flex-1 min-w-0">
+        {/* Profile Picture with Upload - Bigger on desktop */}
+        <div className="relative group flex-shrink-0">
           <div 
-            className={`w-32 h-32 bg-[var(--menucard)] dark:bg-[var(--tertiary)] rounded-full shrink-0 overflow-hidden ${isOwnProfile ? 'cursor-pointer' : ''}`}
-            onClick={isOwnProfile ? handleProfilePictureClick : undefined}
+            className={`w-48 h-48 lg:w-64 lg:h-64 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full overflow-hidden ${isOwnProfile && !uploading ? 'cursor-pointer' : ''}`}
+            onClick={isOwnProfile && !uploading ? handleProfilePictureClick : undefined}
           >
-            {profileImage ? (
-              <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
-            ) :
-             userProfile?.profile_picture_url ? (
+            {userProfile?.profile_picture_url ? (
               <img src={userProfile.profile_picture_url} alt="Profile" className="w-full h-full object-cover" />
-            ) :
-             (
+            ) : (
               <div className="w-full h-full" />
             )}
           </div>
           {/* Hover overlay with edit icon - only for own profile */}
-          {isOwnProfile && (
+          {isOwnProfile && !uploading && (
             <>
               <div 
                 className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
@@ -96,23 +299,78 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
               />
             </>
           )}
+          {uploading && (
+            <div className="absolute inset-0 bg-black bg-opacity-50 rounded-full flex items-center justify-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-white"></div>
+            </div>
+          )}
         </div>
 
-        <div>
-          <h1 className="text-3xl font-bold text-[var(--card-bg)] animate-fade-in">
-            {userProfile?.first_name} {userProfile?.last_name}
-          </h1>
-          <p className="text-lg font-semibold text-[var(--card-bg)] animate-fade-in-delay-1">
-            {userProfile?.pronouns} • {userProfile?.degree_program}
-          </p>
-          <p className="mt-2 max-w-2xl text-[var(--card-bg)] opacity-80 animate-fade-in-delay-2">
-            {userProfile?.description}
-          </p>
+        {/* Text Content - fills remaining space */}
+        <div className="flex-1 text-center md:text-left min-w-0 flex flex-col justify-between">
+          <div className="flex-1">
+            {/* Name and Info */}
+            <div className="flex flex-col lg:flex-row lg:items-center lg:gap-6">
+              <div className="flex-1 min-w-0">
+                <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold text-[var(--card-bg)] break-words">
+                  {userProfile?.first_name} {userProfile?.last_name}
+                </h1>
+                {userProfile?.degree_program && (
+                  <p className="text-base md:text-lg lg:text-2xl font-semibold text-[var(--card-bg)] mt-2">
+                    {userProfile.degree_program}
+                  </p>
+                )}
+                {userProfile?.pronouns && (
+                  <p className="text-sm md:text-base lg:text-xl text-[var(--card-bg)] opacity-80 mt-1 italic">
+                    {userProfile.pronouns}
+                  </p>
+                )}
+                
+                {/* Stats - Mobile only, right after name/pronouns/major */}
+                <div className="lg:hidden mt-3 flex flex-row gap-4 text-[var(--card-bg)]">
+                  <div className="flex flex-col items-center">
+                    <span className="text-xl font-bold">{eventsHostedCount}</span>
+                    <span className="text-xs opacity-80 whitespace-nowrap">{eventsHostedCount === 1 ? 'Event' : 'Events'}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-xl font-bold">{followersCount}</span>
+                    <span className="text-xs opacity-80">{followersCount === 1 ? 'Follower' : 'Followers'}</span>
+                  </div>
+                  <div className="flex flex-col items-center">
+                    <span className="text-xl font-bold">{followingCount}</span>
+                    <span className="text-xs opacity-80">Following</span>
+                  </div>
+                </div>
+              </div>
+              
+              {/* Stats - Desktop, vertically centered with name */}
+              <div className="hidden lg:flex flex-row gap-6 text-[var(--card-bg)]">
+                <div className="flex flex-col items-center">
+                  <span className="text-4xl font-bold">{eventsHostedCount}</span>
+                  <span className="text-sm opacity-80 whitespace-nowrap">{eventsHostedCount === 1 ? 'Event' : 'Events'}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-4xl font-bold">{followersCount}</span>
+                  <span className="text-sm opacity-80">{followersCount === 1 ? 'Follower' : 'Followers'}</span>
+                </div>
+                <div className="flex flex-col items-center">
+                  <span className="text-4xl font-bold">{followingCount}</span>
+                  <span className="text-sm opacity-80">Following</span>
+                </div>
+              </div>
+            </div>
 
-          {/* Buttons */}
-          <div className="mt-4 flex gap-3 items-center">
+            {/* Description */}
+            {userProfile?.description && (
+              <p className="mt-4 text-sm md:text-base lg:text-lg text-[var(--card-bg)] opacity-80 break-words">
+                {userProfile.description}
+              </p>
+            )}
+          </div>
+
+          {/* Buttons - positioned lower */}
+          <div className="mt-6 flex gap-3 items-center justify-center md:justify-start flex-wrap">
             {isOwnProfile ? (
-              // Admin view - Edit Profile button
               <button
                 onClick={() => navigate('/settings')}
                 className="flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-all cursor-pointer bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--background)] dark:text-[var(--secondary)] shadow-md hover:shadow-lg"
@@ -121,11 +379,9 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
                 Edit Profile
               </button>
             ) : (
-              // Guest view - Follow button
-              <>
-                {!isFollowing ? (
+              <>                {!isFollowing ? (
                   <button
-                    onClick={() => setIsFollowing(true)}
+                    onClick={handleFollowToggle}
                     className="flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-all cursor-pointer bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--background)] dark:text-[var(--secondary)] shadow-md hover:shadow-lg"
                   >
                     <UserPlus size={18} />
@@ -133,9 +389,9 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
                   </button>
                 ) : showUnfollowConfirm ? (
                   <button
-                    onClick={() => {
-                      setIsFollowing(false)
-                      setShowUnfollowConfirm(false)
+                    onClick={async () => {
+                      await handleFollowToggle();
+                      setShowUnfollowConfirm(false);
                     }}
                     className="flex items-center gap-2 px-6 py-2 rounded-full font-bold transition-all cursor-pointer bg-red-600 hover:bg-red-700 text-white shadow-md hover:shadow-lg"
                   >
@@ -154,27 +410,46 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
               </>
             )}
 
-            {/* More Options Button - Only show for guest profiles */}
             {!isOwnProfile && (
               <div className="relative">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
-                  className="p-2 rounded-lg bg-[var(--menucard)] dark:bg-[var(--tertiary)] hover:opacity-90 transition-all cursor-pointer text-[var(--text)]"
+                  className="p-2 rounded-lg bg-[var(--menucard)] dark:bg-[var(--tertiary)] hover:bg-[var(--menucard-hover)] transition-all cursor-pointer text-[var(--text)]"
                 >
                   <MoreVertical size={20} />
                 </button>
 
                 {showMenu && (
-                  <div className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] dark:bg-[var(--card-bg)] border-2 border-[var(--border)] rounded-lg shadow-2xl overflow-hidden z-20">
-                    <button className="w-full px-4 py-2.5 text-left hover:bg-[var(--menucard)] dark:hover:bg-[var(--menucard)] flex items-center gap-2 text-[var(--text)] font-medium cursor-pointer transition-colors">
+                  <div className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] border-2 border-[var(--border)] rounded-lg shadow-2xl overflow-hidden z-20">
+                    <button 
+                      onClick={() => {
+                        setShowMenu(false);
+                        alert('User reported. Our team will review this report.');
+                      }}
+                      className="w-full px-4 py-2.5 text-left hover:bg-[var(--menucard)] flex items-center gap-2 text-[var(--text)] font-medium cursor-pointer transition-colors"
+                    >
                       <Flag size={16} />
                       Report
                     </button>
-                    <button className="w-full px-4 py-2.5 text-left hover:bg-[var(--menucard)] dark:hover:bg-[var(--menucard)] flex items-center gap-2 text-[var(--danger)] font-medium cursor-pointer transition-colors">
+                    <button 
+                      onClick={() => {
+                        setShowMenu(false);
+                        alert('User blocked. You will no longer see their content.');
+                      }}
+                      className="w-full px-4 py-2.5 text-left hover:bg-[var(--menucard)] flex items-center gap-2 text-[var(--danger)] font-medium cursor-pointer transition-colors"
+                    >
                       <Ban size={16} />
                       Block User
                     </button>
-                    <button className="w-full px-4 py-2.5 text-left hover:bg-[var(--menucard)] dark:hover:bg-[var(--menucard)] flex items-center gap-2 text-[var(--text)] font-medium cursor-pointer transition-colors">
+                    <button 
+                      onClick={() => {
+                        setShowMenu(false);
+                        const profileUrl = window.location.href;
+                        navigator.clipboard.writeText(profileUrl);
+                        alert('Profile link copied to clipboard!');
+                      }}
+                      className="w-full px-4 py-2.5 text-left hover:bg-[var(--menucard)] flex items-center gap-2 text-[var(--text)] font-medium cursor-pointer transition-colors"
+                    >
                       <Share2 size={16} />
                       Share
                     </button>
@@ -186,9 +461,16 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
         </div>
       </div>
 
-      {/* Right Section: Scrollable Group List */}
-      <div className="w-full lg:w-[30%] lg:max-w-[350px] flex-shrink-0">
-        <GroupList groups={groups} />
+      {/* Right Section: Groups */}
+      <div className="w-full lg:w-[30%] lg:max-w-[350px] flex-shrink-0 hidden lg:block">
+        <div className="bg-[var(--menucard)] dark:bg-[var(--tertiary)] border border-[var(--border)] rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-[var(--card-bg)] mb-3">Groups</h3>
+          {groups.length === 0 ? (
+            <p className="text-center text-[var(--text)] opacity-60 py-4">No groups</p>
+          ) : (
+            <GroupList groups={groups} />
+          )}
+        </div>
         {isOwnProfile && (
           <button
             onClick={() => setShowEditGroups(true)}
@@ -252,26 +534,28 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
                   Your Groups ({groups.length})
                 </h3>
                 {groups.length === 0 ? (
-                  <p className="text-center text-[var(--text-secondary)] py-8">
-                    No groups yet. Add one above!
+                  <p className="text-center text-[var(--text)] opacity-60 py-8">
+                    No groups
                   </p>
                 ) : (
-                  groups.map((group) => (
-                    <div
-                      key={group.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-[var(--menucard)] dark:bg-[var(--tertiary)] border border-[var(--border)]"
-                    >
-                      <span className="font-semibold text-[var(--text)] break-words flex-1 mr-2">
-                        {group.name}
-                      </span>
-                      <button
-                        onClick={() => handleRemoveGroup(group.id)}
-                        className="p-1.5 hover:bg-red-500 hover:text-white rounded-full transition-all cursor-pointer text-[var(--danger)]"
+                  <div className="space-y-2">
+                    {groups.map((group) => (
+                      <div
+                        key={group.id}
+                        className="flex items-center justify-between p-3 rounded-lg bg-[var(--menucard)] dark:bg-[var(--tertiary)] border border-[var(--border)]"
                       >
-                        <X size={18} />
-                      </button>
-                    </div>
-                  ))
+                        <span className="font-semibold text-[var(--text)] break-words flex-1 mr-2">
+                          {group.name}
+                        </span>
+                        <button
+                          onClick={() => handleRemoveGroup(group.id)}
+                          className="p-1.5 hover:bg-red-500 hover:text-white rounded-full transition-all cursor-pointer text-[var(--danger)]"
+                        >
+                          <X size={18} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             </div>

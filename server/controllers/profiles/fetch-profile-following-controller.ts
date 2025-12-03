@@ -1,4 +1,4 @@
-import profileFollowingService from "../../services/profiles/fetch-profile-following-service.js"
+import profileFollowingService from "../../services/profiles/fetch-profile-following-service.ts"
 
 export default async function returnProfileFollowing(userId: string) {
     if (false)

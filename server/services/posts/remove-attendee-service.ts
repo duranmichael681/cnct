@@ -5,12 +5,12 @@ export interface RemoveAttendeeResponse {
     message: string;
 }
 
-export async function removeAttendeeService(eventId: number, userId: number): Promise<RemoveAttendeeResponse> {
+export async function removeAttendeeService(postId: number, userId: number): Promise<RemoveAttendeeResponse> {
     try {
-        const { error } = await supabaseAdmin
+        const { data, error } = await supabaseAdmin
             .from('attendees')
             .delete()
-            .eq('event_id', eventId)
+            .eq('posts_id', postId)
             .eq('user_id', userId);
 
         if (error) {

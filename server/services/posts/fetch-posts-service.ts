@@ -28,9 +28,9 @@ export async function fetchPostService(): Promise<Post[]> {
             rsvp: item.rsvp
         }));
         
-        return events;
+        return posts;
     } catch (error) {
-        console.error('Error in fetchEvents:', error);
+        console.error('Error in fetchPosts:', error);
         throw error;
     }
 }

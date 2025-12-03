@@ -2,6 +2,10 @@ import { useState, useRef, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate, useLocation } from "react-router-dom";
 import { MoreVertical, Flag, Ban, Share2, MapPin, Clock, MessageCircle, Link, Send, EyeOff, Unlink, Pencil, Trash2, ThumbsUp, ThumbsDown, Edit3, Plus, X } from "lucide-react";
+import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
+import { DatePicker } from '@mui/x-date-pickers/DatePicker';
+import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs';
+import dayjs, { Dayjs } from 'dayjs';
 import ShareModal from "./ShareModal";
 import { supabase } from "../lib/supabaseClient";
 import type { Post } from "../services/api";
@@ -20,6 +24,7 @@ interface Comment {
   id: string;
   userId: string;
   username: string;
+  profilePicture: string | null;
   text: string;
   timestamp: string;
   upvotes: number;
@@ -30,6 +35,7 @@ interface Comment {
 interface PostCardProps {
   event: Post;
   isOwnProfile?: boolean;
+  initialOpen?: boolean;
   onUpdate?: (postId: string, updatedData: {
     eventName: string;
     location: string;
@@ -38,13 +44,16 @@ interface PostCardProps {
     tags: string[];
   }) => void;
   onDelete?: (postId: string) => void;
+  onClose?: () => void;
 }
 
 export default function PostCard({
   event,
   isOwnProfile = false,
+  initialOpen = false,
   onUpdate,
   onDelete,
+  onClose,
 }: PostCardProps) {
   const navigate = useNavigate();
   const location_route = useLocation();
@@ -56,15 +65,41 @@ export default function PostCard({
   const [organizerUsername, setOrganizerUsername] = useState<string>("");
   const [organizerProfilePic, setOrganizerProfilePic] = useState<string | null>(null);
   const [timeAgo, setTimeAgo] = useState<string>("");
+  const [locationDisplay, setLocationDisplay] = useState<string>("");
+  
+  // Format location display helper
+  const formatLocationDisplay = (buildingStr: string | null, buildingsList: Building[]): string => {
+    if (!buildingStr) return 'Location TBD';
+    
+    // Check if there's a room number (e.g., "PG6 123" or "PG6-123")
+    const match = buildingStr.match(/^([A-Z0-9]+)[\s-]*([\d]+)?$/i);
+    
+    if (match) {
+      const buildingCode = match[1].toUpperCase();
+      const roomNumber = match[2];
+      
+      // Find the full building name
+      const building = buildingsList.find(b => b.building_code === buildingCode);
+      const fullBuildingName = building ? `${buildingCode} - ${building.building_name}` : buildingCode;
+      
+      // Add room number if it exists
+      return roomNumber ? `${fullBuildingName}, Room ${roomNumber}` : fullBuildingName;
+    }
+    
+    // If format doesn't match, try to find just the building code
+    const building = buildingsList.find(b => b.building_code === buildingStr.toUpperCase());
+    return building ? `${building.building_code} - ${building.building_name}` : buildingStr;
+  };
   
   // UI State
-  const [isOpen, setIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(initialOpen);
   const [showMenu, setShowMenu] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [editedEventName, setEditedEventName] = useState("");
   const [editedBuildingCode, setEditedBuildingCode] = useState("");
   const [editedRoomNumber, setEditedRoomNumber] = useState("");
+  const [editedDate, setEditedDate] = useState<Dayjs | null>(dayjs());
   const [editedTimeHour, setEditedTimeHour] = useState("12");
   const [editedTimeMinute, setEditedTimeMinute] = useState("00");
   const [editedTimePeriod, setEditedTimePeriod] = useState("PM");
@@ -104,7 +139,11 @@ export default function PostCard({
         .from('fiu_buildings')
         .select('building_code, building_name')
         .order('building_code', { ascending: true });
-      if (buildingsData) setBuildings(buildingsData);
+      if (buildingsData) {
+        setBuildings(buildingsData);
+        // Set location display once buildings are loaded
+        setLocationDisplay(formatLocationDisplay(event.building, buildingsData));
+      }
 
       // Fetch all tags
       const { data: tagsData } = await supabase
@@ -145,6 +184,69 @@ export default function PostCard({
         setOrganizerProfilePic(userData.profile_picture_url && userData.profile_picture_url.trim() ? userData.profile_picture_url : null);
       }
 
+      // Fetch RSVP status and count
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        // Check if current user has RSVP'd
+        const { data: rsvpData } = await supabase
+          .from('attendees')
+          .select('id')
+          .eq('posts_id', event.id)
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+        
+        setIsRsvpd(!!rsvpData);
+
+        // Get total RSVP count
+        const { count } = await supabase
+          .from('attendees')
+          .select('*', { count: 'exact', head: true })
+          .eq('posts_id', event.id);
+        
+        setRsvpCount(count || 0);
+      }
+
+      // Fetch comments
+      try {
+        const response = await fetch(`http://localhost:5000/api/comments/post/${event.id}`);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+          const formatTimeAgo = (timestamp: string) => {
+            const now = new Date();
+            const created = new Date(timestamp);
+            const diffMs = now.getTime() - created.getTime();
+            const diffMins = Math.floor(diffMs / 60000);
+            
+            if (diffMins < 1) return 'just now';
+            if (diffMins < 60) return `${diffMins}m ago`;
+            const diffHours = Math.floor(diffMins / 60);
+            if (diffHours < 24) return `${diffHours}h ago`;
+            const diffDays = Math.floor(diffHours / 24);
+            if (diffDays < 7) return `${diffDays}d ago`;
+            const diffWeeks = Math.floor(diffDays / 7);
+            if (diffWeeks < 4) return `${diffWeeks}w ago`;
+            const diffMonths = Math.floor(diffDays / 30);
+            return `${diffMonths}mo ago`;
+          };
+          
+          const formattedComments = result.data.map((c: any) => ({
+            id: c.id,
+            userId: c.user_id,
+            username: c.users ? `${c.users.first_name || ''} ${c.users.last_name || ''}`.trim() : 'Unknown',
+            profilePicture: c.users?.profile_picture_url || null,
+            text: c.text,
+            timestamp: formatTimeAgo(c.created_at),
+            upvotes: c.upvotes,
+            downvotes: c.downvotes,
+            userVote: null // TODO: Fetch user's vote from comment_votes
+          }));
+          setComments(formattedComments);
+        }
+      } catch (error) {
+        console.error('Error fetching comments:', error);
+      }
+
       // Fetch RSVP info
       const { data: attendeesData, error: attendeesError } = await supabase
         .from('attendees')
@@ -179,14 +281,14 @@ export default function PostCard({
     }
 
     fetchData();
-  }, [event.id, event.organizer_id, event.created_at]);
+  }, [event.id, event.organizer_id, event.created_at, event.building]);
 
   // Determine if we're on home or discover page
   const isHomeOrDiscover = location_route.pathname === '/home' || location_route.pathname === '/discover';
 
   const handleUserClick = (e: React.MouseEvent) => {
     e.stopPropagation();
-    navigate(`/profile/${mockUserId}`);
+    navigate(`/profile/${event.organizer_id}`);
   };
 
   const handleCommentUserClick = (e: React.MouseEvent, userId: string) => {
@@ -199,42 +301,87 @@ export default function PostCard({
     setIsRsvpLoading(true);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Toggle RSVP state
-      const newRsvpState = !isRsvpd;
-      setIsRsvpd(newRsvpState);
-      setRsvpCount(prev => newRsvpState ? prev + 1 : prev - 1);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to RSVP');
+        setIsRsvpLoading(false);
+        return;
+      }
 
-      // In a real app, make API call here:
-      // await fetch(`/api/events/${postId}/rsvp`, { method: newRsvpState ? 'POST' : 'DELETE' });
+      const response = await fetch(`http://localhost:5000/api/posts/${event.id}/toggle-attendance`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // Update UI based on action
+        const newRsvpState = result.action === 'joined';
+        setIsRsvpd(newRsvpState);
+        setRsvpCount(prev => newRsvpState ? prev + 1 : prev - 1);
+      } else {
+        console.error('RSVP failed:', result.error);
+        alert('Failed to update RSVP');
+      }
     } catch (error) {
       console.error('Failed to RSVP:', error);
+      alert('Failed to update RSVP');
     } finally {
       setIsRsvpLoading(false);
     }
   };
 
-  const handleCommentSubmit = (e: React.FormEvent) => {
+  const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (newComment.trim()) {
-      const comment: Comment = {
-        id: Date.now().toString(),
-        userId: mockUserId,
-        username: "currentUser",
-        text: newComment,
-        timestamp: "Just now",
-        upvotes: 0,
-        downvotes: 0,
-        userVote: null,
-      };
-      setComments(prev => [comment, ...prev]); // Add to top
-      setNewComment("");
-      setShowEmojiPicker(false);
+    if (!newComment.trim()) return;
 
-      // In a real app, make API call here:
-      // await fetch(`/api/events/${postId}/comments`, { method: 'POST', body: JSON.stringify({ text: newComment }) });
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to comment');
+        return;
+      }
+
+      const response = await fetch('http://localhost:5000/api/comments', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          post_id: event.id,
+          text: newComment.trim()
+        })
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // Add new comment to top of list
+        const newCommentData: Comment = {
+          id: result.data.id,
+          userId: result.data.user_id,
+          username: result.data.users ? `${result.data.users.first_name || ''} ${result.data.users.last_name || ''}`.trim() : 'Unknown',
+          text: result.data.text,
+          timestamp: 'Just now',
+          upvotes: 0,
+          downvotes: 0,
+          userVote: null
+        };
+        setComments(prev => [newCommentData, ...prev]);
+        setNewComment('');
+        setShowEmojiPicker(false);
+      } else {
+        console.error('Comment creation failed:', result.error);
+        alert('Failed to post comment');
+      }
+    } catch (error) {
+      console.error('Error posting comment:', error);
+      alert('Failed to post comment');
     }
   };
 
@@ -263,10 +410,34 @@ export default function PostCard({
     setEditingCommentText("");
   };
 
-  const handleDeleteComment = (commentId: string) => {
-    if (confirm('Are you sure you want to delete this comment?')) {
-      setComments(prev => prev.filter(comment => comment.id !== commentId));
-      // In a real app: await fetch(`/api/events/${postId}/comments/${commentId}`, { method: 'DELETE' });
+  const handleDeleteComment = async (commentId: string) => {
+    if (!confirm('Are you sure you want to delete this comment?')) return;
+
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to delete comments');
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`
+        }
+      });
+
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        setComments(prev => prev.filter(comment => comment.id !== commentId));
+      } else {
+        console.error('Comment deletion failed:', result.error);
+        alert(result.error || 'Failed to delete comment');
+      }
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      alert('Failed to delete comment');
     }
   };
 
@@ -286,32 +457,53 @@ export default function PostCard({
     setShowComments(!showComments);
   };
 
-  const handleCommentVote = (commentId: string, voteType: 'up' | 'down') => {
-    setComments(prev =>
-      prev.map(comment => {
-        if (comment.id !== commentId) return comment;
+  const handleCommentVote = async (commentId: string, voteType: 'up' | 'down') => {
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('Please log in to vote');
+        return;
+      }
 
-        const currentVote = comment.userVote;
-        let newUpvotes = comment.upvotes;
-        let newDownvotes = comment.downvotes;
-        let newUserVote: 'up' | 'down' | null = voteType;
+      // Get current vote for this comment
+      const currentComment = comments.find(c => c.id === commentId);
+      const currentVote = currentComment?.userVote;
+      
+      // Determine new vote (toggle if same, otherwise switch)
+      const newVote = currentVote === voteType ? null : voteType;
 
-        // Remove previous vote if exists
-        if (currentVote === 'up') newUpvotes--;
-        if (currentVote === 'down') newDownvotes--;
+      const response = await fetch(`http://localhost:5000/api/comments/${commentId}/vote`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ vote_type: newVote })
+      });
 
-        // Toggle if clicking same vote, otherwise apply new vote
-        if (currentVote === voteType) {
-          newUserVote = null;
-        } else {
-          if (voteType === 'up') newUpvotes++;
-          if (voteType === 'down') newDownvotes++;
-        }
-
-        return { ...comment, upvotes: newUpvotes, downvotes: newDownvotes, userVote: newUserVote };
-      })
-    );
-    // In a real app: await fetch(`/api/events/${postId}/comments/${commentId}/vote`, { method: 'POST', body: JSON.stringify({ voteType }) });
+      const result = await response.json();
+      
+      if (response.ok && result.success) {
+        // Update local state with new vote counts
+        setComments(prev =>
+          prev.map(comment => {
+            if (comment.id !== commentId) return comment;
+            return {
+              ...comment,
+              upvotes: result.data.upvotes,
+              downvotes: result.data.downvotes,
+              userVote: newVote
+            };
+          })
+        );
+      } else {
+        console.error('Vote failed:', result.error);
+        alert('Failed to vote on comment');
+      }
+    } catch (error) {
+      console.error('Error voting on comment:', error);
+      alert('Failed to vote on comment');
+    }
   };
 
   const handleShare = (e: React.MouseEvent) => {
@@ -358,20 +550,25 @@ export default function PostCard({
     setEditedDescription(event.body);
     setEditedTags(postTags.map(t => t.id));
     
-    // Parse location into building code and room number
-    const locationMatch = event.building?.match(/^([A-Z0-9]+)\s*(\d+)?$/);
-    if (locationMatch) {
-      setEditedBuildingCode(locationMatch[1]);
-      setEditedRoomNumber(locationMatch[2] || "");
-    } else {
-      setEditedBuildingCode(event.building || "");
-      setEditedRoomNumber("");
-    }
+    // Parse location - building field now only contains building_code (FK constraint)
+    // Room numbers are not stored in the database currently
+    setEditedBuildingCode(event.building || "");
+    setEditedRoomNumber(""); // Room number feature not yet implemented in schema
     
-    // Parse time from start_date
-    const startDate = new Date(event.start_date);
-    let hours = startDate.getHours();
-    const minutes = startDate.getMinutes();
+    // Parse date and time from start_date
+    // Database stores 'timestamp without time zone', so parse it as-is without timezone conversion
+    const dateString = event.start_date.includes('T') ? event.start_date.split('T')[0] : event.start_date.split(' ')[0];
+    const timeString = event.start_date.includes('T') ? event.start_date.split('T')[1].substring(0, 5) : event.start_date.split(' ')[1].substring(0, 5);
+    
+    const startDate = new Date(event.start_date.replace('Z', ''));
+    
+    // Set the date for the date picker
+    setEditedDate(dayjs(startDate));
+    
+    // Get hours and minutes directly from the timestamp string
+    const [hourStr, minuteStr] = timeString.split(':');
+    let hours = parseInt(hourStr);
+    const minutes = parseInt(minuteStr);
     const period = hours >= 12 ? 'PM' : 'AM';
     hours = hours % 12 || 12;
     
@@ -382,23 +579,110 @@ export default function PostCard({
     setShowEditModal(true);
   };
 
-  const handleSavePostEdit = () => {
-    const formattedTime = `${editedTimeHour}:${editedTimeMinute} ${editedTimePeriod} EST`;
-    const formattedLocation = editedRoomNumber 
-      ? `${editedBuildingCode} ${editedRoomNumber}`
-      : editedBuildingCode;
-    
-    if (onUpdate) {
-      onUpdate(event.id, {
-        eventName: editedEventName,
-        location: formattedLocation,
-        time: formattedTime,
-        description: editedDescription,
-        tags: editedTags,
+  const handleSavePostEdit = async () => {
+    try {
+      // Get auth token
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        alert('You must be logged in to edit a post');
+        return;
+      }
+
+      // Format location - building field in DB only stores building_code (FK constraint)
+      // Room number is not stored separately in current schema
+      const formattedLocation = editedBuildingCode || null;
+
+      // Format date and time into ISO string using edited date
+      if (!editedDate) {
+        alert('Please select a date');
+        return;
+      }
+      
+      // Convert time to 24-hour format
+      let hours = parseInt(editedTimeHour);
+      if (editedTimePeriod === 'PM' && hours !== 12) hours += 12;
+      if (editedTimePeriod === 'AM' && hours === 12) hours = 0;
+      
+      // Build timestamp string directly without Date constructor to avoid any timezone conversion
+      const year = editedDate.year();
+      const month = editedDate.month() + 1; // dayjs months are 0-11
+      const day = editedDate.date();
+      const minutes = parseInt(editedTimeMinute);
+      
+      // Format as 'YYYY-MM-DD HH:MM:SS' - direct string formatting
+      const pad = (n: number) => n.toString().padStart(2, '0');
+      const isoString = `${year}-${pad(month)}-${pad(day)} ${pad(hours)}:${pad(minutes)}:00`;
+
+      const updatePayload = {
+        title: editedEventName,
+        body: editedDescription,
+        building: formattedLocation,
+        start_date: isoString,
+        // Note: Tags update would require separate API call to post_tags table
+      };
+
+      const response = await fetch(`http://localhost:5000/api/posts/${event.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(updatePayload)
       });
+
+      const result = await response.json();
+
+      if (response.ok && result.success) {
+        // Update tags if they changed
+        const currentTagIds = postTags.map(t => t.id).sort();
+        const newTagIds = [...editedTags].sort();
+        const tagsChanged = JSON.stringify(currentTagIds) !== JSON.stringify(newTagIds);
+
+        if (tagsChanged) {
+          // Delete all existing tags
+          await supabase
+            .from('post_tags')
+            .delete()
+            .eq('post_id', event.id);
+
+          // Insert new tags
+          if (editedTags.length > 0) {
+            const tagInserts = editedTags.map(tagId => ({
+              post_id: event.id,
+              tag_id: parseInt(tagId)
+            }));
+
+            await supabase
+              .from('post_tags')
+              .insert(tagInserts);
+          }
+          
+          // Refetch tags to update UI immediately
+          const { data: postTagsData, error: tagsError } = await supabase
+            .from('post_tags')
+            .select('tag_id, tags!inner(id, code)')
+            .eq('post_id', event.id);
+          
+          if (!tagsError && postTagsData) {
+            const tags: Tag[] = postTagsData
+              .map((pt: any) => ({
+                id: String(pt.tags.id),
+                code: String(pt.tags.code)
+              }))
+              .filter((t: Tag) => t.id && t.code);
+            setPostTags(tags);
+          }
+        }
+
+        alert('Post updated successfully!');
+        setShowEditModal(false);
+      } else {
+        alert(`Failed to update post: ${result.error || 'Unknown error'}`);
+      }
+    } catch (error) {
+      console.error('Error updating post:', error);
+      alert('An error occurred while updating the post');
     }
-    
-    setShowEditModal(false);
   };
 
   const handleAddTag = () => {
@@ -413,14 +697,43 @@ export default function PostCard({
     setEditedTags(editedTags.filter(tag => tag !== tagToRemove));
   };
 
-  const handleDeletePost = (e: React.MouseEvent) => {
+  const handleDeletePost = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setShowMenu(false);
     if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
-      if (onDelete) {
-        onDelete(event.id);
+      try {
+        // Get auth token
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!session) {
+          alert('You must be logged in to delete a post');
+          return;
+        }
+
+        const response = await fetch(`http://localhost:5000/api/posts/${event.id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        const result = await response.json();
+
+        if (response.ok && result.success) {
+          alert('Post deleted successfully!');
+          // Call the parent onDelete callback if provided
+          if (onDelete) {
+            onDelete(event.id);
+          }
+          // Refresh the page or navigate away
+          window.location.reload();
+        } else {
+          alert(`Failed to delete post: ${result.error || 'Unknown error'}`);
+        }
+      } catch (error) {
+        console.error('Error deleting post:', error);
+        alert('An error occurred while deleting the post');
       }
-      // In a real app: await fetch(`/api/events/${event.id}`, { method: 'DELETE' });
     }
   };
 
@@ -430,7 +743,7 @@ export default function PostCard({
     <>
       {/* Compact Card (preview) */}
       <div
-        className="cursor-pointer bg-[var(--card-bg)] rounded-lg shadow-md p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.99] border border-transparent hover:border-[var(--primary)] relative"
+        className="cursor-pointer bg-[var(--card-bg)] rounded-lg shadow-md p-3 md:p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.99] border border-transparent hover:border-[var(--primary)] relative"
       >
         {/* Three-dot menu button */}
         <div className="absolute top-4 right-4">
@@ -455,13 +768,15 @@ export default function PostCard({
                 <Flag size={16} />
                 Report
               </button>
-              <button
-                onClick={handleBlockUser}
-                className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
-              >
-                <Ban size={16} />
-                Block User
-              </button>
+              {!isOwnProfile && (
+                <button
+                  onClick={handleBlockUser}
+                  className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
+                >
+                  <Ban size={16} />
+                  Block User
+                </button>
+              )}
               {isHomeOrDiscover ? (
                 <button
                   onClick={handleNotInterested}
@@ -503,49 +818,50 @@ export default function PostCard({
         <div onClick={() => setIsOpen(true)}>
           {/* User + Timestamp */}
           <div 
-            className="flex items-center gap-3 mb-3 cursor-pointer hover:opacity-80 transition-opacity w-fit"
+            className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3 cursor-pointer hover:opacity-80 transition-opacity max-w-full"
             onClick={handleUserClick}
           >
-            {organizerProfilePic ? (
-              <img 
-                src={organizerProfilePic} 
-                alt={organizerUsername} 
-                className="w-10 h-10 rounded-full object-cover" 
-                onError={(e) => {
-                  e.currentTarget.style.display = 'none';
-                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                }}
-              />
-            ) : null}
-            <div className={`w-10 h-10 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full ${organizerProfilePic ? 'hidden' : ''}`} />
-            <div>
-              <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">{organizerUsername || 'Loading...'}</p>
-              <p className="text-sm text-[var(--text-secondary)]">{timeAgo}</p>
+            {/* Circular profile picture container */}
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)]">
+              {organizerProfilePic ? (
+                <img 
+                  src={organizerProfilePic} 
+                  alt={organizerUsername} 
+                  className="w-full h-full object-cover" 
+                  onError={(e) => {
+                    e.currentTarget.style.display = 'none';
+                  }}
+                />
+              ) : null}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold text-sm md:text-base text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate">{organizerUsername || 'Loading...'}</p>
+              <p className="text-xs md:text-sm text-[var(--text-secondary)]">{timeAgo}</p>
             </div>
           </div>
 
           {/* Event Name */}
-          <h3 className="text-lg font-semibold text-[var(--text)] mb-3 hover:text-[var(--primary)] transition-colors">
+          <h3 className="text-base md:text-lg font-semibold text-[var(--text)] mb-2 md:mb-3 hover:text-[var(--primary)] transition-colors line-clamp-2">
             {event.title}
           </h3>
 
           {/* Event Info */}
-          <div className="flex flex-wrap items-center gap-4 mb-2 text-sm text-[var(--text-secondary)]">
+          <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-2 text-xs md:text-sm text-[var(--text-secondary)]">
             <div className="flex items-center gap-1">
-              <MapPin size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-              <span>{event.building || 'Location TBD'}</span>
+              <MapPin size={14} className="md:w-4 md:h-4 fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)] flex-shrink-0" />
+              <span className="truncate">{locationDisplay || 'Location TBD'}</span>
             </div>
 
             <div className="flex items-center gap-1">
-              <Clock size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-              <span>{new Date(event.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+              <Clock size={14} className="md:w-4 md:h-4 fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)] flex-shrink-0" />
+              <span className="truncate">{new Date(event.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
             </div>
           </div>
 
           {/* Post Image */}
-          <div className="w-full h-48 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden group">
+          <div className="w-full h-48 md:h-56 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden group flex items-center justify-center">
             {event.post_picture_url ? (
-              <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[var(--primary)]/30 via-[var(--secondary)]/30 to-[var(--tertiary)]/30 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
                 <div className="text-[var(--text-secondary)] text-4xl font-bold opacity-20">📸</div>
@@ -554,9 +870,12 @@ export default function PostCard({
           </div>
 
           {/* Action Buttons */}
-          <div className="flex items-center gap-6 mt-3 text-[var(--text-secondary)]">
+          <div className="flex items-center gap-4 md:gap-6 mt-2 md:mt-3 text-[var(--text-secondary)]">
             <button
-              onClick={handleRsvp}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRsvp(e);
+              }}
               disabled={isRsvpLoading}
               onMouseEnter={() => setIsRsvpHovered(true)}
               onMouseLeave={() => setIsRsvpHovered(false)}
@@ -566,29 +885,35 @@ export default function PostCard({
               aria-label={isRsvpd ? 'Cancel RSVP' : 'RSVP to event'}
             >
               {isRsvpd && isRsvpHovered ? (
-                <Unlink size={20} className="stroke-[var(--danger)]" />
+                <Unlink size={16} className="md:w-5 md:h-5 stroke-[var(--danger)]" />
               ) : (
-                <Link size={20} className={`${isRsvpd ? 'fill-[var(--primary)]' : 'fill-transparent'} stroke-[var(--primary)]`} />
+                <Link size={16} className={`md:w-5 md:h-5 ${isRsvpd ? 'fill-[var(--primary)]' : 'fill-transparent'} stroke-[var(--primary)]`} />
               )}
-              <span className="text-sm">{rsvpCount}</span>
+              <span className="text-xs md:text-sm">{rsvpCount}</span>
             </button>
 
             <button
-              onClick={toggleComments}
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleComments(e);
+              }}
               className="flex items-center gap-1 cursor-pointer hover:text-[var(--primary)] transition-colors hover:scale-110 transform duration-200"
               aria-label={showComments ? "Hide comments" : "Show comments"}
             >
-              <MessageCircle size={20} className="fill-transparent stroke-[var(--primary)]" />
-              <span className="text-sm">{comments.length}</span>
+              <MessageCircle size={16} className="md:w-5 md:h-5 fill-transparent stroke-[var(--primary)]" />
+              <span className="text-xs md:text-sm">{comments.length}</span>
             </button>
 
             <button
-              onClick={handleShare}
+              onClick={(e) => {
+                e.stopPropagation();
+                handleShare(e);
+              }}
               className="flex items-center gap-1 cursor-pointer hover:text-[var(--primary)] transition-colors hover:scale-110 transform duration-200"
               aria-label="Share event"
             >
-              <Share2 size={20} className="fill-transparent stroke-[var(--primary)]" />
-              <span className="text-sm">Share</span>
+              <Share2 size={16} className="md:w-5 md:h-5 fill-transparent stroke-[var(--primary)]" />
+              <span className="text-xs md:text-sm">Share</span>
             </button>
           </div>
         </div>
@@ -601,6 +926,7 @@ export default function PostCard({
           onClick={() => {
             setIsOpen(false);
             setShowMenu(false);
+            onClose?.();
           }}
         >
           <div
@@ -621,7 +947,10 @@ export default function PostCard({
               </button>
               
               {showMenu && (
-                <div className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] border border-[var(--border)] rounded-lg shadow-lg z-10">
+                <div 
+                  onClick={(e) => e.stopPropagation()}
+                  className="absolute right-0 mt-2 w-48 bg-[var(--card-bg)] border border-[var(--border)] rounded-lg shadow-lg z-10"
+                >
                   <button
                     onClick={handleReport}
                     className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--text)] cursor-pointer rounded-t-lg"
@@ -629,13 +958,15 @@ export default function PostCard({
                     <Flag size={16} />
                     Report
                   </button>
-                  <button
-                    onClick={handleBlockUser}
-                    className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
-                  >
-                    <Ban size={16} />
-                    Block User
-                  </button>
+                  {!isOwnProfile && (
+                    <button
+                      onClick={handleBlockUser}
+                      className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
+                    >
+                      <Ban size={16} />
+                      Block User
+                    </button>
+                  )}
                   {isHomeOrDiscover ? (
                     <button
                       onClick={handleNotInterested}
@@ -679,6 +1010,7 @@ export default function PostCard({
               onClick={() => {
                 setIsOpen(false);
                 setShowMenu(false);
+                onClose?.();
               }}
               className="absolute top-5 right-5.5 text-[var(--text-secondary)] hover:text-[var(--text)] text-2xl hover:rotate-90 transition-all duration-300 cursor-pointer"
               aria-label="Close modal"
@@ -688,23 +1020,24 @@ export default function PostCard({
 
             {/* Event Header */}
             <div 
-              className="flex items-center gap-4 mb-4 cursor-pointer hover:opacity-80 transition-opacity w-fit"
+              className="flex items-center gap-4 mb-4 cursor-pointer hover:opacity-80 transition-opacity w-fit max-w-full"
               onClick={handleUserClick}
             >
-              {organizerProfilePic ? (
-                <img 
-                  src={organizerProfilePic} 
-                  alt={organizerUsername} 
-                  className="w-12 h-12 rounded-full object-cover" 
-                  onError={(e) => {
-                    e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling?.classList.remove('hidden');
-                  }}
-                />
-              ) : null}
-              <div className={`w-12 h-12 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full ${organizerProfilePic ? 'hidden' : ''}`} />
-              <div>
-                <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors">{organizerUsername || 'Loading...'}</p>
+              {/* Circular profile picture container */}
+              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)]">
+                {organizerProfilePic ? (
+                  <img 
+                    src={organizerProfilePic} 
+                    alt={organizerUsername} 
+                    className="w-full h-full object-cover" 
+                    onError={(e) => {
+                      e.currentTarget.style.display = 'none';
+                    }}
+                  />
+                ) : null}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate">{organizerUsername || 'Loading...'}</p>
                 <p className="text-sm text-[var(--text-secondary)]">{timeAgo}</p>
               </div>
             </div>
@@ -718,7 +1051,7 @@ export default function PostCard({
             <div className="flex flex-wrap items-center gap-4 mb-4 text-sm text-[var(--text-secondary)]">
               <div className="flex items-center gap-1">
                 <MapPin size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
-                <span>{event.building || 'Location TBD'}</span>
+                <span>{locationDisplay || 'Location TBD'}</span>
               </div>
               <div className="flex items-center gap-1">
                 <Clock size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
@@ -727,9 +1060,9 @@ export default function PostCard({
             </div>
 
             {/* Image */}
-            <div className="w-full h-64 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg mb-4 overflow-hidden">
+            <div className="w-full aspect-video bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg mb-4 overflow-hidden">
               {event.post_picture_url ? (
-                <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-cover" />
+                <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-contain" />
               ) : (
                 <div className="w-full h-full bg-gradient-to-br from-[var(--primary)]/30 via-[var(--secondary)]/30 to-[var(--tertiary)]/30 flex items-center justify-center">
                   <div className="text-[var(--text-secondary)] text-6xl font-bold opacity-20">📸</div>
@@ -808,7 +1141,14 @@ export default function PostCard({
                       }`}
                     >
                       <div 
-                        className="w-8 h-8 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity" 
+                        className="w-8 h-8 rounded-full flex-shrink-0 cursor-pointer hover:opacity-80 transition-opacity overflow-hidden"
+                        style={{
+                          backgroundImage: comment.profilePicture 
+                            ? `url(${comment.profilePicture})` 
+                            : 'linear-gradient(to bottom right, var(--primary), var(--tertiary))',
+                          backgroundSize: 'cover',
+                          backgroundPosition: 'center'
+                        }}
                         onClick={(e) => handleCommentUserClick(e, comment.userId)}
                         aria-label={`View ${comment.username}'s profile`}
                       />
@@ -1032,12 +1372,84 @@ export default function PostCard({
                     </select>
                     <input
                       type="text"
-                      placeholder="Room #"
+                      placeholder="Room # (not saved)"
                       value={editedRoomNumber}
                       onChange={(e) => setEditedRoomNumber(e.target.value)}
-                      className="px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--text)] focus:border-[var(--primary)] focus:outline-none"
+                      disabled
+                      className="px-4 py-2 border-2 border-[var(--border)] rounded-lg bg-[var(--background)] text-[var(--text-secondary)] focus:border-[var(--primary)] focus:outline-none opacity-50 cursor-not-allowed"
+                      title="Room numbers are not yet stored in the database"
                     />
                   </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-bold text-[var(--text)] mb-2">Event Date</label>
+                  <LocalizationProvider dateAdapter={AdapterDayjs}>
+                    <DatePicker
+                      value={editedDate}
+                      onChange={(newValue) => setEditedDate(newValue)}
+                      slotProps={{
+                        textField: {
+                          fullWidth: true,
+                          InputProps: {
+                            style: { 
+                              color: 'var(--text)', 
+                              borderColor: 'var(--border)', 
+                              borderWidth: '2px',
+                              backgroundColor: 'var(--background)',
+                              borderRadius: '0.5rem'
+                            }
+                          },
+                          InputLabelProps: {
+                            style: { 
+                              color: 'var(--primary)',
+                              fontWeight: 'bold',
+                              backgroundColor: 'var(--background)',
+                              paddingLeft: '4px',
+                              paddingRight: '4px'
+                            }
+                          },
+                          sx: {
+                            '& .MuiInputLabel-root': { 
+                              color: 'var(--primary)',
+                              fontWeight: 'bold',
+                            },
+                            '& .MuiOutlinedInput-notchedOutline': { 
+                              borderColor: 'var(--border) !important', 
+                              borderWidth: '2px' 
+                            },
+                            '& .MuiOutlinedInput-root:hover .MuiOutlinedInput-notchedOutline': { 
+                              borderColor: 'var(--primary)' 
+                            },
+                            '& .MuiOutlinedInput-root.Mui-focused .MuiOutlinedInput-notchedOutline': { 
+                              borderColor: 'var(--primary)' 
+                            },
+                            '& .MuiIconButton-root': { color: 'var(--primary)' },
+                          },
+                        },
+                        layout: {
+                          sx: {
+                            backgroundColor: 'var(--card-bg)',
+                            color: 'var(--text)',
+                            '.MuiPickersDay-root': {
+                              color: 'var(--text)',
+                              '&.Mui-selected': {
+                                backgroundColor: 'var(--primary)',
+                                color: 'var(--primary-text)',
+                              },
+                            },
+                            '.MuiPickersCalendarHeader-label': { color: 'var(--text)' },
+                            '.MuiIconButton-root': { color: 'var(--primary)' },
+                            '.MuiDayCalendar-weekDayLabel': { color: 'var(--text)' },
+                            '.MuiPickersToolbar-root': { 
+                              backgroundColor: 'var(--primary)',
+                              color: 'var(--primary-text)',
+                            },
+                            '.MuiPickersToolbarText-root': { color: 'var(--primary-text)' },
+                          },
+                        },
+                      }}
+                    />
+                  </LocalizationProvider>
                 </div>
                 <div>
                   <label className="block text-sm font-bold text-[var(--text)] mb-2">Time (EST)</label>

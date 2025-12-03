@@ -3,8 +3,8 @@ import { Request, Response } from 'express';
 
 export async function deletePostController(req: Request, res: Response) {
     try {
-        const eventId = req.params.id;
-        const response = await deletePostService(eventId);
+        const postId = req.params.id;
+        const response = await deletePostService(postId);
         res.json({ success: true, data: response });
     } catch (error) {
         console.error('Error in deletePostController:', error);
