@@ -851,26 +851,25 @@ export default function PostCard({
             </div>
           </div>
 
-          {/* Event Name */}
-          <h3 className="text-base md:text-lg font-semibold text-[var(--text)] mb-2 md:mb-3 hover:text-[var(--primary)] transition-colors line-clamp-2">
+          {/* Event Name - single line with ellipsis */}
+          <h3 className="text-base md:text-lg font-semibold text-[var(--text)] mb-2 md:mb-3 hover:text-[var(--primary)] transition-colors truncate whitespace-nowrap overflow-hidden min-w-0">
             {event.title}
           </h3>
 
-          {/* Event Info */}
-          <div className="flex flex-wrap items-center gap-2 md:gap-4 mb-2 text-xs md:text-sm text-[var(--text-secondary)]">
-            <div className="flex items-center gap-1">
-              <MapPin size={14} className="md:w-4 md:h-4 fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)] flex-shrink-0" />
-              <span className="truncate">{locationDisplay || 'Location TBD'}</span>
+          {/* Event Info - two fixed lines */}
+          <div className="flex flex-col gap-1 md:gap-1.5 mb-2 text-xs md:text-sm text-[var(--text-secondary)] min-w-0">
+            <div className="flex items-center gap-1 min-w-0">
+              <MapPin size={16} strokeWidth={2} color="var(--primary)" className="md:w-4 md:h-4 flex-shrink-0" />
+              <span className="truncate whitespace-nowrap overflow-hidden max-w-[18rem] md:max-w-[22rem]">{locationDisplay || 'Location TBD'}</span>
             </div>
-
-            <div className="flex items-center gap-1">
-              <Clock size={14} className="md:w-4 md:h-4 fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)] flex-shrink-0" />
-              <span className="truncate">{new Date(event.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+            <div className="flex items-center gap-1 min-w-0">
+              <Clock size={16} strokeWidth={2} color="var(--primary)" className="md:w-4 md:h-4 flex-shrink-0" />
+              <span className="truncate whitespace-nowrap overflow-hidden max-w-[18rem] md:max-w-[22rem]">{new Date(event.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
             </div>
           </div>
 
-          {/* Post Image */}
-          <div className="w-full h-48 md:h-56 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden group flex items-center justify-center">
+          {/* Post Image - fixed aspect ratio */}
+          <div className="w-full aspect-[16/9] bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden group flex items-center justify-center">
             {event.post_picture_url ? (
               <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             ) : (
