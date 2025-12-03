@@ -13,6 +13,7 @@
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
+import { Server } from "socket.io"
 import { createClient } from "@supabase/supabase-js" // Placeholder for until we refactor to ./config/supabase.js
 import { supabaseAdmin } from "./config/supabase.js";
 import { authMiddleware } from "./middleware/auth.js";
@@ -118,3 +119,65 @@ app.listen(PORT, () => {
 📚 API Docs: http://localhost:${PORT}/
     `);
 });
+
+// ==================== Websockets ====================
+
+//Use JWT token as websocket identifier to verify websocket connection with the supplied UID.
+//Any connections that try to fake will be rejected due to invalid JWT token
+
+/*interface AuthData {
+    JWT: string;
+    UUID: string;
+}
+*/
+
+var websockets = [];
+const websocketServer = new Server(app)
+
+
+websocketServer.on("connection", (socket) => {
+    //Verify JWT on websocket connection
+    socket.emit("authRequest","", async (authData) => {
+        //Client needs to implement Callback, not implemented yet.
+        const authData = await JWTData(authData.JWT);
+        if (authData) {
+            socket.id = authData.claims.session_id;
+            websockets.push(socket);
+            initializeWebSocketEvents(socket);
+            //deliver all current notifications to the user. Is not yet implemented, needs to be made in repository.
+            //socket.emit("notifications",getUnreadNotificationsFromUUID(socket.id));
+        }
+        else {
+            socket.emit("error","Invalid JWT")
+            socket.disconnect(true);
+        }
+    });
+
+
+
+});
+
+function initializeWebSocketEvents(socket) {
+    socket.on("readNotification", (notificationData) => {
+        //Insert update notification repository when made.
+    })
+    socket.on("deleteNotification", (notificationData) => {
+        //Insert update notification repository when made.
+    })
+}
+
+//Return JWT data (claims)
+async function JWTData(JWT) {
+    const { data, error } = await supabase.auth.getClaims(JWT)
+    if(error) {
+        console.log("Failed to find JWT. Error: ")
+        console.log(error);
+    }
+    return data
+
+}
+//Push a notification if user's websocket is found.
+export function pushNotification(userId, notification) {
+    notifeeSocket = websockets.find(websocket => websocket.id === userId);
+    notifeeSocket?.emit("notification", notification);
+}

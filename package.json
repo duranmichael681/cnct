@@ -29,6 +29,7 @@
     "react-dom": "^19.2.0",
     "react-dropzone": "^14.3.8",
     "react-router-dom": "^7.9.6",
+    "socket.io": "^4.8.1",
     "tailwindcss": "^4.1.13"
   },
   "devDependencies": {
