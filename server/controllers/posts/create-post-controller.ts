@@ -1,3 +1,4 @@
+import { moderateImage } from '../../middleware/moderate';
 import { createPostService, postData, postResponse } from '../../services/posts/create-post-service';
 import {Request, Response } from "express";
 
@@ -24,6 +25,9 @@ export async function createPostController(req: Request, res: Response) {
             isPrivate: Boolean(req.body.is_private),
             tagIds: req.body.tag_ids || [],
         }
+
+        if(!moderateImage(newPost.postPictureUrl))
+            throw Error("Profile picture did not pass moderation.");
 
         const response = await createPostService(newPost);
         res.json({ success: true, data: response });
