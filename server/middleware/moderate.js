@@ -1,4 +1,4 @@
-const axios = require('axios');
+import axios from "axios";
 
 import dotenv from "dotenv";
 
@@ -11,18 +11,38 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const api_endpoint = "https://api.sightengine.com/1.0/check.json";
+
 export async function moderateImage(url) {
-    axios.get('https://api.sightengine.com/1.0/check.json', {
-  params: {
-    'url': url,
-    'models': 'nudity-2.1,weapon,recreational_drug,medical,gore-2.0,violence',
-    'api_user': process.env.api_user,
-    'api_secret': process.env.api_secret,
-  }
-}).then( function (response) {
-    return true;
-}).catch(error)( function (error) {
-    console.log(error);
-    return false;
-})
+    const params = {
+        'url': url,
+        'models': 'nudity-2.1,recreational_drug,gore-2.0,violence',
+        'api_user': process.env.SIGHTENGINE_USER,
+        'api_secret': process.env.SIGHTENGINE_SECRET,
+    }
+
+    try {
+        const response = await axios.get(api_endpoint, { params });
+
+        const content_data = response['data'];
+
+        const nudity_content = content_data['nudity'];
+
+        Object.keys(nudity_content).forEach(key => {
+            if(!key.endsWith("none") && nudity_content[key] > 0.8) {
+                console.log(key);
+                return false;
+            }
+        })
+
+        if(content_data['gore'] > 0.8) {
+            console.log(content_data['gore']);
+            return false;
+        }
+
+        return true;
+    } catch (error) {
+        console.log(error);
+        return false;
+    }
 }
