@@ -22,7 +22,6 @@ export interface postResponse {
 }
 export async function createPostService(postData: postData): Promise<postResponse> {
     try {
-        // Map camelCase fields to snake_case database columns
         const { data, error } = await supabaseAdmin
             .from('posts')
             .insert([{
