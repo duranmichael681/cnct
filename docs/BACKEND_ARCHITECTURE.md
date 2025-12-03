@@ -21,13 +21,14 @@ https://excalidraw.com/#json=KLm8GHkA8p921qGEkOeuA,Lgf7R-EHszyTbOuSTMKYIg
   - Handle real-time updates via Supabase subscriptions
 - **Communication**: Sends REST API requests (GET, POST, PUT, DELETE) to Express server
 
-#### 2. **Routes Layer** (`/api/events`, `/api/users`, `/api/messages`)
+#### 2. **Routes Layer** (`/api/posts`, `/api/users`, `/api/messages`)
 - **What it does**: Entry point for all API requests — defines available endpoints
 - **Responsibilities**:
-  - Map HTTP methods to controller functions (e.g., `POST /api/events` → `createEvent`)
+  - Map HTTP methods to controller functions (e.g., `POST /api/posts` → `createPost`)
   - Apply middleware before passing requests forward
-  - Organize endpoints by resource (events, users, messages)
-- **Example**: `router.post('/events', authenticateUser, validateEvent, eventController.createEvent)`
+  - Organize endpoints by resource (posts, users, messages)
+- **Example**: `router.post('/posts', authMiddleware, PostControllerModule.createPostController)`
+- **Implementation**: TypeScript routes with controller modules for type safety and maintainability
 
 #### 3. **Middleware Layer**
 - **What it does**: Gatekeepers that intercept requests before they reach controllers
@@ -83,45 +84,50 @@ https://excalidraw.com/#json=KLm8GHkA8p921qGEkOeuA,Lgf7R-EHszyTbOuSTMKYIg
 ```
 server/
 ├── config/
-│   └── supabase.js              # Supabase client configuration
+│   ├── supabase.js              # Supabase client configuration
+│   └── supabase.ts              # TypeScript Supabase config
 │
 ├── middleware/
 │   ├── auth.js                  # JWT authentication
-│   ├── validation.js            # Input validation
 │   ├── errorHandler.js          # Global error handling
-│   ├── moderation.js            # Content filtering
-│   └── rateLimiter.js           # API rate limiting
+│   ├── moderate.js              # Content filtering
+│   └── notFound.js              # 404 handler
 │
 ├── routes/
-│   ├── index.js                 # Main router
-│   ├── events.js                # Event-related routes
+│   ├── index.ts                 # Main router (TypeScript)
+│   ├── posts.ts                 # Post-related routes (TypeScript)
 │   ├── users.js                 # User profile routes
-│   ├── messages.js              # Messaging routes
-│   └── attendees.js             # Event attendee routes
+│   ├── Messages.ts              # Messaging routes
+│   ├── comments.js              # Comment routes
+│   ├── profiles.ts              # Profile routes
+│   ├── notifications.js         # Notification routes
+│   ├── tags.js                  # Tag routes
+│   └── storage.js               # Storage routes
 │
 ├── controllers/
-│   ├── eventController.js       # Event request handlers
-│   ├── userController.js        # User request handlers
-│   ├── messageController.js     # Message request handlers
-│   └── attendeeController.js    # Attendee request handlers
+│   ├── controller-module.ts     # Controller module exports
+│   └── posts/
+│       ├── create-post-controller.ts
+│       ├── fetch-posts-controller.ts
+│       ├── fetch-post-by-id-controller.ts
+│       ├── update-post-controller.ts
+│       ├── delete-post-controller.ts
+│       └── toggle-attendance-controller.ts
 │
 ├── services/
-│   ├── eventService.js          # Event business logic
-│   ├── messageService.js        # Messaging logic
-│   ├── userService.js           # User management logic
-│   ├── moderationService.js     # Content moderation
-│   └── notificationService.js   # Notifications (future)
+│   └── posts/
+│       ├── create-post-service.ts
+│       ├── fetch-posts-service.ts
+│       ├── fetch-post-by-id-service.ts
+│       ├── update-post-service.ts
+│       └── delete-post-service.ts
 │
 ├── repositories/
-│   ├── eventRepository.js       # Event database operations
-│   ├── userRepository.js        # User database operations
-│   ├── messageRepository.js     # Message database operations
-│   └── attendeeRepository.js    # Attendee database operations
+│   ├── profiles/                # Profile database operations
+│   └── notifications/           # Notification database operations
 │
-├── utils/
-│   ├── validators.js            # Custom validation helpers
-│   ├── helpers.js               # General utility functions
-│   └── constants.js             # App-wide constants
+├── types/
+│   └── express.d.ts             # TypeScript type definitions
 │
 ├── .env                         # Environment variables
 ├── server.js                    # Server entry point
@@ -132,42 +138,36 @@ server/
 
 ## 🔄 Request Flow Example
 
-### Creating an Event
+### Creating a Post
 
 ```
-1. User submits "Create Event" form from React frontend
+1. User submits "Create Post" form from React frontend
    ↓
-2. POST /api/events
+2. POST /api/posts
    ↓
-3. Authentication Middleware
-   • Verifies Supabase JWT token
-   • Extracts user ID from token
+3. Authentication Middleware (authMiddleware)
+   • Verifies Supabase JWT token from Authorization header
+   • Extracts user ID and attaches to req.user
+   • Returns 401 if not authenticated
    ↓
-4. Validation Middleware
-   • Checks event data (title, date, location, etc.)
-   • Ensures required fields are present
+4. Create Post Controller (createPostController)
+   • Receives authenticated request
+   • Validates required fields (title, body, start_date)
+   • Verifies user exists in database
+   • Moderates post picture if provided
+   • Calls createPostService(postData)
    ↓
-5. Event Controller (createEvent)
-   • Receives validated request
-   • Calls eventService.createEvent(userId, eventData)
+5. Create Post Service
+   • Inserts post into database with organizer_id = req.user.id
+   • If tag_ids provided, inserts into post_tags junction table
+   • Returns new post object
    ↓
-6. Event Service
-   • Business logic checks:
-     - Is the event date in the future?
-     - Is the title appropriate?
-   • Calls eventRepository.create(eventData)
+6. Controller formats response
+   • Returns 201 Created status
+   • Logs success with post ID
    ↓
-7. Event Repository
-   • Executes Supabase query:
-     INSERT INTO events (title, date, creator_id, ...)
-   • Returns new event object
-   ↓
-8. Service returns processed event
-   ↓
-9. Controller formats response
-   ↓
-10. Response sent back to React frontend
-    { success: true, event: {...} }
+7. Response sent back to React frontend
+   { success: true, data: { id, title, body, created_at, ... } }
 ```
 
 ---
@@ -203,18 +203,18 @@ server/
 
 ## 🎯 API Endpoints Design
 
-### Events API
+### Posts API
 
 | Method | Endpoint | Description | Auth Required |
 |--------|----------|-------------|---------------|
-| `GET` | `/api/events` | Get all events | No |
-| `GET` | `/api/events/:id` | Get specific event | No |
-| `POST` | `/api/events` | Create new event | Yes |
-| `PUT` | `/api/events/:id` | Update event | Yes (owner) |
-| `DELETE` | `/api/events/:id` | Delete event | Yes (owner) |
-| `POST` | `/api/events/:id/join` | Join an event | Yes |
-| `POST` | `/api/events/:id/leave` | Leave an event | Yes |
-| `GET` | `/api/events/:id/attendees` | Get attendee list | No |
+| `GET` | `/api/posts` | Get all posts (with optional ?userId for tag filtering) | No |
+| `GET` | `/api/posts/:id` | Get specific post | No |
+| `POST` | `/api/posts` | Create new post | Yes |
+| `PUT` | `/api/posts/:id` | Update post | Yes (organizer only) |
+| `DELETE` | `/api/posts/:id` | Delete post | Yes (organizer only) |
+| `POST` | `/api/posts/:id/toggle-attendance` | Toggle RSVP for post | Yes |
+| `POST` | `/api/posts/:id/leave` | Leave a post | Yes |
+| `GET` | `/api/posts/:id/attendees` | Get attendee list | No |
 
 ### Users API
 
@@ -277,36 +277,48 @@ supabase
 **users**
 - `id` (UUID, primary key)
 - `email` (string, unique)
-- `username` (string, unique)
+- `first_name` (string)
+- `last_name` (string)
 - `profile_picture_url` (string)
 - `bio` (text)
 - `created_at` (timestamp)
 
-**events**
+**posts**
 - `id` (UUID, primary key)
-- `creator_id` (UUID, foreign key → users)
+- `organizer_id` (UUID, foreign key → users) - Who created the post
 - `title` (string)
-- `description` (text)
-- `event_date` (timestamp)
-- `location` (string)
-- `max_attendees` (integer)
-- `image_url` (string)
+- `body` (text)
+- `building` (string, nullable) - FIU building location
+- `start_date` (timestamp)
+- `end_date` (timestamp, nullable)
+- `post_picture_url` (string, nullable)
+- `is_private` (boolean, default false)
 - `created_at` (timestamp)
 
 **attendees**
 - `id` (UUID, primary key)
-- `event_id` (UUID, foreign key → events)
-- `user_id` (UUID, foreign key → users)
-- `joined_at` (timestamp)
-- Unique constraint: (event_id, user_id)
-
-**messages**
-- `id` (UUID, primary key)
-- `event_id` (UUID, foreign key → events)
-- `sender_id` (UUID, foreign key → users)
-- `content` (text)
+- `post_id` (UUID, foreign key → posts) - Which post
+- `user_id` (UUID, foreign key → users) - Who is attending (RSVP)
 - `created_at` (timestamp)
-- `edited_at` (timestamp, nullable)
+- Unique constraint: (post_id, user_id)
+
+**comments**
+- `id` (UUID, primary key)
+- `post_id` (UUID, foreign key → posts)
+- `user_id` (UUID, foreign key → users)
+- `body` (text)
+- `created_at` (timestamp)
+- `updated_at` (timestamp, nullable)
+
+**tags**
+- `id` (integer, primary key)
+- `code` (string, unique) - Tag name/code
+
+**post_tags**
+- `id` (UUID, primary key)
+- `post_id` (UUID, foreign key → posts)
+- `tag_id` (integer, foreign key → tags)
+- Unique constraint: (post_id, tag_id)
 
 **friendships** (future feature)
 - `id` (UUID, primary key)
@@ -413,13 +425,27 @@ supabase
 
 ## 🛠️ Development Workflow
 
-1. **Create route** → Define endpoint in routes folder
-2. **Add middleware** → Apply auth, validation as needed
-3. **Build controller** → Handle request/response
-4. **Write service** → Implement business logic
-5. **Create repository** → Define database operations
-6. **Test endpoint** → Use Postman/Insomnia
-7. **Document** → Update API docs
+1. **Create route** → Define endpoint in routes folder (TypeScript preferred: `posts.ts`)
+2. **Add middleware** → Apply authMiddleware for protected routes
+3. **Build controller** → Create controller in `controllers/posts/` directory
+4. **Write service** → Implement business logic in `services/posts/` directory
+5. **Database operations** → Use Supabase client directly in service layer
+6. **Test endpoint** → Use Postman/Insomnia or frontend integration
+7. **Document** → Update API docs and architecture documentation
+
+### TypeScript Architecture Pattern
+
+**Current Implementation:**
+- Routes: `routes/posts.ts` → Imports controller module
+- Controllers: `controllers/posts/*.ts` → Handles HTTP, calls services
+- Services: `services/posts/*.ts` → Business logic, database operations
+- Types: Shared interfaces (e.g., `Post`, `postData`)
+
+**Benefits:**
+- Type safety catches errors at compile time
+- Better IDE autocomplete and refactoring
+- Self-documenting code with TypeScript interfaces
+- Consistent field naming (using snake_case for database fields)
 
 ---
 

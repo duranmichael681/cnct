@@ -64,6 +64,13 @@ export interface Post {
   created_at: string;
   is_private: boolean;
   attendees?: { count: number }[];
+  comments?: { count: number }[];
+  users?: {
+    id: string;
+    first_name: string | null;
+    last_name: string | null;
+    profile_picture_url: string | null;
+  };
 }
 
 export interface CreatePostData {
@@ -144,7 +151,6 @@ export interface UserProfile {
   degree_program: string | null;
   created_at: string;
   profile_picture_url: string | null;
-  description: string | null;
 }
 
 export interface UserTag {

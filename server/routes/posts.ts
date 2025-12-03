@@ -1,28 +1,33 @@
 import { Request, Response, Router } from 'express';
-import { EventControllerModule } from '../controllers/controller-module.js';
-//TODO: import other necessary middlewares and controllrs here
+import { PostControllerModule } from '../controllers/controller-module.js';
+import { authMiddleware } from '../middleware/auth.js';
 
 const postsRouter = Router();
 
-//TODO: Are these in file controllers or what?
-//      for now, i'm going to write my controllers but commented out
+// GET /api/posts - Fetch all posts (optionally filtered by user tag preferences)
+// Query params: ?userId=xxx to filter by user preferences
+postsRouter.get('/', PostControllerModule.fetchPostsController)
 
-postsRouter.get('/events', EventControllerModule.fetchPostsController)
+// GET /api/posts/:id - Fetch a single post by ID
+postsRouter.get('/:id', PostControllerModule.fetchPostByIdController)
 
-postsRouter.get('/events/:id',  EventControllerModule.fetchPostByIdController)
+// POST /api/posts - Create a new post (requires authentication)
+postsRouter.post('/', authMiddleware, PostControllerModule.createPostController)
 
-postsRouter.post('/events', EventControllerModule.createPostController)
+// PUT /api/posts/:id - Update a post (requires authentication, only organizer can update)
+postsRouter.put('/:id', authMiddleware, PostControllerModule.updatePostController)
 
-postsRouter.put('/events/:id', EventControllerModule.updatePostController)
+// DELETE /api/posts/:id - Delete a post (requires authentication, only organizer can delete)
+postsRouter.delete('/:id', authMiddleware, PostControllerModule.deletePostController)
 
-postsRouter.delete('/events/:id', EventControllerModule.deletePostController)
+// POST /api/posts/:id/toggle-attendance - Toggle attendance for a post (requires authentication)
+postsRouter.post('/:id/toggle-attendance', authMiddleware, PostControllerModule.toggleAttendanceController)
 
-postsRouter.post('/events/:id/join', /*middleware, controller*/ function(req: Request, res: Response) {
-    res.send("Joined event!");
-})
-postsRouter.post('/events/:id/leave', EventControllerModule.removeAttendeeController)
+// POST /api/posts/:id/leave - Remove attendance from a post (requires authentication)
+postsRouter.post('/:id/leave', authMiddleware, PostControllerModule.removeAttendeeController)
 
-postsRouter.get('/events/:id/attendees', EventControllerModule.fetchAttendeesController)
+// GET /api/posts/:id/attendees - Get all attendees for a specific post
+postsRouter.get('/:id/attendees', PostControllerModule.fetchPostAttendeesController)
 
 export default postsRouter
 

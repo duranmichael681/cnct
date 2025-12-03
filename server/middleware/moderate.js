@@ -1,5 +1,4 @@
-const axios = require('axios');
-
+import axios from 'axios';
 import dotenv from "dotenv";
 
 /*
@@ -12,17 +11,19 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export async function moderateImage(url) {
-    axios.get('https://api.sightengine.com/1.0/check.json', {
-  params: {
-    'url': url,
-    'models': 'nudity-2.1,weapon,recreational_drug,medical,gore-2.0,violence',
-    'api_user': process.env.api_user,
-    'api_secret': process.env.api_secret,
-  }
-}).then( function (response) {
+  try {
+    const { data } = await axios.get('https://api.sightengine.com/1.0/check.json', {
+      params: {
+        url,
+        models: 'nudity-2.1,weapon,recreational_drug,medical,gore-2.0,violence',
+        api_user: process.env.api_user,
+        api_secret: process.env.api_secret,
+      }
+    });
+    // You can inspect "data" here to decide pass/fail
     return true;
-}).catch(error)( function (error) {
+  } catch (error) {
     console.log(error);
     return false;
-})
+  }
 }

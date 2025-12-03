@@ -134,6 +134,13 @@ export default function PostCard({
   // Fetch dynamic data on mount
   useEffect(() => {
     async function fetchData() {
+      console.log('🔍 PostCard event data:', { 
+        id: event.id, 
+        organizer_id: event.organizer_id,
+        hasUsers: !!event.users,
+        users: event.users 
+      });
+
       // Fetch buildings
       const { data: buildingsData } = await supabase
         .from('fiu_buildings')
@@ -167,24 +174,38 @@ export default function PostCard({
         setPostTags(tags);
       }
 
-      // Fetch organizer info
-      const { data: userData, error: userError } = await supabase
-        .from('users')
-        .select('first_name, last_name, profile_picture_url')
-        .eq('id', event.organizer_id)
-        .single();
-      
-      if (userError) {
-        console.error('Error fetching user:', userError);
-        setOrganizerUsername('Unknown User');
-      } else if (userData) {
-        const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+      // Use organizer info from event if available, otherwise fetch
+      if (event.users?.first_name || event.users?.last_name) {
+        const fullName = `${event.users.first_name || ''} ${event.users.last_name || ''}`.trim();
         setOrganizerUsername(fullName || 'Unknown User');
-        // Only set profile pic if it's a valid non-empty URL
-        setOrganizerProfilePic(userData.profile_picture_url && userData.profile_picture_url.trim() ? userData.profile_picture_url : null);
+        setOrganizerProfilePic(event.users.profile_picture_url && event.users.profile_picture_url.trim() ? event.users.profile_picture_url : null);
+      } else if (event.organizer_id) {
+        // Fallback: Fetch organizer info if not included and organizer_id exists
+        const { data: userData, error: userError } = await supabase
+          .from('users')
+          .select('first_name, last_name, profile_picture_url')
+          .eq('id', event.organizer_id)
+          .single();
+        
+        if (userError) {
+          console.error('Error fetching user:', userError);
+          setOrganizerUsername('Unknown User');
+        } else if (userData) {
+          const fullName = `${userData.first_name || ''} ${userData.last_name || ''}`.trim();
+          setOrganizerUsername(fullName || 'Unknown User');
+          setOrganizerProfilePic(userData.profile_picture_url && userData.profile_picture_url.trim() ? userData.profile_picture_url : null);
+        }
+      } else {
+        // No organizer info available
+        setOrganizerUsername('Unknown User');
       }
 
-      // Fetch RSVP status and count
+      // Use RSVP count from event if available
+      if (event.attendees && event.attendees.length > 0) {
+        setRsvpCount(event.attendees[0].count || 0);
+      }
+
+      // Check current user's RSVP status
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
         // Check if current user has RSVP'd
@@ -196,14 +217,6 @@ export default function PostCard({
           .maybeSingle();
         
         setIsRsvpd(!!rsvpData);
-
-        // Get total RSVP count
-        const { count } = await supabase
-          .from('attendees')
-          .select('*', { count: 'exact', head: true })
-          .eq('posts_id', event.id);
-        
-        setRsvpCount(count || 0);
       }
 
       // Fetch comments
@@ -247,19 +260,6 @@ export default function PostCard({
         console.error('Error fetching comments:', error);
       }
 
-      // Fetch RSVP info
-      const { data: attendeesData, error: attendeesError } = await supabase
-        .from('attendees')
-        .select('user_id')
-        .eq('posts_id', event.id);
-      
-      if (attendeesError) {
-        console.error('Error fetching attendees:', attendeesError);
-      } else if (attendeesData) {
-        setRsvpCount(attendeesData.length);
-        setIsRsvpd(attendeesData.some(a => a.user_id === mockUserId));
-      }
-
       // Calculate time ago
       if (event.created_at) {
         const now = new Date();
@@ -281,7 +281,7 @@ export default function PostCard({
     }
 
     fetchData();
-  }, [event.id, event.organizer_id, event.created_at, event.building]);
+  }, [event.id, event.organizer_id, event.created_at, event.building, event.users, event.attendees]);
 
   // Determine if we're on home or discover page
   const isHomeOrDiscover = location_route.pathname === '/home' || location_route.pathname === '/discover';
@@ -302,12 +302,21 @@ export default function PostCard({
 
     try {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('🎫 RSVP - Session check:', {
+        hasSession: !!session,
+        hasToken: !!session?.access_token,
+        user: session?.user?.email,
+        userId: session?.user?.id
+      });
+
       if (!session) {
+        console.error('❌ RSVP - No session found');
         alert('Please log in to RSVP');
         setIsRsvpLoading(false);
         return;
       }
 
+      console.log('📤 RSVP - Sending request to:', `/api/posts/${event.id}/toggle-attendance`);
       const response = await fetch(`http://localhost:5000/api/posts/${event.id}/toggle-attendance`, {
         method: 'POST',
         headers: {
@@ -317,19 +326,21 @@ export default function PostCard({
       });
 
       const result = await response.json();
+      console.log('📥 RSVP - Response:', { status: response.status, result });
       
       if (response.ok && result.success) {
         // Update UI based on action
         const newRsvpState = result.action === 'joined';
         setIsRsvpd(newRsvpState);
         setRsvpCount(prev => newRsvpState ? prev + 1 : prev - 1);
+        console.log('✅ RSVP successful:', result.action);
       } else {
-        console.error('RSVP failed:', result.error);
-        alert('Failed to update RSVP');
+        console.error('❌ RSVP failed:', result.error);
+        alert(`Failed to update RSVP: ${result.error || 'Unknown error'}`);
       }
     } catch (error) {
-      console.error('Failed to RSVP:', error);
-      alert('Failed to update RSVP');
+      console.error('❌ Failed to RSVP:', error);
+      alert(`Failed to update RSVP: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsRsvpLoading(false);
     }
@@ -401,7 +412,7 @@ export default function PostCard({
       );
       setEditingCommentId(null);
       setEditingCommentText("");
-      // In a real app: await fetch(`/api/events/${postId}/comments/${commentId}`, { method: 'PUT', body: JSON.stringify({ text: editingCommentText }) });
+      // In a real app: await fetch(`/api/posts/${postId}/comments/${commentId}`, { method: 'PUT', body: JSON.stringify({ text: editingCommentText }) });
     }
   };
 
@@ -517,7 +528,7 @@ export default function PostCard({
     setShowMenu(false);
     // In a real app, open report modal or make API call
     alert('Report functionality will be implemented. This post will be reported to moderators.');
-    // await fetch(`/api/events/${postId}/report`, { method: 'POST' });
+    // await fetch(`/api/posts/${postId}/report`, { method: 'POST' });
   };
 
   const handleBlockUser = async (e: React.MouseEvent) => {
@@ -737,13 +748,13 @@ export default function PostCard({
     }
   };
 
-  const postUrl = `${window.location.origin}/event/${event.id}`;
+  const postUrl = `${window.location.origin}/post/${event.id}`;
 
   return (
     <>
       {/* Compact Card (preview) */}
       <div
-        className="cursor-pointer bg-[var(--card-bg)] rounded-lg shadow-md p-3 md:p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.99] border border-transparent hover:border-[var(--primary)] relative"
+        className="cursor-pointer bg-[var(--card-bg)] rounded-lg shadow-md p-3 md:p-4 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl active:scale-[0.99] hover:ring-2 hover:ring-[var(--primary)] relative h-full flex flex-col outline-none focus:outline-none"
       >
         {/* Three-dot menu button */}
         <div className="absolute top-4 right-4">
@@ -861,7 +872,7 @@ export default function PostCard({
           {/* Post Image */}
           <div className="w-full h-48 md:h-56 bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden group flex items-center justify-center">
             {event.post_picture_url ? (
-              <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-contain group-hover:scale-105 transition-transform duration-300" />
+              <img src={event.post_picture_url} alt={event.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
             ) : (
               <div className="w-full h-full bg-gradient-to-br from-[var(--primary)]/30 via-[var(--secondary)]/30 to-[var(--tertiary)]/30 group-hover:scale-105 transition-transform duration-300 flex items-center justify-center">
                 <div className="text-[var(--text-secondary)] text-4xl font-bold opacity-20">📸</div>

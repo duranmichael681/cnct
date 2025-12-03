@@ -9,7 +9,7 @@ import ShareModal from '../components/ShareModal'
 import { motion } from 'framer-motion'
 import type { Post } from '../services/api'
 
-interface EventDetail {
+interface PostDetail {
   id: string
   title: string
   body: string | null
@@ -26,10 +26,10 @@ interface EventDetail {
 }
 
 export default function EventDetailPage() {
-  const { eventId } = useParams<{ eventId: string }>()
+  const { postId } = useParams<{ postId: string }>()
   const navigate = useNavigate()
   
-  const [event, setEvent] = useState<EventDetail | null>(null)
+  const [post, setPost] = useState<PostDetail | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showShareModal, setShowShareModal] = useState(false)
@@ -41,10 +41,10 @@ export default function EventDetailPage() {
   const [postData, setPostData] = useState<Post | null>(null)
 
   useEffect(() => {
-    document.title = 'CNCT | Event Details'
+    document.title = 'CNCT | Post Details'
     checkAuthStatus()
-    loadEventDetails()
-  }, [eventId])
+    loadPostDetails()
+  }, [postId])
 
   const checkAuthStatus = async () => {
     const { data: { session } } = await supabase.auth.getSession()
@@ -59,9 +59,9 @@ export default function EventDetailPage() {
     }
   }
 
-  const loadEventDetails = async () => {
-    if (!eventId) {
-      setError('Event ID is missing')
+  const loadPostDetails = async () => {
+    if (!postId) {
+      setError('Post ID is missing')
       setLoading(false)
       return
     }
@@ -69,7 +69,7 @@ export default function EventDetailPage() {
     try {
       setLoading(true)
       
-      // Fetch event from posts table
+      // Fetch post from posts table
       const { data: post, error: postError } = await supabase
         .from('posts')
         .select(`
@@ -85,11 +85,11 @@ export default function EventDetailPage() {
           is_private,
           rsvps
         `)
-        .eq('id', eventId)
+        .eq('id', postId)
         .single()
 
       if (postError) throw postError
-      if (!post) throw new Error('Event not found')
+      if (!post) throw new Error('Post not found')
 
       // Fetch organizer info
       const { data: organizer, error: organizerError } = await supabase
@@ -101,13 +101,13 @@ export default function EventDetailPage() {
       if (organizerError) throw organizerError
 
       // Combine data
-      const eventDetail: EventDetail = {
+      const postDetail: PostDetail = {
         ...post,
         organizer_name: `${organizer?.first_name || ''} ${organizer?.last_name || ''}`.trim(),
         organizer_profile_pic: organizer?.profile_picture_url || null
       }
 
-      setEvent(eventDetail)
+      setPost(postDetail)
       setRsvpCount(post.rsvps || 0)
       
       // Convert to Post format for PostCard
@@ -128,27 +128,27 @@ export default function EventDetailPage() {
       // Check if current user has RSVP'd
       const { data: { session } } = await supabase.auth.getSession()
       if (session?.user) {
-        const { data: rsvpData } = await supabase
+        const { data: userRsvp } = await supabase
           .from('attendees')
           .select('id')
-          .eq('posts_id', eventId)
+          .eq('posts_id', postId)
           .eq('user_id', session.user.id)
           .maybeSingle()
         
-        setIsRsvpd(!!rsvpData)
+        setIsRsvpd(!!userRsvp)
 
         // Get total RSVP count
         const { count } = await supabase
           .from('attendees')
           .select('*', { count: 'exact', head: true })
-          .eq('posts_id', eventId)
+          .eq('posts_id', postId)
         
         setRsvpCount(count || 0)
       }
 
     } catch (err: any) {
-      console.error('Error loading event:', err)
-      setError(err.message || 'Failed to load event details')
+      console.error('Error loading post:', err)
+      setError(err.message || 'Failed to load post details')
     } finally {
       setLoading(false)
     }
@@ -170,7 +170,7 @@ export default function EventDetailPage() {
         return
       }
 
-      const response = await fetch(`http://localhost:5000/api/posts/${eventId}/toggle-attendance`, {
+      const response = await fetch(`http://localhost:5000/api/posts/${postId}/toggle-attendance`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${session.access_token}`,
@@ -233,7 +233,7 @@ export default function EventDetailPage() {
           <main className="flex-1 p-6 pb-24 md:pb-6 md:ml-[70px] flex items-center justify-center">
             <div className="text-center">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[var(--primary)] mx-auto mb-4"></div>
-              <p className="text-[var(--text)]">Loading event...</p>
+              <p className="text-[var(--text)]">Loading post...</p>
             </div>
           </main>
         </div>
@@ -242,7 +242,7 @@ export default function EventDetailPage() {
     )
   }
 
-  if (error || !event) {
+  if (error || !post) {
     return (
       <div className="flex flex-col min-h-screen bg-[var(--background)]">
         <div className="flex flex-1">
@@ -250,8 +250,8 @@ export default function EventDetailPage() {
           <main className="flex-1 p-6 pb-24 md:pb-6 md:ml-[70px] flex items-center justify-center">
             <div className="text-center max-w-md">
               <div className="text-6xl mb-4">😕</div>
-              <h1 className="text-2xl font-bold text-[var(--text)] mb-2">Event Not Found</h1>
-              <p className="text-[var(--text-secondary)] mb-6">{error || 'This event may have been deleted or made private.'}</p>
+              <h1 className="text-2xl font-bold text-[var(--text)] mb-2">Post Not Found</h1>
+              <p className="text-[var(--text-secondary)] mb-6">{error || 'This post may have been deleted or made private.'}</p>
               <button
                 onClick={() => navigate('/home')}
                 className="px-6 py-3 bg-[var(--primary)] text-white font-semibold rounded-lg hover:bg-[var(--primary-hover)] transition-all cursor-pointer"
@@ -266,7 +266,7 @@ export default function EventDetailPage() {
     )
   }
 
-  const postUrl = `${window.location.origin}/event/${event.id}`
+  const postUrl = `${window.location.origin}/post/${post.id}`
 
   return (
     <div className="flex flex-col min-h-screen bg-[var(--background)]">
@@ -290,12 +290,12 @@ export default function EventDetailPage() {
               transition={{ duration: 0.3 }}
               className="bg-[var(--card-bg)] rounded-xl shadow-lg overflow-hidden"
             >
-              {/* Event Image */}
-              {event.post_picture_url ? (
+              {/* Post Image */}
+              {post.post_picture_url ? (
                 <div className="w-full aspect-video md:aspect-[21/9] bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20">
                   <img 
-                    src={event.post_picture_url} 
-                    alt={event.title} 
+                    src={post.post_picture_url} 
+                    alt={post.title} 
                     className="w-full h-full object-contain"
                   />
                 </div>
@@ -305,23 +305,23 @@ export default function EventDetailPage() {
                 </div>
               )}
 
-              {/* Event Content */}
+              {/* Post Content */}
               <div className="p-4 md:p-6 lg:p-8">
-                {/* Event Title */}
+                {/* Post Title */}
                 <h1 className="text-2xl md:text-3xl lg:text-4xl font-bold text-[var(--text)] mb-4 break-words">
-                  {event.title}
+                  {post.title}
                 </h1>
 
                 {/* Organizer Info */}
                 <div 
                   className="flex items-center gap-3 mb-6 cursor-pointer hover:opacity-80 transition-opacity w-fit"
-                  onClick={() => navigate(`/profile/${event.organizer_id}`)}
+                  onClick={() => navigate(`/profile/${post.organizer_id}`)}
                 >
                   <div className="w-12 h-12 md:w-14 md:h-14 rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)]">
-                    {event.organizer_profile_pic ? (
+                    {post.organizer_profile_pic ? (
                       <img 
-                        src={event.organizer_profile_pic} 
-                        alt={event.organizer_name} 
+                        src={post.organizer_profile_pic} 
+                        alt={post.organizer_name} 
                         className="w-full h-full object-cover" 
                       />
                     ) : null}
@@ -329,21 +329,21 @@ export default function EventDetailPage() {
                   <div className="min-w-0 flex-1">
                     <p className="text-xs md:text-sm text-[var(--text-secondary)]">Organized by</p>
                     <p className="font-bold text-sm md:text-base text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate">
-                      {event.organizer_name || 'Unknown'}
+                      {post.organizer_name || 'Unknown'}
                     </p>
                   </div>
                 </div>
 
-                {/* Event Details */}
+                {/* Post Details */}
                 <div className="space-y-4 mb-6">
                   <div className="flex items-start gap-3">
                     <Calendar size={24} className="text-[var(--primary)] mt-1 flex-shrink-0" />
                     <div>
                       <p className="text-sm text-[var(--text-secondary)]">Date & Time</p>
-                      <p className="font-semibold text-[var(--text)]">{formatDate(event.start_date)}</p>
-                      {event.end_date && (
+                      <p className="font-semibold text-[var(--text)]">{formatDate(post.start_date)}</p>
+                      {post.end_date && (
                         <p className="text-sm text-[var(--text-secondary)]">
-                          Ends: {formatTime(event.end_date)}
+                          Ends: {formatTime(post.end_date)}
                         </p>
                       )}
                     </div>
@@ -354,7 +354,7 @@ export default function EventDetailPage() {
                     <div>
                       <p className="text-sm text-[var(--text-secondary)]">Location</p>
                       <p className="font-semibold text-[var(--text)]">
-                        {event.building || 'Location TBD'}
+                        {post.building || 'Location TBD'}
                       </p>
                     </div>
                   </div>
@@ -370,12 +370,12 @@ export default function EventDetailPage() {
                   </div>
                 </div>
 
-                {/* Event Description */}
-                {event.body && (
+                {/* Post Description */}
+                {post.body && (
                   <div className="mb-6">
-                    <h2 className="text-xl font-bold text-[var(--text)] mb-3">About This Event</h2>
+                    <h2 className="text-xl font-bold text-[var(--text)] mb-3">About This Post</h2>
                     <p className="text-[var(--text)] whitespace-pre-wrap leading-relaxed">
-                      {event.body}
+                      {post.body}
                     </p>
                   </div>
                 )}
@@ -433,7 +433,7 @@ export default function EventDetailPage() {
           isOwnProfile={false}
           initialOpen={true}
           onClose={() => setShowPostCard(false)}
-          onUpdate={() => loadEventDetails()}
+          onUpdate={() => loadPostDetails()}
         />
       )}
     </div>

@@ -1,4 +1,4 @@
-import postsRouter from "./posts.js";
+import postsRouter from "./posts.ts";
 import profilesRouter from "./profiles.ts";
 import messageRouter from "./Messages.ts";
 import webpagesRouter from "./webpages.ts";

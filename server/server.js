@@ -15,6 +15,7 @@ import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
 import { Server } from "socket.io";
+import http from "http";
 import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "./config/supabase.js";
 import { authMiddleware } from "./middleware/auth.js";
@@ -32,6 +33,7 @@ import { errorHandler } from "./middleware/errorHandler.js";
 dotenv.config();
 
 export const app = express();
+const httpServer = http.createServer(app);
 const PORT = process.env.PORT || 5000;
 
 // Initialize Supabase client
@@ -102,7 +104,7 @@ app.use(errorHandler);
 // ==================== SERVER STARTUP ====================
 
 // Start the Express server and listen on the configured port
-app.listen(PORT, () => {
+httpServer.listen(PORT, () => {
     console.log(`
 🚀 CNCT Backend Running!
 📍 http://localhost:${PORT}
@@ -122,16 +124,20 @@ app.listen(PORT, () => {
 */
 
 var websockets = [];
-const websocketServer = new Server(app);
+const websocketServer = new Server(httpServer, {
+    cors: {
+        origin: '*'
+    }
+});
 
 
 websocketServer.on("connection", (socket) => {
     //Verify JWT on websocket connection
     socket.emit("authRequest","", async (authData) => {
         //Client needs to implement Callback, not implemented yet.
-        const authData = await JWTData(authData.JWT);
-        if (authData) {
-            socket.id = authData.claims.session_id;
+        const claims = await JWTData(authData.JWT);
+        if (claims) {
+            socket.id = claims.claims.session_id;
             websockets.push(socket);
             initializeWebSocketEvents(socket);
             //deliver all current notifications to the user. Is not yet implemented, needs to be made in repository.

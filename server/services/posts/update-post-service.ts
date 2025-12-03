@@ -8,7 +8,7 @@ export async function updatePostService(postId: string, updatedData: Partial<Pos
             .update({
                 title: updatedData.title,
                 body: updatedData.body,
-                organizer_id: updatedData.organizerId,
+                organizer_id: updatedData.organizer_id,
                 building: updatedData.building,
                 start_date: updatedData.startDate,
                 end_date: updatedData.endDate,
@@ -30,7 +30,7 @@ export async function updatePostService(postId: string, updatedData: Partial<Pos
             id: data.id,
             title: data.title,
             body: data.body,
-            organizerId: data.organizer_id,
+            organizer_id: data.organizer_id,
             building: data.building,
             startDate: data.start_date,
             endDate: data.end_date,

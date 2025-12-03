@@ -8,7 +8,7 @@ import { supabase } from "../supabase/client";
 interface ProfileHeaderProps {
   isOwnProfile?: boolean;
   userId?: string;
-  userProfile : UserProfile;
+  userProfile?: UserProfile;
   onProfileUpdate?: () => void;
 }
 
@@ -240,13 +240,23 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
 
       const publicUrl = uploadResult.data.url;
 
-      // Update user profile in database
-      const { error: updateError } = await supabase
-        .from('users')
-        .update({ profile_picture_url: publicUrl })
-        .eq('id', userProfile.id);
+      // Update user profile in database via backend API
+      const updateResponse = await fetch(`http://localhost:5000/api/profile/${userProfile.id}`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${session.access_token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          profile_picture_url: publicUrl
+        })
+      });
 
-      if (updateError) throw updateError;
+      const updateResult = await updateResponse.json();
+
+      if (!updateResponse.ok || !updateResult.success) {
+        throw new Error(updateResult.error || 'Profile update failed');
+      }
 
       // Trigger parent component to refetch profile
       if (onProfileUpdate) {

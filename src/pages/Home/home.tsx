@@ -1,61 +1,51 @@
 import SideBar from "../../components/SideBar";
+import PostCard from "../../components/PostCard";
 import Footer from "../../components/Footer";
 import PopularEventImage from "../../assets/how-it-works.jpg";
 import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { getAllPosts, getUserProfile, type Post, type UserProfile } from "../../services/api";
 import { LoadingSpinner, ErrorMessage } from "../../components/ui/UIComponents";
 import { formatEventDate } from "../../utils/helpers";
+import PostPicture from '../../assets/download.jfif'
 import {supabase} from '../../supabase/client'
-import PostCard from "../../components/PostCard";
-import { motion } from "framer-motion";
 
 
 export default function Home() {
+  const navigate = useNavigate();
   const [width, setWidth] = useState(window.innerWidth);
   const [posts, setPosts] = useState<Post[]>([]);
-  const [userName, setUserName] = useState<string>('User');
-  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
-    // Fetch user data on mount
-    async function fetchUserData() {
+      supabase.auth.getUser().then((res) => console.log(res));
+    } , []); //for seeing if log in via supabase worked , can delete later 
+
+  // Fetch user profile
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchUserProfile() {
       try {
-        const { data: { user } } = await supabase.auth.getUser();
-        console.log('🔐 Authenticated user:', user);
-        
-        if (user) {
-          // Fetch user profile from database
-          const userProfile = await getUserProfile(user.id);
-          console.log('👤 User profile from database:', userProfile);
-          
-          if (userProfile) {
-            setUserProfile(userProfile);
-            if (userProfile.first_name) {
-              setUserName(userProfile.first_name);
-            } else {
-              // Fallback to email username if no first name
-              const emailUsername = user.email?.split('@')[0] || 'User';
-              setUserName(emailUsername);
-            }
-            console.log('✅ User data loaded successfully');
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session?.user && mounted) {
+          const profile = await getUserProfile(session.user.id);
+          if (mounted) {
+            setUserProfile(profile);
           }
-        } else {
-          console.warn('⚠️  No authenticated user found');
         }
       } catch (err) {
-        console.error('❌ Error fetching user data:', err);
+        console.error("Error fetching user profile:", err);
       }
     }
-    fetchUserData();
-  }, []);
+
+    fetchUserProfile();
+    return () => { mounted = false };
+  }, []); 
 
   useEffect(() => {
-    document.title = 'CNCT | Home';
-    // Mark that user has visited the app (for showing sidebar on info pages)
-    sessionStorage.setItem('hasVisitedApp', 'true');
-    
     function handleResize() {
       setWidth(window.innerWidth);
     }
@@ -64,28 +54,16 @@ export default function Home() {
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  // Fetch posts from backend - filtered by user preferences on Home page
+  // Fetch posts from backend
   useEffect(() => {
     let mounted = true;
 
     async function fetchPosts() {
       try {
         setLoading(true);
-        
-        // Get current user for personalized filtering
-        const { data: { user } } = await supabase.auth.getUser();
-        const userId = user?.id;
-
-        // Use filtered endpoint if user is logged in (personalized Home feed)
-        const url = userId 
-          ? `http://localhost:5000/api/posts?userId=${userId}`
-          : 'http://localhost:5000/api/posts';
-
-        const response = await fetch(url);
-        const result = await response.json();
-        
-        if (mounted && result.success) {
-          setPosts(result.data || []);
+        const data = await getAllPosts();
+        if (mounted) {
+          setPosts(data);
           setError(null);
         }
       } catch (err) {
@@ -137,9 +115,12 @@ export default function Home() {
           {/* Left Section - Posts */}
           <div className="p-4 sm:p-6 lg:p-8 w-full lg:w-2/3 flex flex-col gap-6 sm:gap-8 lg:gap-10">
             {/* Welcome Message */}
-            <div className='animate-fade-in'>
-              <h1 className='text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text)] mb-2'>
-                Welcome, <span className='text-[var(--primary)]'>{userName}</span>!
+            <div className="animate-fade-in">
+              <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-[var(--text)] mb-2">
+                Welcome Back,{" "}
+                <span className="text-[var(--primary)]">
+                  {userProfile?.first_name || "User"}
+                </span>!
               </h1>
               <p className="text-base sm:text-lg text-[var(--text)] opacity-80">
                 Here's what's happening today
@@ -173,52 +154,90 @@ export default function Home() {
               </div>
             )}
 
-            {/* Posts List - Single Column */}
-            {!loading && displayPosts.length > 0 && (
-              <div className="flex flex-col gap-4 md:gap-6">
-                {displayPosts.map((post, index) => (
-                  <motion.div
-                    key={post.id}
-                    className={`animate-fade-in-delay-${Math.min(index + 2, 4)}`}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: index * 0.1 }}
-                  >
-                    <PostCard event={post} />
-                  </motion.div>
-                ))}
-              </div>
-            )}
+            {/* Posts List */}
+            {!loading &&
+              displayPosts.map((post, index) => (
+                <div
+                  key={post.id}
+                  className={`animate-fade-in-delay-${Math.min(index + 2, 4)}`}
+                >
+                  <div 
+                    onClick={() => navigate(`/posts/${post.id}`)}
+                    className="bg-[var(--menucard)] rounded-lg p-6 shadow-lg hover:shadow-xl transition-shadow cursor-pointer">
+                    <div className="flex items-center gap-3 mb-4">
+                      <div className="w-10 h-10 bg-[var(--primary)] rounded-full flex items-center justify-center text-white font-bold">
+                        {post.title[0]}
+                      </div>
+                      <div>
+                        <p className="text-[var(--text)] font-semibold">
+                          {post.title}
+                        </p>
+                        <p className="text-[var(--text)] opacity-60 text-sm">
+                          {formatEventDate(post.created_at)}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="text-[var(--text)] mb-3">{post.body}</p>
+                    <div className="flex gap-4 text-sm text-[var(--text)] opacity-80 flex-wrap">
+                      {post.building && <span>📍 {post.building}</span>}
+                      <span>📅 {formatEventDate(post.start_date)}</span>
+                      {post.end_date && (
+                        <span>⏰ Ends: {formatEventDate(post.end_date)}</span>
+                      )}
+                      <span>👥 {getAttendeeCount(post)} attending</span>
+                      {post.is_private && (
+                        <span className="text-yellow-500">🔒 Private</span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))}
           </div>
-          {width >= 1024 && (
-            <div className="m-5 w-full lg:w-1/3 h-auto flex flex-col justify-start items-center border-l border-[var(--border)] mt-20 animate-fade-in-delay-1 px-4">
-              <h1 className="text-center text-[var(--primary)] font-semibold text-2xl lg:text-3xl mb-6 animate-fade-in-delay-2">
+          {width >= 1300 && (
+            <div className="m-5 w-1/3 h-auto flex flex-col justify-start items-center border-l border-[var(--border)] mt-20 animate-fade-in-delay-1">
+              <h1 className="text-center text-[var(--primary)] font-semibold text-3xl mb-6 animate-fade-in-delay-2">
                 Popular this Week
               </h1>
 
-              <div className="flex flex-col w-full gap-4">
+              <div className="flex flex-col w-full gap-10">
                 {popularPosts.length === 0 ? (
                   <p className="text-center text-[var(--text)] opacity-70">
                     No posts yet
                   </p>
                 ) : (
-                  popularPosts.map((post, index) => {
-                    // Find the full post object from posts array
-                    const fullPost = posts.find(p => p.id === post.id);
-                    if (!fullPost) return null;
-                    
-                    return (
-                      <motion.div
-                        key={post.id || index}
-                        className={`animate-fade-in-delay-${Math.min(index + 3, 4)} scale-90`}
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                      >
-                        <PostCard event={fullPost} />
-                      </motion.div>
-                    );
-                  })
+                  popularPosts.map((post, index) => (
+                    <div
+                      key={post.id || index}
+                      onClick={() => navigate(`/posts/${post.id}`)}
+                      className={`flex w-full relative cursor-pointer hover:bg-[var(--menucard)] transition-colors rounded-lg p-2 animate-fade-in-delay-${Math.min(
+                        index + 3,
+                        4
+                      )}`}
+                    >
+                      <div className="flex flex-col sm:flex-row w-full items-center sm:items-start sm:justify-start">
+                        <img
+                          src={post.image}
+                          alt={post.title}
+                          className="ml-5 rounded-xl max-w-[175px] aspect-square object-cover mt-10"
+                        />
+                      </div>
+                      <div className="mt-10 mr-10 w-2/3 flex-row items-center justify-center">
+                        <h2 className="text-[var(--primary)] font-semibold text-2xl">
+                          {post.title}
+                        </h2>
+                        <div className="bg-[var(--border)] h-0.25 w-15 my-3" />
+                        <p className="text-[var(--text)] line-clamp-3">
+                          {post.description}
+                        </p>
+                        <p className="text-[var(--text)] opacity-70 text-sm mt-2">
+                          📍 {post.location}
+                        </p>
+                        <p className="text-[var(--text)] opacity-70 text-sm">
+                          📅 {post.date}
+                        </p>
+                      </div>
+                    </div>
+                  ))
                 )}
               </div>
             </div>

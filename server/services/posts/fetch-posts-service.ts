@@ -1,36 +1,95 @@
 import { supabaseAdmin } from '../../config/supabase';
-import { Post } from './fetch-post-by-id-service';
 
-export async function fetchPostService(): Promise<Post[]> {
+export async function fetchPostService(userId?: string): Promise<any[]> {
     try {
+        // If userId provided, filter by user's tag preferences
+        if (userId) {
+            // Fetch user's tag preferences
+            const { data: userPrefs, error: prefsError } = await supabaseAdmin
+                .from('user_tag_preferences')
+                .select('tag_id')
+                .eq('user_id', userId);
+
+            if (prefsError) throw prefsError;
+
+            if (userPrefs && userPrefs.length > 0) {
+                // User has tag preferences - show posts matching those tags OR posts with no tags
+                const tagIds = userPrefs.map(pref => pref.tag_id);
+
+                // Get posts that match user's tag preferences
+                const { data: postTags, error: postTagsError } = await supabaseAdmin
+                    .from('post_tags')
+                    .select('post_id')
+                    .in('tag_id', tagIds);
+
+                if (postTagsError) throw postTagsError;
+
+                const taggedPostIds = [...new Set(postTags.map(pt => pt.post_id))];
+
+                // Get all posts with enhanced data
+                const { data: allPosts, error: allPostsError } = await supabaseAdmin
+                    .from('posts')
+                    .select(`
+                        *,
+                        users!posts_organizer_id_fkey (
+                            id,
+                            first_name,
+                            last_name,
+                            profile_picture_url
+                        ),
+                        attendees(count),
+                        comments:comments(count)
+                    `)
+                    .eq('is_private', false)
+                    .order('start_date', { ascending: true });
+
+                if (allPostsError) throw allPostsError;
+
+                // Get all post IDs that have tags
+                const { data: allPostTags, error: allPostTagsError } = await supabaseAdmin
+                    .from('post_tags')
+                    .select('post_id');
+
+                if (allPostTagsError) throw allPostTagsError;
+
+                const postsWithTags = new Set(allPostTags.map(pt => pt.post_id));
+
+                // Filter: show posts that match user's tags OR posts with no tags
+                const filteredPosts = allPosts.filter(post => 
+                    taggedPostIds.includes(post.id) || !postsWithTags.has(post.id)
+                );
+
+                return filteredPosts;
+            }
+        }
+
+        // Default: fetch all public posts with enhanced data (joins for users, attendees, comments)
         const { data, error } = await supabaseAdmin
             .from('posts')
-            .select('*');
+            .select(`
+                *,
+                users!posts_organizer_id_fkey (
+                    id,
+                    first_name,
+                    last_name,
+                    profile_picture_url
+                ),
+                attendees(count),
+                comments:comments(count)
+            `)
+            .eq('is_private', false)
+            .order('start_date', { ascending: true });
             
         if (error) {
-            throw new Error(`Error fetching events: ${error.message}`);
+            throw new Error(`Error fetching posts: ${error.message}`);
         }
         if (!data) {
             throw new Error('No data returned from fetch');
         }
         
-        const events: Post[] = data.map((item: any) => ({
-            id: item.id,
-            title: item.title,
-            body: item.body,
-            organizerId: item.organizer_id,
-            building: item.building,
-            startDate: item.start_date,
-            endDate: item.end_date,
-            postPictureUrl: item.post_picture_url,
-            createdAt: item.created_at,
-            isPrivate: item.is_private,
-            rsvp: item.rsvp
-        }));
-        
-        return posts;
+        return data;
     } catch (error) {
-        console.error('Error in fetchPosts:', error);
+        console.error('Error in fetchPostService:', error);
         throw error;
     }
 }

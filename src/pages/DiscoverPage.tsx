@@ -4,14 +4,13 @@ import SideBar from "../components/SideBar";
 import Footer from "../components/Footer";
 import SortFilter from "../components/SortFilter";
 import CategoryFilter from "../components/CategoryFilter";
+import PostCard from "../components/PostCard";
 import { getAllPosts, type Post } from "../services/api";
 import {
   LoadingSpinner,
   ErrorMessage,
   EmptyState,
 } from "../components/ui/UIComponents";
-import { formatEventDate } from "../utils/helpers";
-import PostCard from "../components/PostCard";
 
 export default function DiscoverPage() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | "tags" | null>(
@@ -24,10 +23,6 @@ export default function DiscoverPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
-
-  useEffect(() => {
-    document.title = 'CNCT | Discover';
-  }, []);
 
   // Fetch posts from backend
   useEffect(() => {
@@ -109,12 +104,6 @@ export default function DiscoverPage() {
     console.log("Selected category:", category);
   };
 
-  const getAttendeeCount = (event: Post) => {
-    return event.attendees && event.attendees.length > 0
-      ? event.attendees[0].count
-      : 0;
-  };
-
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -176,13 +165,14 @@ export default function DiscoverPage() {
 
             {/* Post Grid */}
             {!loading && !error && filteredPosts.length > 0 && (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-fr">
                 {filteredPosts.map((post) => (
                   <motion.div
                     key={post.id}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3 }}
+                    className="h-full"
                   >
                     <PostCard event={post} />
                   </motion.div>

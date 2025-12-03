@@ -42,7 +42,14 @@ router.get('/', async (req, res) => {
                     .from('posts')
                     .select(`
                         *,
-                        attendees(count)
+                        users!posts_organizer_id_fkey (
+                            id,
+                            first_name,
+                            last_name,
+                            profile_picture_url
+                        ),
+                        attendees(count),
+                        comments:comments(count)
                     `)
                     .eq('is_private', false)
                     .order('start_date', { ascending: true });
@@ -72,12 +79,24 @@ router.get('/', async (req, res) => {
             .from('posts')
             .select(`
                 *,
-                attendees(count)
+                users!posts_organizer_id_fkey (
+                    id,
+                    first_name,
+                    last_name,
+                    profile_picture_url
+                ),
+                attendees(count),
+                comments:comments(count)
             `)
             .eq('is_private', false)
             .order('start_date', { ascending: true });
 
         if (error) throw error;
+
+        // Debug: Log first post to see structure
+        if (data && data.length > 0) {
+            console.log('📦 Sample post data:', JSON.stringify(data[0], null, 2));
+        }
 
         res.json({ success: true, data });
     } catch (error) {

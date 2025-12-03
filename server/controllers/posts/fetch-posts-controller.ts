@@ -4,7 +4,8 @@ import { Request, Response } from "express";
 
 export async function fetchPostsController(req: Request, res: Response) {
     try {
-        const posts = await fetchPostService();
+        const { userId } = req.query;
+        const posts = await fetchPostService(userId as string | undefined);
         res.json({ success: true, data: posts });
     } catch (error) {
         console.error('Error in fetchPostsController:', error);

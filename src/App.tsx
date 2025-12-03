@@ -36,7 +36,7 @@ export default function App() {
       <Route path='/home' element={<Home />} />
       <Route path='/profile' element={<ProfilePage />} />  {/* Should render own profile, needs integration */}
       <Route path='/profile/:userId' element={<ProfilePage />} />
-      <Route path='/event/:eventId' element={<EventDetailPage />} />
+      <Route path='/posts/:postId' element={<EventDetailPage />} />
       <Route path='/discover' element={<DiscoverPage />} />
       <Route path='/create' element={<CreatePage />} />
       <Route path='/settings' element={<SettingsPage />} />

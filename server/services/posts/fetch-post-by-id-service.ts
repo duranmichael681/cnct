@@ -4,7 +4,7 @@ export interface Post {
     id: string;
     title: string;
     body: string;
-    organizerId: string;
+    organizer_id: string;  // Keep snake_case to match database and frontend
     building: string | null
     startDate: string;
     endDate: string;
@@ -33,7 +33,7 @@ export async function fetchPostByIdService(postId: string): Promise<Post> {
             id: data.id,
             title: data.title,
             body: data.body,
-            organizerId: data.organizer_id,
+            organizer_id: data.organizer_id,
             building: data.building,
             startDate: data.start_date,
             endDate: data.end_date,
