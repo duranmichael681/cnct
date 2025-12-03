@@ -14,7 +14,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-   useEffect(() => {
+  useEffect(() => {
       supabase.auth.getUser().then((res) => console.log(res));
     } , []); //for seeing if log in via supabase worked , can delete later 
 

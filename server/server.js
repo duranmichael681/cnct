@@ -8,16 +8,19 @@
  * - Authentication middleware for protected routes
  * - CORS configuration for frontend communication
  * - Database connection via Supabase
+ * - WebSocket connections for real-time notifications
  */
 
 import express from "express";
 import dotenv from "dotenv";
 import cors from "cors";
-import { Server } from "socket.io"
-import { createClient } from "@supabase/supabase-js" // Placeholder for until we refactor to ./config/supabase.js
+import { Server } from "socket.io";
+import { createClient } from "@supabase/supabase-js";
 import { supabaseAdmin } from "./config/supabase.js";
 import { authMiddleware } from "./middleware/auth.js";
 import { mainRouter } from "./routes/index.ts";
+import { notFound } from "./middleware/notFound.js";
+import { errorHandler } from "./middleware/errorHandler.js";
 
 // Load environment variables from .env file
 /*
@@ -40,8 +43,8 @@ export const supabase = createClient(
 // ==================== MIDDLEWARE ====================
 
 app.use(cors()); // Enable CORS for frontend requests (allows cross-origin API calls)
-app.use(express.json({ limit: '50mb' })); // Parse JSON request bodies with 50MB limit for image uploads
-app.use(express.urlencoded({ extended: true, limit: '50mb' })); // Parse URL-encoded form data with 50MB limit
+app.use(express.json({ limit: '5mb' })); // Parse JSON request bodies with 5MB limit for image uploads
+app.use(express.urlencoded({ extended: true, limit: '5mb' })); // Parse URL-encoded form data with 5MB limit
 
 // ==================== HEALTH CHECK ROUTES ====================
 
@@ -85,29 +88,16 @@ app.get("/test-db", async (req, res) => {
     }
 });
 
-// Connect main router to the app.
+// ==================== API ROUTES ====================
+
+// Connect main router to the app
 app.use(mainRouter);
 
 // ==================== ERROR HANDLERS ====================
 
-// 404 handler - catches requests to undefined routes
-app.use((req, res) => {
-    res.status(404).json({
-        success: false,
-        error: "Route not found",
-        path: req.path
-    });
-});
-
-// Global error handler - catches all unhandled errors
-app.use((err, req, res, next) => {
-    console.error("Server error:", err);
-    res.status(500).json({
-        success: false,
-        error: "Internal server error",
-        message: err.message
-    });
-});
+// 404 and error handling middleware
+app.use(notFound);
+app.use(errorHandler);
 
 // ==================== SERVER STARTUP ====================
 
@@ -132,7 +122,7 @@ app.listen(PORT, () => {
 */
 
 var websockets = [];
-const websocketServer = new Server(app)
+const websocketServer = new Server(app);
 
 
 websocketServer.on("connection", (socket) => {
@@ -148,7 +138,7 @@ websocketServer.on("connection", (socket) => {
             //socket.emit("notifications",getUnreadNotificationsFromUUID(socket.id));
         }
         else {
-            socket.emit("error","Invalid JWT")
+            socket.emit("error","Invalid JWT");
             socket.disconnect(true);
         }
     });
@@ -160,20 +150,20 @@ websocketServer.on("connection", (socket) => {
 function initializeWebSocketEvents(socket) {
     socket.on("readNotification", (notificationData) => {
         //Insert update notification repository when made.
-    })
+    });
     socket.on("deleteNotification", (notificationData) => {
         //Insert update notification repository when made.
-    })
+    });
 }
 
 //Return JWT data (claims)
 async function JWTData(JWT) {
-    const { data, error } = await supabase.auth.getClaims(JWT)
+    const { data, error } = await supabase.auth.getClaims(JWT);
     if(error) {
-        console.log("Failed to find JWT. Error: ")
+        console.log("Failed to find JWT. Error: ");
         console.log(error);
     }
-    return data
+    return data;
 
 }
 //Push a notification if user's websocket is found.
