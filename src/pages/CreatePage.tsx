@@ -4,12 +4,14 @@ import { AdapterDayjs } from '@mui/x-date-pickers/AdapterDayjs'
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider'
 import { DatePicker } from '@mui/x-date-pickers/DatePicker'
 import dayjs, { Dayjs } from 'dayjs'
+import Cropper from 'react-easy-crop'
+import type { Point, Area } from 'react-easy-crop'
 import uploadIcon from '../assets/icons/upload_24dp_F3F3F3_FILL0_wght400_GRAD0_opsz24.svg'
 import { uploadFileToStorage, createPost } from '../services/api'
 import { getCurrentUser } from '../lib/supabaseClient'
 import { supabase } from '../lib/supabaseClient'
 import { motion, Reorder } from "framer-motion";
-import { X, Plus } from "lucide-react";
+import { X, Plus, Crop } from "lucide-react";
 import SideBar from "../components/SideBar";
 import Footer from "../components/Footer";
 
@@ -48,8 +50,107 @@ export default function UploadPage() {
   const [newTag, setNewTag] = useState("");
   const [files, setFiles] = useState<FileWithPreview[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  
+  // Cropping state
+  const [cropModalOpen, setCropModalOpen] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState<string | null>(null);
+  const [cropIndexToEdit, setCropIndexToEdit] = useState<number | null>(null);
+  const [crop, setCrop] = useState<Point>({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(1);
+  const [croppedAreaPixels, setCroppedAreaPixels] = useState<Area | null>(null);
 
   const fileRef = useRef<FileWithPreview[]>([])
+
+  // --- Helper: Create cropped image ---
+  const createCroppedImage = async (
+    imageSrc: string,
+    pixelCrop: Area
+  ): Promise<Blob> => {
+    const image = new Image();
+    image.src = imageSrc;
+    await new Promise((resolve) => {
+      image.onload = resolve;
+    });
+
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      throw new Error('Could not get canvas context');
+    }
+
+    // Set canvas size to cropped area
+    canvas.width = pixelCrop.width;
+    canvas.height = pixelCrop.height;
+
+    // Draw the cropped image
+    ctx.drawImage(
+      image,
+      pixelCrop.x,
+      pixelCrop.y,
+      pixelCrop.width,
+      pixelCrop.height,
+      0,
+      0,
+      pixelCrop.width,
+      pixelCrop.height
+    );
+
+    return new Promise((resolve, reject) => {
+      canvas.toBlob((blob) => {
+        if (blob) {
+          resolve(blob);
+        } else {
+          reject(new Error('Canvas is empty'));
+        }
+      }, 'image/jpeg', 0.95);
+    });
+  };
+
+  const onCropComplete = useCallback((_: Area, croppedAreaPixels: Area) => {
+    setCroppedAreaPixels(croppedAreaPixels);
+  }, []);
+
+  const handleCropSave = async () => {
+    if (!imageToCrop || !croppedAreaPixels || cropIndexToEdit === null) return;
+
+    try {
+      const croppedBlob = await createCroppedImage(imageToCrop, croppedAreaPixels);
+      const croppedFile = new File(
+        [croppedBlob],
+        files[cropIndexToEdit].name,
+        { type: 'image/jpeg' }
+      ) as FileWithPreview;
+      croppedFile.preview = URL.createObjectURL(croppedBlob);
+
+      // Revoke old preview URL
+      URL.revokeObjectURL(files[cropIndexToEdit].preview);
+
+      // Update the file in the array
+      const newFiles = [...files];
+      newFiles[cropIndexToEdit] = croppedFile;
+      setFiles(newFiles);
+
+      // Close modal
+      setCropModalOpen(false);
+      setImageToCrop(null);
+      setCropIndexToEdit(null);
+      setCrop({ x: 0, y: 0 });
+      setZoom(1);
+    } catch (error) {
+      console.error('Error cropping image:', error);
+      alert('Failed to crop image. Please try again.');
+    }
+  };
+
+  const openCropModal = (index: number) => {
+    setImageToCrop(files[index].preview);
+    setCropIndexToEdit(index);
+    setCrop({ x: 0, y: 0 });
+    setZoom(1);
+    setCroppedAreaPixels(null);
+    setCropModalOpen(true);
+  };
 
   // --- Load Draft and Buildings on Mount ---
 
@@ -364,6 +465,17 @@ export default function UploadPage() {
         <button
           onClick={(e) => {
             e.stopPropagation();
+            openCropModal(index);
+          }}
+          className="absolute top-0 left-0 bg-blue-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold z-10 hover:bg-blue-700 transition-colors"
+          aria-label={`Crop ${file.name}`}
+          title="Crop image"
+        >
+          <Crop size={12} />
+        </button>
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
             removeFile(file.name);
           }}
           className="absolute top-0 right-0 bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold z-10 hover:bg-red-700 transition-colors"
@@ -378,11 +490,11 @@ export default function UploadPage() {
   // --- Main Carousel Preview (Large Display Area) ---
   const mainCarouselPreview =
     files.length > 0 ? (
-      <div className='relative w-full h-full flex items-center justify-center'>
+      <div className='relative w-full aspect-[16/9] bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden group flex items-center justify-center'>
         {currentImageIndex < files.length && (
           <img
             src={files[currentImageIndex].preview}
-            className='object-contain w-full h-full'
+            className='w-full h-full object-cover group-hover:scale-105 transition-transform duration-300'
             alt={`Listing Preview ${files[currentImageIndex].name}`}
           />
         )}
@@ -405,22 +517,38 @@ export default function UploadPage() {
           </>
         )}
         {files.length > 0 && (
-          <div className='absolute bottom-2 left-1/2 -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm'>
-            {currentImageIndex + 1} / {files.length}
-          </div>
+          <>
+            <div className='absolute bottom-2 left-1/2 -translate-x-1/2 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm'>
+              {currentImageIndex + 1} / {files.length}
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                openCropModal(currentImageIndex);
+              }}
+              className="absolute top-2 right-2 bg-blue-600 text-white p-2 rounded-full z-10 hover:bg-blue-700 transition-colors flex items-center gap-2 cursor-pointer"
+              aria-label="Crop current image"
+              title="Crop this image"
+            >
+              <Crop size={18} />
+              <span className="text-sm font-semibold">Crop</span>
+            </button>
+          </>
         )}
       </div>
     ) : (
-      // Default content when no files are uploaded
-      <>
-        <h2 className="font-semibold text-2xl text-[var(--primary)]">
-          Your Listing Preview
-        </h2>
-        <p className="mt-5 w-full md:w-1/3 break-words text-center text-[var(--primary)] opacity-70 px-4">
-          As you create your listing, you can preview how it will appear to
-          others on Marketplace.
-        </p>
-      </>
+      // Default content when no files are uploaded - matching PostCard empty state
+      <div className='relative w-full aspect-[16/9] bg-gradient-to-br from-[var(--primary)]/20 via-[var(--secondary)]/20 to-[var(--tertiary)]/20 rounded-lg overflow-hidden flex items-center justify-center'>
+        <div className="w-full h-full bg-gradient-to-br from-[var(--primary)]/30 via-[var(--secondary)]/30 to-[var(--tertiary)]/30 flex flex-col items-center justify-center">
+          <div className="text-[var(--text-secondary)] text-6xl mb-4 opacity-20">📸</div>
+          <h2 className="font-semibold text-2xl text-[var(--primary)]">
+            Your Listing Preview
+          </h2>
+          <p className="mt-3 w-full md:w-2/3 break-words text-center text-[var(--primary)] opacity-70 px-4">
+            Upload images to see how your post will appear
+          </p>
+        </div>
+      </div>
     )
 
   // --- Main Component Render ---
@@ -431,6 +559,102 @@ export default function UploadPage() {
       transition={{ duration: 0.5 }}
       className="flex flex-col min-h-screen bg-[var(--background)]"
     >
+      {/* Crop Modal */}
+      {cropModalOpen && imageToCrop && (
+        <div 
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setCropModalOpen(false);
+              setImageToCrop(null);
+              setCropIndexToEdit(null);
+            }
+          }}
+        >
+          <div className="bg-[var(--card-bg)] rounded-lg w-full max-w-4xl h-[90vh] flex flex-col">
+            <div className="p-4 border-b border-[var(--border)] flex justify-between items-center flex-shrink-0">
+              <h2 className="text-xl font-bold text-[var(--text)]">Crop Image (16:9)</h2>
+              <button
+                onClick={() => {
+                  setCropModalOpen(false);
+                  setImageToCrop(null);
+                  setCropIndexToEdit(null);
+                }}
+                className="text-[var(--text)] hover:text-[var(--danger)] transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+            
+            <div className="relative flex-1 bg-black" style={{ minHeight: 0 }}>
+              <Cropper
+                image={imageToCrop}
+                crop={crop}
+                zoom={zoom}
+                aspect={16 / 9}
+                onCropChange={setCrop}
+                onZoomChange={setZoom}
+                onCropComplete={onCropComplete}
+                style={{
+                  containerStyle: {
+                    width: '100%',
+                    height: '100%',
+                  },
+                }}
+              />
+            </div>
+            
+            <div className="p-4 border-t border-[var(--border)] flex-shrink-0">
+              <div className="mb-4">
+                <div className="flex justify-between items-center mb-2">
+                  <label className="text-sm font-medium text-[var(--text)]">
+                    Zoom
+                  </label>
+                  <span className="text-sm text-[var(--text-secondary)]">
+                    {Math.round(zoom * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={1}
+                  max={3}
+                  step={0.01}
+                  value={zoom}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    setZoom(Number(e.target.value));
+                  }}
+                  onMouseDown={(e) => e.stopPropagation()}
+                  className="w-full h-2 bg-[var(--secondary)] rounded-lg appearance-none cursor-pointer"
+                  style={{
+                    background: `linear-gradient(to right, var(--primary) 0%, var(--primary) ${((zoom - 1) / 2) * 100}%, var(--secondary) ${((zoom - 1) / 2) * 100}%, var(--secondary) 100%)`
+                  }}
+                />
+              </div>
+              
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => {
+                    setCropModalOpen(false);
+                    setImageToCrop(null);
+                    setCropIndexToEdit(null);
+                  }}
+                  className="px-4 py-2 bg-[var(--secondary)] text-[var(--text)] rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleCropSave}
+                  className="px-4 py-2 bg-[var(--primary)] text-white rounded-lg hover:opacity-90 transition-opacity"
+                >
+                  Apply Crop
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="flex flex-1">
         <SideBar />
         <div className="flex-1 w-full min-h-screen flex flex-col lg:flex-row md:ml-[70px] pb-24 md:pb-6">
@@ -789,14 +1013,14 @@ export default function UploadPage() {
           <h1 className="font-semibold text-base text-center lg:text-left text-[var(--text)] mb-2">
             Preview ({files.length} / {MAX_FILES} Pictures)
           </h1>
-          <div className="w-full bg-[var(--secondary-hover)] h-96 lg:h-[600px] xl:h-[700px] flex items-center justify-center flex-col overflow-hidden rounded-xl relative">
+          <div className="w-full flex items-center justify-center flex-col">
             {mainCarouselPreview}
           </div>
         </div>
 
         {/* Right Column - Preview Details (Large Screens Only) */}
         <div className="hidden xl:flex xl:w-full xl:max-w-sm flex-col mt-10 px-6 xl:px-8">
-          <h2 className="font-bold text-3xl xl:text-4xl break-words text-[var(--text)]">{title || "Title"}</h2>
+          <h2 className="font-bold text-xl break-words text-[var(--text)] truncate whitespace-nowrap overflow-hidden min-w-0">{title || "Title"}</h2>
           
           {(buildingCode || roomNumber) && (
             <div className="mt-6">
