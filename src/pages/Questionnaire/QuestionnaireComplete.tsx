@@ -13,7 +13,7 @@ export default function QuestionnaireComplete() {
     localStorage.removeItem('questionnaireData')
     
     // Navigate to sign in
-    navigate('/signup')
+    navigate('/signin')
   }
 
   const handleBackToForm = () => {

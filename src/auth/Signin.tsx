@@ -11,8 +11,9 @@ import CollageImg7 from '../assets/placeholder_event_7.png'
 import CollageImg8 from '../assets/placeholder_event_8.png'
 import { Link } from 'react-router-dom'
 
-//google auth
+//auth imports
 import { googleAuth } from '../supabase/auth'
+import {signInEmail} from '../supabase/auth'
 
 export default function SignIn() {
   useEffect(() => {
@@ -49,6 +50,19 @@ export default function SignIn() {
     },
   }
 
+  const handleSignIn = async (e) =>{
+    e.preventDefault()
+    try{
+      await signInEmail(email, password);
+      window.location.href = "/home"; 
+    }
+    catch(err:unknown){
+      if (err instanceof Error) {
+        console.log(err.message);
+        return;
+      }
+    }
+  }
   return (
     // 1. MAIN CONTAINER: Stacks vertically on mobile (flex-col) then switches to row on desktop (md:flex-row)
     <div className='flex flex-col md:flex-row min-h-screen'>
@@ -86,18 +100,18 @@ export default function SignIn() {
             </div>
           </div>
 
-          <Link to='/home'>
-            <button
+          
+            <button onClick={handleSignIn}
               // Replaced w-[clamp(...)] with w-full
               className='mt-10 border p-2 bg-[#B6862C] border-[#B6862C] rounded-xl w-full text-white cursor-pointer hover:bg-[var(--secondary-hover)] transition hover:text-[var(--primary)]'
             >
               Log In
             </button>
-          </Link>
+         
 
           <p className='mt-3 text-sm text-[var(--secondary)] text-center'>
             Don't have an account?{' '}
-            <Link to='/questionnaire/start' className='text-[#B6862C] hover:underline hover:cursor-pointer'>
+            <Link to='/signup' className='text-[#B6862C] hover:underline hover:cursor-pointer'>
               Sign Up
             </Link>
           </p>

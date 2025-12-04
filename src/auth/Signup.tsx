@@ -14,6 +14,7 @@ import { Link } from 'react-router-dom'
 
 //auth imports
 import { googleAuth } from '../supabase/auth'
+import {signUpEmail} from '../supabase/auth'
 
 export default function SignUp() {
   useEffect(() => {
@@ -70,6 +71,22 @@ export default function SignUp() {
     },
   }
 
+
+  const handleSignUp = async (e) =>{
+    e.preventDefault()
+    try{
+      await signUpEmail( name, email, password)
+      window.location.href = "/signin";
+
+      //needs a way to let users know to confirm their emails
+    }
+    catch(err:unknown){
+      if (err instanceof Error) {
+        console.log(err.message);
+        return;
+      }
+    }
+  }
   return (
     // FIX 1: Change to stack vertically on mobile (flex-col) and switch to row on desktop (md:flex-row)
     <div className='flex flex-col md:flex-row min-h-screen'>
@@ -144,8 +161,8 @@ export default function SignUp() {
             </h1>
           </div>
 
-          <Link to='/home'>
-            <button
+          
+            <button onClick={handleSignUp}
               disabled={!isFormValid()}
               className={`mt-10 border p-2 rounded-xl w-full text-white ${
                 isFormValid()
@@ -155,7 +172,10 @@ export default function SignUp() {
             >
               Sign up
             </button>
-          </Link>
+          
+
+            <p className='mt-3 text-sm text-[var(--secondary)] text-center'>
+              Already have an account? <Link to='/signin' className='text-[#B6862C] hover:underline hover:cursor-pointer'>Log In</Link></p>
 
           <TermsModal isOpen={isTermsModalOpen} onClose={() => setIsTermsModalOpen(false)} />
 
@@ -166,9 +186,9 @@ export default function SignUp() {
           </div>
 
           <div className='mt-17 flex-row gap-4 flex justify-center'>
-            <button onClick={googleAuth} className='flex items-center border border-[#8f8b86] rounded-xl p-3 mb-6 sm:mb-8 hover:bg-gray-50 transition cursor-pointer' >
-              <img src='https://www.svgrepo.com/show/475656/google-color.svg' alt='Google' className='w-6 h-6' />
-              <span className='text-gray-700 font-semibold text-base sm:text-lg ml-2'>Sign up with Google</span>
+            <button onClick={googleAuth} className='flex items-center border border-[#8f8b86] rounded-xl px-6 py-3 mb-6 sm:mb-8 hover:bg-[var(--primary-hover)] transition cursor-pointer w-full max-w-xs'>
+              <img src='https://www.svgrepo.com/show/475656/google-color.svg' alt='Google' className='w-5 h-5' />
+              <span className='text-var(--primary) font-semibold text-sm ml-2 whitespace-nowrap'>Sign up with Google</span>
             </button>
           </div>
         </div>
