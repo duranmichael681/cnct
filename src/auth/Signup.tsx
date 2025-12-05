@@ -76,7 +76,8 @@ export default function SignUp() {
     e.preventDefault()
     try{
       await signUpEmail( name, email, password)
-      window.location.href = "/signin";
+      // Redirect to questionnaire instead of signin
+      window.location.href = "/questionnaire/start";
 
       //needs a way to let users know to confirm their emails
     }

@@ -5,13 +5,11 @@ export default function QuestionnaireComplete() {
   const navigate = useNavigate()
 
   const handleSignIn = () => {
-    // TODO: Save questionnaire data to Supabase
+    // Keep questionnaire data in localStorage for sign-in process
     const questionnaireData = localStorage.getItem('questionnaireData')
-    console.log('Saving questionnaire data:', questionnaireData)
+    console.log('Questionnaire data ready for sign-in:', questionnaireData)
     
-    // Clear questionnaire data after saving
-    localStorage.removeItem('questionnaireData')
-    
+    // Don't clear yet - it will be saved and cleared during sign-in
     // Navigate to sign in
     navigate('/signin')
   }

@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Mail, Lock } from 'lucide-react'
 import CollageImg1 from '../assets/placeholder_event_1.png'
 import CollageImg2 from '../assets/placeholder_event_2.png'
@@ -14,8 +14,12 @@ import { Link } from 'react-router-dom'
 //auth imports
 import { googleAuth } from '../supabase/auth'
 import {signInEmail} from '../supabase/auth'
+import { supabase } from '../lib/supabaseClient'
 
 export default function SignIn() {
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+
   useEffect(() => {
     document.title = 'CNCT | Sign In';
   }, []);
@@ -53,7 +57,35 @@ export default function SignIn() {
   const handleSignIn = async (e) =>{
     e.preventDefault()
     try{
-      await signInEmail(email, password);
+      const { data } = await signInEmail(email, password);
+      
+      // Check if there's questionnaire data to save
+      const questionnaireData = localStorage.getItem('questionnaireData');
+      if (questionnaireData && data?.user) {
+        const parsedData = JSON.parse(questionnaireData);
+        
+        // Update user profile with questionnaire data
+        const { error: updateError } = await supabase
+          .from('users')
+          .update({
+            first_name: parsedData.firstName,
+            last_name: parsedData.lastName,
+            pronouns: parsedData.pronouns,
+            degree_program: parsedData.major,
+            username_email: parsedData.email || email
+          })
+          .eq('id', data.user.id);
+        
+        if (updateError) {
+          console.error('Error updating user profile:', updateError);
+        } else {
+          console.log('User profile updated successfully');
+          // Clear questionnaire data after successful save
+          localStorage.removeItem('questionnaireData');
+        }
+      }
+      
+      // Redirect to home page after successful sign in
       window.location.href = "/home"; 
     }
     catch(err:unknown){
@@ -84,6 +116,8 @@ export default function SignIn() {
               <input
                 placeholder='Enter your email'
                 className='pl-10 border-2 rounded-xl border-[#8f8b86] w-full p-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-300'
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
             </div>
           </div>
@@ -96,6 +130,8 @@ export default function SignIn() {
                 placeholder='Enter your password'
                 type='password'
                 className='pl-10 border-2 rounded-xl border-[#8f8b86] w-full p-2 text-sm placeholder:text-gray-400 dark:placeholder:text-gray-300'
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
             </div>
           </div>
