@@ -63,6 +63,7 @@ export interface Post {
   post_picture_url: string | null;
   created_at: string;
   is_private: boolean;
+  tag_ids?: number[];
   attendees?: { count: number }[];
   comments?: { count: number }[];
   users?: {
@@ -82,7 +83,7 @@ export interface CreatePostData {
   is_private?: boolean;
   organizer_id: string;
   post_picture_url?: string | null;
-  tag_ids?: string[];
+  tag_ids?: (string | number)[];
 }
 
 export interface Attendee {

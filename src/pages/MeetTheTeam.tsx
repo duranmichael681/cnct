@@ -15,6 +15,7 @@ import santiagoMunozPfp from '../assets/pfps/santiago_munoz.jpeg';
 import jorgeTabanPfp from '../assets/pfps/jorge_taban.jpg';
 import matthewFortesPfp from '../assets/pfps/matthew_fortes.jpeg';
 import paulReyesPfp from '../assets/pfps/paul_reyes.jpeg';
+import isabellaMitchellPfp from '../assets/pfps/IsabellaMitchell.png';
 
 interface TeamMember {
   name: string;
@@ -243,6 +244,18 @@ const teamMembers: TeamMember[] = [
     linkedin: 'https://www.linkedin.com/in/pauljohnreyes',
     imagePlaceholder: 'PR',
     image: paulReyesPfp,
+    category: 'backend',
+  },
+  {
+    name: 'Isabella Mitchell',
+    role: 'Backend Developer',
+    description: [
+      'Handled authentication functions for signup and signin',
+      'Developed UI and handled frontend fixes',
+    ],
+    linkedin: 'https://www.linkedin.com/in/isabella-mi/',
+    imagePlaceholder: 'IM',
+    image: isabellaMitchellPfp,
     category: 'backend',
   },
 ];

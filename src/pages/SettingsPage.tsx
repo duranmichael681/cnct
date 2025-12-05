@@ -45,6 +45,11 @@ export default function SettingsPage() {
     document.title = 'CNCT | Settings';
     loadUserData();
     loadTags();
+    
+    // Clear success message when user navigates away
+    return () => {
+      setSaveSuccess(false)
+    }
   }, []);
 
   const loadUserData = async () => {
@@ -243,11 +248,9 @@ export default function SettingsPage() {
 
       setSaveSuccess(true)
       
-      // Navigate to home after a brief delay to show success message
-      setTimeout(() => {
-        setSaveSuccess(false)
-        navigate('/') // Route back to home page
-      }, 1500)
+      // Reload user data to reflect saved changes
+      await loadUserData()
+      await loadTags()
     } catch (error: any) {
       console.error('Error saving settings:', error)
       setSaveError(error.message || 'Failed to save settings')

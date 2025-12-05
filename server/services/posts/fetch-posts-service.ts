@@ -38,7 +38,8 @@ export async function fetchPostService(userId?: string): Promise<any[]> {
                             profile_picture_url
                         ),
                         attendees(count),
-                        comments:comments(count)
+                        comments:comments(count),
+                        post_tags(tag_id)
                     `)
                     .eq('is_private', false)
                     .order('start_date', { ascending: true });
@@ -59,7 +60,12 @@ export async function fetchPostService(userId?: string): Promise<any[]> {
                     taggedPostIds.includes(post.id) || !postsWithTags.has(post.id)
                 );
 
-                return filteredPosts;
+                // Map post_tags to tag_ids array
+                return filteredPosts.map((post: any) => ({
+                    ...post,
+                    tag_ids: post.post_tags?.map((pt: any) => pt.tag_id) || [],
+                    post_tags: undefined // Remove the post_tags array from response
+                }));
             }
         }
 
@@ -75,7 +81,8 @@ export async function fetchPostService(userId?: string): Promise<any[]> {
                     profile_picture_url
                 ),
                 attendees(count),
-                comments:comments(count)
+                comments:comments(count),
+                post_tags(tag_id)
             `)
             .eq('is_private', false)
             .order('start_date', { ascending: true });
@@ -86,8 +93,20 @@ export async function fetchPostService(userId?: string): Promise<any[]> {
         if (!data) {
             throw new Error('No data returned from fetch');
         }
+
+        // Map post_tags to tag_ids array
+        const postsWithTagIds = data.map((post: any) => {
+            const tagIds = post.post_tags?.map((pt: any) => pt.tag_id) || [];
+            console.log(`📍 Post ${post.id}: post_tags =`, post.post_tags, 'mapped to tag_ids =', tagIds);
+            return {
+                ...post,
+                tag_ids: tagIds,
+                post_tags: undefined // Remove the post_tags array from response
+            };
+        });
         
-        return data;
+        console.log(`✅ Fetched ${postsWithTagIds.length} posts with tags`);
+        return postsWithTagIds;
     } catch (error) {
         console.error('Error in fetchPostService:', error);
         throw error;

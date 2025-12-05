@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useParams } from "react-router-dom";
 import ProfileHeader from "../components/ProfileHeader";
 import PostCard from "../components/PostCard";
 import SideBar from "../components/SideBar";
@@ -10,14 +11,18 @@ import { formatEventDate } from "../utils/helpers";
 import { supabase } from "../lib/supabaseClient";
 
 export default function ProfilePage() {
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'tags' | null>(null);
+  const { userId: paramUserId } = useParams<{ userId: string }>();
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | null>(null);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [userEvents, setUserEvents] = useState<Post[]>([]);
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [isOwnProfile, setIsOwnProfile] = useState(false);
 
+  // Initialize: get current user and determine which profile to view
   useEffect(() => {
     let mounted = true;
 
@@ -25,9 +30,12 @@ export default function ProfilePage() {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         if (mounted && session?.user) {
-          setUserId(session.user.id);
+          setCurrentUserId(session.user.id);
+          // If URL has a userId param, view that user's profile, otherwise view own profile
+          setUserId(paramUserId || session.user.id);
+          setIsOwnProfile(!paramUserId || paramUserId === session.user.id);
         } else {
-          setError('Please log in to view your profile.');
+          setError('Please log in to view profiles.');
           setLoading(false);
         }
       } catch (err) {
@@ -41,7 +49,7 @@ export default function ProfilePage() {
 
     initializeUser();
     return () => { mounted = false };
-  }, []);
+  }, [paramUserId]);
 
   useEffect(() => {
     if (!userId) return;
@@ -77,15 +85,10 @@ export default function ProfilePage() {
     return () => { mounted = false };
   }, [userId]);
 
-  const handleSortChange = (sort: 'newest' | 'oldest' | 'tags', tags?: string[]) => {
+  const handleSortChange = (sort: 'newest' | 'oldest') => {
     setSortBy(sort);
-    if (tags) {
-      setSelectedTags(tags);
-      console.log('Sorting by tags:', tags);
-    } else {
-      setSelectedTags([]);
-      console.log('Sorting by:', sort);
-    }
+    setSelectedTags([]);
+    console.log('Sorting by:', sort);
 
     // Apply sorting
     let sorted = [...userEvents];
@@ -97,6 +100,18 @@ export default function ProfilePage() {
     setUserEvents(sorted);
   };
 
+  const handleProfileUpdate = async () => {
+    if (!userId) return;
+    
+    try {
+      // Refetch user profile to get updated profile picture
+      const profileData = await getUserProfile(userId);
+      setUserProfile(profileData);
+    } catch (err) {
+      console.error('Error refreshing profile:', err);
+    }
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-[var(--background)] text-[var(--text)] transition-colors">
       <div className="flex flex-1">
@@ -105,7 +120,7 @@ export default function ProfilePage() {
 
         <main className="flex-1 p-6 pb-24 md:pb-6 md:ml-[70px]">
           {/* Profile Header */}
-          {userId && <ProfileHeader userId={userId} userProfile={userProfile || undefined} isOwnProfile={true} />}
+          {userId && <ProfileHeader userId={userId} userProfile={userProfile || undefined} isOwnProfile={isOwnProfile} onProfileUpdate={handleProfileUpdate} />}
 
           {/* Sort Filter */}
           <section className="mt-6 flex justify-end">

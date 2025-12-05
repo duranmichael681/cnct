@@ -13,11 +13,11 @@ import {
 } from "../components/ui/UIComponents";
 
 export default function DiscoverPage() {
-  const [sortBy, setSortBy] = useState<"newest" | "oldest" | "tags" | null>(
+  const [sortBy, setSortBy] = useState<"newest" | "oldest" | null>(
     null
   );
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
   const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedTagId, setSelectedTagId] = useState<number | undefined>(undefined);
   const [posts, setPosts] = useState<Post[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
@@ -28,13 +28,13 @@ export default function DiscoverPage() {
   useEffect(() => {
     let mounted = true;
 
-    async function fetchPosts() {
+    async function fetchData() {
       try {
         setLoading(true);
-        const data = await getAllPosts();
+        const postsData = await getAllPosts();
         if (mounted) {
-          setPosts(data);
-          setFilteredPosts(data);
+          setPosts(postsData);
+          setFilteredPosts(postsData);
           setError(null);
         }
       } catch (err) {
@@ -49,7 +49,7 @@ export default function DiscoverPage() {
       }
     }
 
-    fetchPosts();
+    fetchData();
     return () => {
       mounted = false;
     };
@@ -58,6 +58,13 @@ export default function DiscoverPage() {
   // Filter and sort posts when search, category, or sort changes
   useEffect(() => {
     let result = [...posts];
+
+    console.log('🔍 Filtering posts:', {
+      totalPosts: posts.length,
+      selectedTagId,
+      searchQuery,
+      sortBy
+    });
 
     // Filter by search query
     if (searchQuery) {
@@ -68,6 +75,16 @@ export default function DiscoverPage() {
           (post.building &&
             post.building.toLowerCase().includes(searchQuery.toLowerCase()))
       );
+    }
+
+    // Filter by category (if not "All Categories")
+    if (selectedTagId !== undefined) {
+      console.log(`📍 Filtering by tag ID: ${selectedTagId}`);
+      result = result.filter((post) => {
+        const hasTag = post.tag_ids?.includes(selectedTagId);
+        console.log(`   Post "${post.title}" - tag_ids: ${JSON.stringify(post.tag_ids)}, matches: ${hasTag}`);
+        return hasTag;
+      });
     }
 
     // Sort posts
@@ -84,24 +101,19 @@ export default function DiscoverPage() {
     }
 
     setFilteredPosts(result);
-  }, [searchQuery, sortBy, selectedCategory, posts]);
+  }, [searchQuery, sortBy, selectedTagId, posts]);
 
   const handleSortChange = (
-    sort: "newest" | "oldest" | "tags",
-    tags?: string[]
+    sort: "newest" | "oldest"
   ) => {
     setSortBy(sort);
-    if (tags) {
-      setSelectedTags(tags);
-    } else {
-      setSelectedTags([]);
-    }
-    console.log("Sorting by:", sort, "Tags:", tags);
+    console.log("Sorting by:", sort);
   };
 
-  const handleCategoryChange = (category: string) => {
+  const handleCategoryChange = (category: string, tagId?: number) => {
     setSelectedCategory(category);
-    console.log("Selected category:", category);
+    setSelectedTagId(tagId);
+    console.log("Selected category:", category, "Tag ID:", tagId);
   };
 
   return (

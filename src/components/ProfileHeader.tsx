@@ -322,22 +322,22 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
             {/* Name and Info */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:gap-6">
               <div className="flex-1 min-w-0">
-                <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold text-[var(--card-bg)] break-words">
+                <h1 className="text-2xl md:text-3xl lg:text-5xl font-bold text-[var(--text)] break-words">
                   {userProfile?.first_name} {userProfile?.last_name}
                 </h1>
                 {userProfile?.degree_program && (
-                  <p className="text-base md:text-lg lg:text-2xl font-semibold text-[var(--card-bg)] mt-2">
+                  <p className="text-base md:text-lg lg:text-2xl font-semibold text-[var(--text)] mt-2">
                     {userProfile.degree_program}
                   </p>
                 )}
                 {userProfile?.pronouns && (
-                  <p className="text-sm md:text-base lg:text-xl text-[var(--card-bg)] opacity-80 mt-1 italic">
+                  <p className="text-sm md:text-base lg:text-xl text-[var(--text)] opacity-80 mt-1 italic">
                     {userProfile.pronouns}
                   </p>
                 )}
                 
                 {/* Stats - Mobile only, right after name/pronouns/major */}
-                <div className="lg:hidden mt-3 flex flex-row gap-4 text-[var(--card-bg)]">
+                <div className="lg:hidden mt-3 flex flex-row gap-4 text-[var(--text)]">
                   <div className="flex flex-col items-center">
                     <span className="text-xl font-bold">{eventsHostedCount}</span>
                     <span className="text-xs opacity-80 whitespace-nowrap">{eventsHostedCount === 1 ? 'Event' : 'Events'}</span>
@@ -354,7 +354,7 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
               </div>
               
               {/* Stats - Desktop, vertically centered with name */}
-              <div className="hidden lg:flex flex-row gap-6 text-[var(--card-bg)]">
+              <div className="hidden lg:flex flex-row gap-6 text-[var(--text)]">
                 <div className="flex flex-col items-center">
                   <span className="text-4xl font-bold">{eventsHostedCount}</span>
                   <span className="text-sm opacity-80 whitespace-nowrap">{eventsHostedCount === 1 ? 'Event' : 'Events'}</span>
@@ -372,7 +372,7 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
 
             {/* Description */}
             {userProfile?.description && (
-              <p className="mt-4 text-sm md:text-base lg:text-lg text-[var(--card-bg)] opacity-80 break-words">
+              <p className="mt-4 text-sm md:text-base lg:text-lg text-[var(--text)] opacity-80 break-words">
                 {userProfile.description}
               </p>
             )}
@@ -474,7 +474,7 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
       {/* Right Section: Groups */}
       <div className="w-full lg:w-[30%] lg:max-w-[350px] flex-shrink-0 hidden lg:block">
         <div className="bg-[var(--menucard)] dark:bg-[var(--tertiary)] border border-[var(--border)] rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-[var(--card-bg)] mb-3">Groups</h3>
+          <h3 className="text-lg font-semibold text-[var(--text)] mb-3">Groups</h3>
           {groups.length === 0 ? (
             <p className="text-center text-[var(--text)] opacity-60 py-4">No groups</p>
           ) : (

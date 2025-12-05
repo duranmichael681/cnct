@@ -18,7 +18,7 @@ export async function fetchPostByIdService(postId: string): Promise<Post> {
     try {
         const { data, error } = await supabaseAdmin
             .from('posts')
-            .select('*')
+            .select('*, post_tags(tag_id)')
             .eq('id', postId)
             .single();
             
