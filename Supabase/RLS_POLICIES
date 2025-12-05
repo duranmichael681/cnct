@@ -146,6 +146,7 @@ ALTER TABLE public.attendees ENABLE ROW LEVEL SECURITY;
 DROP POLICY IF EXISTS attendees_select_all        ON public.attendees;
 DROP POLICY IF EXISTS attendees_insert_self_only  ON public.attendees;
 DROP POLICY IF EXISTS attendees_delete_self_only  ON public.attendees;
+DROP POLICY IF EXISTS attendees_insert_admin      ON public.attendees;
 
 -- Anyone (with table SELECT privilege) can read attendees
 CREATE POLICY attendees_select_all
@@ -158,6 +159,12 @@ CREATE POLICY attendees_insert_self_only
 ON public.attendees
 FOR INSERT
 WITH CHECK (user_id = (select auth.uid()));
+
+-- Admin/Service role can insert attendees (for automated operations like organizer attendance)
+CREATE POLICY attendees_insert_admin
+ON public.attendees
+FOR INSERT
+WITH CHECK (true);
 
 -- You can only cancel *your own* attendance
 CREATE POLICY attendees_delete_self_only

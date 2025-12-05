@@ -114,6 +114,7 @@ export default function PostCard({
   const [visibleCommentsCount, setVisibleCommentsCount] = useState(5);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const [comments, setComments] = useState<Comment[]>([
     { id: "1", userId: "101", username: "user1", text: "This looks amazing!", timestamp: "1h ago", upvotes: 5, downvotes: 0, userVote: null },
     { id: "2", userId: "102", username: "user2", text: "Count me in!", timestamp: "30m ago", upvotes: 3, downvotes: 0, userVote: null },
@@ -128,8 +129,9 @@ export default function PostCard({
   const [editingCommentText, setEditingCommentText] = useState("");
   const commentInputRef = useRef<HTMLInputElement>(null);
 
-  // Mock user ID - in a real app, this would come from props or context
-  const mockUserId = "123";
+  // Check if current user is the organizer of this post
+  const isCurrentUserOrganizer = currentUserId && event.organizer_id && currentUserId === event.organizer_id;
+  const isHomeOrDiscover = location_route.pathname === '/' || location_route.pathname === '/discover';
 
   // Fetch dynamic data on mount
   useEffect(() => {
@@ -208,6 +210,7 @@ export default function PostCard({
       // Check current user's RSVP status
       const { data: { session } } = await supabase.auth.getSession();
       if (session?.user) {
+        setCurrentUserId(session.user.id);
         // Check if current user has RSVP'd
         const { data: rsvpData } = await supabase
           .from('attendees')
@@ -282,9 +285,6 @@ export default function PostCard({
 
     fetchData();
   }, [event.id, event.organizer_id, event.created_at, event.building, event.users, event.attendees]);
-
-  // Determine if we're on home or discover page
-  const isHomeOrDiscover = location_route.pathname === '/home' || location_route.pathname === '/discover';
 
   const handleUserClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -779,7 +779,7 @@ export default function PostCard({
                 <Flag size={16} />
                 Report
               </button>
-              {!isOwnProfile && (
+              {!isCurrentUserOrganizer && (
                 <button
                   onClick={handleBlockUser}
                   className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
@@ -796,7 +796,7 @@ export default function PostCard({
                   <EyeOff size={16} />
                   Not Interested
                 </button>
-              ) : isOwnProfile ? (
+              ) : isCurrentUserOrganizer ? (
                 <>
                   <button
                     onClick={handleEditPost}
@@ -826,14 +826,17 @@ export default function PostCard({
           )}
         </div>
 
-        <div onClick={() => setIsOpen(true)}>
+        <div onClick={() => {
+          setIsOpen(true);
+          setShowComments(false);
+        }}>
           {/* User + Timestamp */}
           <div 
             className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3 cursor-pointer hover:opacity-80 transition-opacity max-w-full"
             onClick={handleUserClick}
           >
             {/* Circular profile picture container */}
-            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)]">
+            <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] flex items-center justify-center">
               {organizerProfilePic ? (
                 <img 
                   src={organizerProfilePic} 
@@ -843,7 +846,11 @@ export default function PostCard({
                     e.currentTarget.style.display = 'none';
                   }}
                 />
-              ) : null}
+              ) : (
+                <span className="text-white font-bold text-sm">
+                  {(organizerUsername?.[0] || 'U').toUpperCase()}
+                </span>
+              )}
             </div>
             <div className="min-w-0 flex-1">
               <p className="font-bold text-sm md:text-base text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate">{organizerUsername || 'Loading...'}</p>
@@ -905,10 +912,11 @@ export default function PostCard({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                toggleComments(e);
+                setIsOpen(true);
+                setShowComments(true);
               }}
               className="flex items-center gap-1 cursor-pointer hover:text-[var(--primary)] transition-colors hover:scale-110 transform duration-200"
-              aria-label={showComments ? "Hide comments" : "Show comments"}
+              aria-label="View comments"
             >
               <MessageCircle size={16} className="md:w-5 md:h-5 fill-transparent stroke-[var(--primary)]" />
               <span className="text-xs md:text-sm">{comments.length}</span>
@@ -968,7 +976,7 @@ export default function PostCard({
                     <Flag size={16} />
                     Report
                   </button>
-                  {!isOwnProfile && (
+                  {!isCurrentUserOrganizer && (
                     <button
                       onClick={handleBlockUser}
                       className="w-full px-4 py-2 text-left hover:bg-[var(--menucard)] transition-colors flex items-center gap-2 text-[var(--danger)] cursor-pointer"
@@ -985,7 +993,7 @@ export default function PostCard({
                       <EyeOff size={16} />
                       Not Interested
                     </button>
-                  ) : isOwnProfile ? (
+                  ) : isCurrentUserOrganizer ? (
                     <>
                       <button
                         onClick={handleEditPost}
@@ -1015,18 +1023,30 @@ export default function PostCard({
               )}
             </div>
 
-            {/* Close button */}
-            <button
-              onClick={() => {
-                setIsOpen(false);
-                setShowMenu(false);
-                onClose?.();
-              }}
-              className="absolute top-5 right-5.5 text-[var(--text-secondary)] hover:text-[var(--text)] text-2xl hover:rotate-90 transition-all duration-300 cursor-pointer"
-              aria-label="Close modal"
-            >
-              ×
-            </button>
+            {/* Delete and Close buttons */}
+            <div className="absolute top-5 right-5.5 flex items-center gap-2">
+              {isCurrentUserOrganizer && (
+                <button
+                  onClick={handleDeletePost}
+                  className="p-2 hover:bg-[var(--danger)]/10 rounded-lg transition-colors text-[var(--danger)] hover:text-[var(--danger)] font-semibold"
+                  aria-label="Delete post"
+                  title="Delete post"
+                >
+                  <Trash2 size={20} />
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setIsOpen(false);
+                  setShowMenu(false);
+                  onClose?.();
+                }}
+                className="text-[var(--text-secondary)] hover:text-[var(--text)] text-2xl hover:rotate-90 transition-all duration-300 cursor-pointer"
+                aria-label="Close modal"
+              >
+                ×
+              </button>
+            </div>
 
             {/* Event Header */}
             <div 
@@ -1034,7 +1054,7 @@ export default function PostCard({
               onClick={handleUserClick}
             >
               {/* Circular profile picture container */}
-              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)]">
+              <div className="w-12 h-12 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] flex items-center justify-center">
                 {organizerProfilePic ? (
                   <img 
                     src={organizerProfilePic} 
@@ -1044,7 +1064,11 @@ export default function PostCard({
                       e.currentTarget.style.display = 'none';
                     }}
                   />
-                ) : null}
+                ) : (
+                  <span className="text-white font-bold text-xl">
+                    {(organizerUsername?.[0] || 'U').toUpperCase()}
+                  </span>
+                )}
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-bold text-[var(--text)] hover:text-[var(--primary)] transition-colors truncate">{organizerUsername || 'Loading...'}</p>
@@ -1060,11 +1084,11 @@ export default function PostCard({
             {/* Event Info */}
             <div className="flex flex-wrap items-center gap-4 mb-4 text-sm text-[var(--text-secondary)]">
               <div className="flex items-center gap-1">
-                <MapPin size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
+                <MapPin size={16} strokeWidth={2} color="var(--primary)" className="flex-shrink-0" />
                 <span>{locationDisplay || 'Location TBD'}</span>
               </div>
               <div className="flex items-center gap-1">
-                <Clock size={16} className="fill-[var(--primary)] dark:fill-transparent stroke-[var(--primary)]" />
+                <Clock size={16} strokeWidth={2} color="var(--primary)" className="flex-shrink-0" />
                 <span>{new Date(event.start_date).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
               </div>
             </div>

@@ -22,6 +22,8 @@ export interface postResponse {
 }
 export async function createPostService(postData: postData): Promise<postResponse> {
     try {
+        console.log('🚀 Starting createPostService with userId:', postData.userId);
+        
         const { data, error } = await supabaseAdmin
             .from('posts')
             .insert([{
@@ -45,6 +47,39 @@ export async function createPostService(postData: postData): Promise<postRespons
             throw new Error('No data returned after insert');
         }
 
+        console.log('✅ Post inserted:', data.id);
+
+        // Add organizer as an attendee automatically
+        console.log(`\n🔔 ATTEMPTING TO ADD ORGANIZER AS ATTENDEE\n`);
+        console.log(`   Post ID: ${data.id}`);
+        console.log(`   User ID: ${postData.userId}`);
+        
+        const attendeePayload = {
+            posts_id: data.id,
+            user_id: postData.userId
+        };
+        console.log(`   Payload:`, attendeePayload);
+
+        const { data: attendeeData, error: attendeeError } = await supabaseAdmin
+            .from('attendees')
+            .insert([attendeePayload])
+            .select();
+
+        console.log(`   Response:`, { data: attendeeData, error: attendeeError });
+
+        if (attendeeError) {
+            console.error(`\n❌ ERROR ADDING ORGANIZER AS ATTENDEE\n`, {
+                message: attendeeError.message,
+                code: attendeeError.code,
+                details: attendeeError.details,
+                hint: attendeeError.hint,
+                postId: data.id,
+                userId: postData.userId
+            });
+        } else {
+            console.log(`\n✅ ORGANIZER ADDED AS ATTENDEE\n`, attendeeData);
+        }
+
         // Insert tags into post_tags junction table if provided
         if (postData.tagIds && postData.tagIds.length > 0) {
             console.log(`📝 Inserting ${postData.tagIds.length} tags for post ${data.id}`);
@@ -61,7 +96,6 @@ export async function createPostService(postData: postData): Promise<postRespons
 
             if (tagsError) {
                 console.error('❌ Error inserting post tags:', tagsError);
-                // Don't throw - post was created successfully, tags are optional
             } else {
                 console.log('✅ Tags inserted successfully');
             }
@@ -72,7 +106,7 @@ export async function createPostService(postData: postData): Promise<postRespons
             message: 'Post created successfully',
             id: data.id,
             title: data.title,
-            body: data.body,       // was content
+            body: data.body,
             created_at: data.created_at,
         }
 

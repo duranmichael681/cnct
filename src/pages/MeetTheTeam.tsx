@@ -15,7 +15,7 @@ import santiagoMunozPfp from '../assets/pfps/santiago_munoz.jpeg';
 import jorgeTabanPfp from '../assets/pfps/jorge_taban.jpg';
 import matthewFortesPfp from '../assets/pfps/matthew_fortes.jpeg';
 import paulReyesPfp from '../assets/pfps/paul_reyes.jpeg';
-import isabellaMitchellPfp from '../assets/pfps/IsabellaMitchell.png';
+import isabellaMitchellPfp from '../assets/pfps/IsabellaMitchell.png'
 
 interface TeamMember {
   name: string;
@@ -151,7 +151,8 @@ const teamMembers: TeamMember[] = [
       'Managed Supabase database schema and RLS policies',
       'Set up Google OAuth project',
       'Contributed to backend documentation, issue planning, and merge reviews',
-      'Will finalize error handling',
+      'Error handling (404 page, big img error)',
+      'Finalized project alongside fellow co-lead with merging, updates, debugging, and fixes',
     ],
     linkedin: 'https://www.linkedin.com/in/jose-uribe-26965a241/',
     imagePlaceholder: 'JU',
@@ -161,7 +162,16 @@ const teamMembers: TeamMember[] = [
   {
     name: 'Jorge Taban',
     role: 'Backend Co-Lead',
-    description: ['TBA'],
+    description: [
+      'Co-led backend development',
+      'bBuilt the initial server architecture', 
+      'Designed the Supabase schema with RLS',
+      'Integrated frontend → middleware → backend flows',
+      'Implemented storage buckets and dynamic post creation', 
+      'Ensured images + metadata populated correctly',
+      'Refactored hardcoded frontend logic into dynamic components',
+      'Documentation, planning, reviews, and error-handling',
+    ],
     linkedin: 'https://www.linkedin.com/in/jorgetaban/',
     imagePlaceholder: 'JT',
     image: jorgeTabanPfp,
@@ -240,7 +250,10 @@ const teamMembers: TeamMember[] = [
   {
     name: 'Paul Reyes',
     role: 'Backend Developer',
-    description: ['TBA'],
+    description: [
+      'Implemented the post endpoints', 
+      'Created framework for structuring files',
+    ],
     linkedin: 'https://www.linkedin.com/in/pauljohnreyes',
     imagePlaceholder: 'PR',
     image: paulReyesPfp,

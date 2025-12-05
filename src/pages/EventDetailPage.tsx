@@ -317,14 +317,18 @@ export default function EventDetailPage() {
                   className="flex items-center gap-3 mb-6 cursor-pointer hover:opacity-80 transition-opacity w-fit"
                   onClick={() => navigate(`/profile/${post.organizer_id}`)}
                 >
-                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)]">
+                  <div className="w-12 h-12 md:w-14 md:h-14 rounded-full flex-shrink-0 overflow-hidden bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] flex items-center justify-center">
                     {post.organizer_profile_pic ? (
                       <img 
                         src={post.organizer_profile_pic} 
                         alt={post.organizer_name} 
                         className="w-full h-full object-cover" 
                       />
-                    ) : null}
+                    ) : (
+                      <span className="text-white font-bold text-xl">
+                        {(post.organizer_name?.split(' ')[0]?.[0] || 'U').toUpperCase()}
+                      </span>
+                    )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="text-xs md:text-sm text-[var(--text-secondary)]">Organized by</p>

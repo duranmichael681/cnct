@@ -1,11 +1,12 @@
 import { motion } from "framer-motion";
 import { useState, useEffect } from "react";
+import { supabase } from "../lib/supabaseClient";
 import SideBar from "../components/SideBar";
 import Footer from "../components/Footer";
 import SortFilter from "../components/SortFilter";
 import CategoryFilter from "../components/CategoryFilter";
 import PostCard from "../components/PostCard";
-import { getAllPosts, type Post } from "../services/api";
+import { getAllPosts, getUserFollowing, type Post, type UserProfile } from "../services/api";
 import {
   LoadingSpinner,
   ErrorMessage,
@@ -16,13 +17,42 @@ export default function DiscoverPage() {
   const [sortBy, setSortBy] = useState<"newest" | "oldest" | null>(
     null
   );
-  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [selectedFilter, setSelectedFilter] = useState("All Filters");
   const [selectedTagId, setSelectedTagId] = useState<number | undefined>(undefined);
+  const [selectedOtherFilter, setSelectedOtherFilter] = useState<string | undefined>(undefined);
   const [posts, setPosts] = useState<Post[]>([]);
   const [filteredPosts, setFilteredPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [following, setFollowing] = useState<UserProfile[]>([]);
+
+  // Fetch current user and their following list
+  useEffect(() => {
+    let mounted = true;
+
+    async function fetchCurrentUser() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        if (mounted && user) {
+          setCurrentUserId(user.id);
+          // Fetch following list
+          const followingData = await getUserFollowing(user.id);
+          if (mounted) {
+            setFollowing(followingData);
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching current user:', err);
+      }
+    }
+
+    fetchCurrentUser();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   // Fetch posts from backend
   useEffect(() => {
@@ -55,13 +85,14 @@ export default function DiscoverPage() {
     };
   }, []);
 
-  // Filter and sort posts when search, category, or sort changes
+  // Filter and sort posts when search, filter, or sort changes
   useEffect(() => {
     let result = [...posts];
 
     console.log('🔍 Filtering posts:', {
       totalPosts: posts.length,
       selectedTagId,
+      selectedOtherFilter,
       searchQuery,
       sortBy
     });
@@ -77,7 +108,7 @@ export default function DiscoverPage() {
       );
     }
 
-    // Filter by category (if not "All Categories")
+    // Filter by tag (if selected)
     if (selectedTagId !== undefined) {
       console.log(`📍 Filtering by tag ID: ${selectedTagId}`);
       result = result.filter((post) => {
@@ -85,6 +116,30 @@ export default function DiscoverPage() {
         console.log(`   Post "${post.title}" - tag_ids: ${JSON.stringify(post.tag_ids)}, matches: ${hasTag}`);
         return hasTag;
       });
+    }
+
+    // Filter by other filters (friends are going, friends are organizing, this week)
+    if (selectedOtherFilter === 'friends_going') {
+      const friendIds = following.map(f => f.id);
+      result = result.filter((post) => {
+        // Check if any attendees are in the user's following list
+        const hasFollowingAttendee = (post.attendees || []).some(attendee => 
+          attendee.users && friendIds.includes(attendee.users.id)
+        );
+        return hasFollowingAttendee;
+      });
+      console.log('📍 Filtering by friends are going - Friend IDs:', friendIds);
+    } else if (selectedOtherFilter === 'friends_organizing') {
+      // TODO: Implement friends are organizing filter
+      console.log('📍 Filtering by friends are organizing');
+    } else if (selectedOtherFilter === 'this_week') {
+      const today = new Date();
+      const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+      result = result.filter((post) => {
+        const postDate = new Date(post.start_date);
+        return postDate >= today && postDate <= weekFromNow;
+      });
+      console.log('📍 Filtering by this week');
     }
 
     // Sort posts
@@ -101,7 +156,7 @@ export default function DiscoverPage() {
     }
 
     setFilteredPosts(result);
-  }, [searchQuery, sortBy, selectedTagId, posts]);
+  }, [searchQuery, sortBy, selectedTagId, selectedOtherFilter, posts, following]);
 
   const handleSortChange = (
     sort: "newest" | "oldest"
@@ -110,10 +165,29 @@ export default function DiscoverPage() {
     console.log("Sorting by:", sort);
   };
 
-  const handleCategoryChange = (category: string, tagId?: number) => {
-    setSelectedCategory(category);
-    setSelectedTagId(tagId);
-    console.log("Selected category:", category, "Tag ID:", tagId);
+  const handleFilterChange = (filter: string, tagId?: number) => {
+    setSelectedFilter(filter);
+    
+    if (tagId !== undefined) {
+      // It's a tag filter
+      setSelectedTagId(tagId);
+      setSelectedOtherFilter(undefined);
+    } else if (filter === 'All Filters') {
+      // Reset all filters
+      setSelectedTagId(undefined);
+      setSelectedOtherFilter(undefined);
+    } else if (filter === 'Friends are going') {
+      setSelectedOtherFilter('friends_going');
+      setSelectedTagId(undefined);
+    } else if (filter === 'Friends are organizing') {
+      setSelectedOtherFilter('friends_organizing');
+      setSelectedTagId(undefined);
+    } else if (filter === 'This week') {
+      setSelectedOtherFilter('this_week');
+      setSelectedTagId(undefined);
+    }
+    
+    console.log("Selected filter:", filter, "Tag ID:", tagId);
   };
 
   return (
@@ -144,7 +218,7 @@ export default function DiscoverPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 w-full px-4 py-2 rounded-lg border border-[var(--border)] bg-[var(--card-bg)] text-[var(--text)] placeholder:text-gray-400 dark:placeholder:text-gray-300 focus:outline-none focus:ring-2 focus:ring-[var(--primary)] cursor-text"
               />
-              <CategoryFilter onCategoryChange={handleCategoryChange} />
+              <CategoryFilter onCategoryChange={handleFilterChange} />
               <SortFilter onSortChange={handleSortChange} />
             </div>
 

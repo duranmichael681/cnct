@@ -10,6 +10,8 @@ interface ProfileHeaderProps {
   userId?: string;
   userProfile?: UserProfile;
   onProfileUpdate?: () => void;
+  onShowFollowers?: () => void;
+  onShowFollowing?: () => void;
 }
 
 interface Group {
@@ -19,7 +21,7 @@ interface Group {
   role?: string;
 }
 
-export default function ProfileHeader({ isOwnProfile = true, userId, userProfile, onProfileUpdate  }: ProfileHeaderProps) {
+export default function ProfileHeader({ isOwnProfile = true, userId, userProfile, onProfileUpdate, onShowFollowers, onShowFollowing }: ProfileHeaderProps) {
   const navigate = useNavigate();
   const [isFollowing, setIsFollowing] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -135,7 +137,7 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) return;
 
-      const response = await fetch(`http://localhost:5000/api/groups/${groupId}/leave`, {
+      const response = await fetch(`http://localhost:5000/api/groups/${groupId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${session.access_token}`
@@ -281,13 +283,15 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
         {/* Profile Picture with Upload - Bigger on desktop */}
         <div className="relative group flex-shrink-0">
           <div 
-            className={`w-48 h-48 lg:w-64 lg:h-64 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full overflow-hidden ${isOwnProfile && !uploading ? 'cursor-pointer' : ''}`}
+            className={`w-48 h-48 lg:w-64 lg:h-64 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] rounded-full overflow-hidden flex items-center justify-center ${isOwnProfile && !uploading ? 'cursor-pointer' : ''}`}
             onClick={isOwnProfile && !uploading ? handleProfilePictureClick : undefined}
           >
             {userProfile?.profile_picture_url ? (
               <img src={userProfile.profile_picture_url} alt="Profile" className="w-full h-full object-cover" />
             ) : (
-              <div className="w-full h-full" />
+              <span className="text-white font-bold text-7xl lg:text-9xl">
+                {(userProfile?.first_name?.[0] || 'U').toUpperCase()}
+              </span>
             )}
           </div>
           {/* Hover overlay with edit icon - only for own profile */}
@@ -342,14 +346,14 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
                     <span className="text-xl font-bold">{eventsHostedCount}</span>
                     <span className="text-xs opacity-80 whitespace-nowrap">{eventsHostedCount === 1 ? 'Event' : 'Events'}</span>
                   </div>
-                  <div className="flex flex-col items-center">
+                  <button onClick={onShowFollowers} className="flex flex-col items-center hover:opacity-80 transition cursor-pointer">
                     <span className="text-xl font-bold">{followersCount}</span>
                     <span className="text-xs opacity-80">{followersCount === 1 ? 'Follower' : 'Followers'}</span>
-                  </div>
-                  <div className="flex flex-col items-center">
+                  </button>
+                  <button onClick={onShowFollowing} className="flex flex-col items-center hover:opacity-80 transition cursor-pointer">
                     <span className="text-xl font-bold">{followingCount}</span>
                     <span className="text-xs opacity-80">Following</span>
-                  </div>
+                  </button>
                 </div>
               </div>
               
@@ -359,14 +363,14 @@ export default function ProfileHeader({ isOwnProfile = true, userId, userProfile
                   <span className="text-4xl font-bold">{eventsHostedCount}</span>
                   <span className="text-sm opacity-80 whitespace-nowrap">{eventsHostedCount === 1 ? 'Event' : 'Events'}</span>
                 </div>
-                <div className="flex flex-col items-center">
+                <button onClick={onShowFollowers} className="flex flex-col items-center hover:opacity-80 transition cursor-pointer">
                   <span className="text-4xl font-bold">{followersCount}</span>
                   <span className="text-sm opacity-80">{followersCount === 1 ? 'Follower' : 'Followers'}</span>
-                </div>
-                <div className="flex flex-col items-center">
+                </button>
+                <button onClick={onShowFollowing} className="flex flex-col items-center hover:opacity-80 transition cursor-pointer">
                   <span className="text-4xl font-bold">{followingCount}</span>
                   <span className="text-sm opacity-80">Following</span>
-                </div>
+                </button>
               </div>
             </div>
 

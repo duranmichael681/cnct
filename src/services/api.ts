@@ -188,6 +188,34 @@ export async function getUserAttendingPosts(userId: string): Promise<any[]> {
   return response.data;
 }
 
+// Get user followers
+export async function getUserFollowers(userId: string): Promise<UserProfile[]> {
+  const response = await fetchAPI<{ success: boolean; data: UserProfile[] }>(
+    `/profile/${userId}/followers`
+  );
+  return response.data;
+}
+
+// Get users that the user is following
+export async function getUserFollowing(userId: string): Promise<UserProfile[]> {
+  const response = await fetchAPI<{ success: boolean; data: UserProfile[] }>(
+    `/profile/${userId}/following`
+  );
+  return response.data;
+}
+
+// Toggle follow/unfollow a user
+export async function toggleFollow(userId: string, followerId: string): Promise<{ success: boolean; action: 'followed' | 'unfollowed' }> {
+  const response = await fetchAPI<{ success: boolean; action: 'followed' | 'unfollowed' }>(
+    `/users/${userId}/follow`,
+    {
+      method: 'POST',
+      body: JSON.stringify({ follower_id: followerId })
+    }
+  );
+  return response;
+}
+
 // Update user setting
 export async function updateUserSetting(
   userId: string,
