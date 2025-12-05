@@ -153,6 +153,7 @@ const teamMembers: TeamMember[] = [
       'Contributed to backend documentation, issue planning, and merge reviews',
       'Error handling (404 page, big img error)',
       'Finalized project alongside co-lead with testing, merging, reviews, and updates',
+      'Final deployment on Render',
     ],
     linkedin: 'https://www.linkedin.com/in/jose-uribe-26965a241/',
     imagePlaceholder: 'JU',
@@ -169,6 +170,7 @@ const teamMembers: TeamMember[] = [
       'Implemented storage buckets, dynamic post creation, and deletion',
       'Integrated follow/following system',
       'Testing, merging, reviews, documentation, and error-handling',
+      'Final deployment on Render',
     ],
     linkedin: 'https://www.linkedin.com/in/jorgetaban/',
     imagePlaceholder: 'JT',
@@ -397,3 +399,4 @@ export default function MeetTheTeam() {
     </div>
   );
 }
+
