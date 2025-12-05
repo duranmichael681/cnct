@@ -64,7 +64,7 @@ export interface Post {
   created_at: string;
   is_private: boolean;
   tag_ids?: number[];
-  attendees?: { count: number }[];
+  attendees?: { user_id: string }[];
   comments?: { count: number }[];
   users?: {
     id: string;

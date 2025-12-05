@@ -37,7 +37,6 @@ export async function fetchPostService(userId?: string): Promise<any[]> {
                             last_name,
                             profile_picture_url
                         ),
-                        attendees(count),
                         comments:comments(count),
                         post_tags(tag_id)
                     `)
@@ -45,6 +44,26 @@ export async function fetchPostService(userId?: string): Promise<any[]> {
                     .order('start_date', { ascending: true });
 
                 if (allPostsError) throw allPostsError;
+
+                // Fetch all attendees separately
+                const { data: allAttendees, error: attendeesError} = await supabaseAdmin
+                    .from('attendees')
+                    .select('user_id, posts_id');
+
+                if (attendeesError) {
+                    console.error('Error fetching attendees:', attendeesError);
+                }
+
+                // Group attendees by post_id
+                const attendeesByPost: Record<string, { user_id: string }[]> = {};
+                if (allAttendees) {
+                    allAttendees.forEach(attendee => {
+                        if (!attendeesByPost[attendee.posts_id]) {
+                            attendeesByPost[attendee.posts_id] = [];
+                        }
+                        attendeesByPost[attendee.posts_id].push({ user_id: attendee.user_id });
+                    });
+                }
 
                 // Get all post IDs that have tags
                 const { data: allPostTags, error: allPostTagsError } = await supabaseAdmin
@@ -60,10 +79,11 @@ export async function fetchPostService(userId?: string): Promise<any[]> {
                     taggedPostIds.includes(post.id) || !postsWithTags.has(post.id)
                 );
 
-                // Map post_tags to tag_ids array
+                // Map post_tags to tag_ids array and add attendees
                 return filteredPosts.map((post: any) => ({
                     ...post,
                     tag_ids: post.post_tags?.map((pt: any) => pt.tag_id) || [],
+                    attendees: attendeesByPost[post.id] || [],
                     post_tags: undefined // Remove the post_tags array from response
                 }));
             }
@@ -80,7 +100,6 @@ export async function fetchPostService(userId?: string): Promise<any[]> {
                     last_name,
                     profile_picture_url
                 ),
-                attendees(count),
                 comments:comments(count),
                 post_tags(tag_id)
             `)
@@ -94,13 +113,36 @@ export async function fetchPostService(userId?: string): Promise<any[]> {
             throw new Error('No data returned from fetch');
         }
 
-        // Map post_tags to tag_ids array
+        // Fetch all attendees separately
+        const { data: allAttendees, error: attendeesError } = await supabaseAdmin
+            .from('attendees')
+            .select('user_id, posts_id');
+
+        if (attendeesError) {
+            console.error('Error fetching attendees:', attendeesError);
+        }
+
+        // Group attendees by post_id
+        const attendeesByPost: Record<string, { user_id: string }[]> = {};
+        if (allAttendees) {
+            allAttendees.forEach(attendee => {
+                if (!attendeesByPost[attendee.posts_id]) {
+                    attendeesByPost[attendee.posts_id] = [];
+                }
+                attendeesByPost[attendee.posts_id].push({ user_id: attendee.user_id });
+            });
+        }
+
+        console.log('📦 Sample attendees for first post:', JSON.stringify(attendeesByPost[data[0]?.id], null, 2));
+
+        // Map post_tags to tag_ids array and add attendees
         const postsWithTagIds = data.map((post: any) => {
             const tagIds = post.post_tags?.map((pt: any) => pt.tag_id) || [];
             console.log(`📍 Post ${post.id}: post_tags =`, post.post_tags, 'mapped to tag_ids =', tagIds);
             return {
                 ...post,
                 tag_ids: tagIds,
+                attendees: attendeesByPost[post.id] || [],
                 post_tags: undefined // Remove the post_tags array from response
             };
         });

@@ -121,17 +121,37 @@ export default function DiscoverPage() {
     // Filter by other filters (friends are going, friends are organizing, this week)
     if (selectedOtherFilter === 'friends_going') {
       const friendIds = following.map(f => f.id);
+      console.log('📍 Filtering by friends are going');
+      console.log('   Friend IDs:', friendIds);
+      console.log('   First post attendees structure:', JSON.stringify(posts[0]?.attendees, null, 2));
+      
       result = result.filter((post) => {
-        // Check if any attendees are in the user's following list
-        const hasFollowingAttendee = (post.attendees || []).some(attendee => 
-          attendee.users && friendIds.includes(attendee.users.id)
-        );
-        return hasFollowingAttendee;
+        // Check if organizer is a friend OR any attendees are friends (excluding current user)
+        const isOrganizerFollowing = friendIds.includes(post.organizer_id);
+        const hasFollowingAttendee = (post.attendees || []).some(attendee => {
+          // Exclude current user from the check
+          if (attendee.user_id === currentUserId) return false;
+          const matches = friendIds.includes(attendee.user_id);
+          if (matches) {
+            console.log(`   ✓ Found friend attendee in "${post.title}":`, attendee.user_id);
+          }
+          return matches;
+        });
+        
+        if (isOrganizerFollowing || hasFollowingAttendee) {
+          console.log(`   Including "${post.title}" - Organizer: ${isOrganizerFollowing}, Has friend attendee: ${hasFollowingAttendee}, Attendees:`, post.attendees);
+        }
+        
+        return isOrganizerFollowing || hasFollowingAttendee;
       });
-      console.log('📍 Filtering by friends are going - Friend IDs:', friendIds);
     } else if (selectedOtherFilter === 'friends_organizing') {
-      // TODO: Implement friends are organizing filter
-      console.log('📍 Filtering by friends are organizing');
+      const friendIds = following.map(f => f.id);
+      result = result.filter((post) => {
+        // Check if the organizer is in the user's following list
+        const isOrganizerFollowing = friendIds.includes(post.organizer_id);
+        return isOrganizerFollowing;
+      });
+      console.log('📍 Filtering by friends are organizing - Friend IDs:', friendIds);
     } else if (selectedOtherFilter === 'this_week') {
       const today = new Date();
       const weekFromNow = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);

@@ -202,9 +202,9 @@ export default function PostCard({
         setOrganizerUsername('Unknown User');
       }
 
-      // Use RSVP count from event if available
-      if (event.attendees && event.attendees.length > 0) {
-        setRsvpCount(event.attendees[0].count || 0);
+      // Use RSVP count from attendees array length
+      if (event.attendees) {
+        setRsvpCount(event.attendees.length);
       }
 
       // Check current user's RSVP status
@@ -826,14 +826,20 @@ export default function PostCard({
           )}
         </div>
 
-        <div onClick={() => {
-          setIsOpen(true);
-          setShowComments(false);
-        }}>
+        <div
+          onClick={() => {
+            setIsOpen(true);
+            setShowComments(false);
+          }}
+          className="cursor-pointer"
+        >
           {/* User + Timestamp */}
           <div 
-            className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3 cursor-pointer hover:opacity-80 transition-opacity max-w-full"
-            onClick={handleUserClick}
+            className="flex items-center gap-2 md:gap-3 mb-2 md:mb-3 cursor-pointer hover:opacity-80 transition-opacity max-w-full w-fit"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUserClick(e);
+            }}
           >
             {/* Circular profile picture container */}
             <div className="w-8 h-8 md:w-10 md:h-10 rounded-full overflow-hidden flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] flex items-center justify-center">
@@ -859,13 +865,13 @@ export default function PostCard({
           </div>
 
           {/* Event Name - single line with ellipsis */}
-          <h3 className="text-base md:text-lg font-semibold text-[var(--text)] mb-2 md:mb-3 hover:text-[var(--primary)] transition-colors truncate whitespace-nowrap overflow-hidden min-w-0">
-            {event.title}
-          </h3>
+            <h3 className="text-base md:text-lg font-semibold text-[var(--text)] mb-2 md:mb-3 hover:text-[var(--primary)] transition-colors truncate whitespace-nowrap overflow-hidden min-w-0">
+              {event.title}
+            </h3>
 
-          {/* Event Info - two fixed lines */}
-          <div className="flex flex-col gap-1 md:gap-1.5 mb-2 text-xs md:text-sm text-[var(--text-secondary)] min-w-0">
-            <div className="flex items-center gap-1 min-w-0">
+            {/* Event Info - two fixed lines */}
+            <div className="flex flex-col gap-1 md:gap-1.5 mb-2 text-xs md:text-sm text-[var(--text-secondary)] min-w-0">
+              <div className="flex items-center gap-1 min-w-0">
               <MapPin size={16} strokeWidth={2} color="var(--primary)" className="md:w-4 md:h-4 flex-shrink-0" />
               <span className="truncate whitespace-nowrap overflow-hidden max-w-[18rem] md:max-w-[22rem]">{locationDisplay || 'Location TBD'}</span>
             </div>
@@ -1077,7 +1083,13 @@ export default function PostCard({
             </div>
 
             {/* Big Event Name */}
-            <h2 className="text-2xl font-bold text-[var(--text)] mb-3">
+            <h2 
+              className="text-2xl font-bold text-[var(--text)] mb-3 cursor-pointer hover:text-[var(--primary)] transition-colors"
+              onClick={() => {
+                navigate(`/posts/${event.id}`);
+                setIsOpen(false);
+              }}
+            >
               {event.title}
             </h2>
 
