@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios from "axios";
 import dotenv from "dotenv";
 
 /*
@@ -9,6 +9,10 @@ import dotenv from "dotenv";
 */
 
 dotenv.config();
+
+const api_endpoint = "https://api.sightengine.com/1.0/check.json";
+
+const threshold = 0.5;
 
 export async function moderateImage(url) {
   try {
@@ -21,7 +25,7 @@ export async function moderateImage(url) {
     const { data } = await axios.get('https://api.sightengine.com/1.0/check.json', {
       params: {
         url,
-        models: 'nudity-2.1,weapon,recreational_drug,medical,gore-2.0,violence',
+        models: 'nudity-2.1,weapon,recreational_drug,medical,gore-2.0,violence,self-harm',
         // Use the env vars defined in .env
         api_user: process.env.SIGHTENGINE_USER,
         api_secret: process.env.SIGHTENGINE_SECRET,
@@ -34,7 +38,7 @@ export async function moderateImage(url) {
     if (data.status === 'success') {
       // If any flagged content is detected, reject it
       const hasFlags = data.nudity?.raw || data.weapon?.raw || data.recreational_drug?.raw || 
-                       data.medical?.raw || data.gore?.raw || data.violence?.raw;
+                       data.medical?.raw || data.gore?.raw || data.violence?.raw || data['self-harm']?.raw;
       
       if (hasFlags) {
         console.log('⚠️ Image flagged for inappropriate content');
