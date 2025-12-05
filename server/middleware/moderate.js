@@ -30,7 +30,7 @@ export async function moderateImage(url) {
 
         const nudity_content = content_data['nudity'];
 
-        const nudity_flag = search(nudity_content);
+        const nudity_flag = await search(nudity_content);
 
         if(nudity_flag)
             return false;
