@@ -39,6 +39,9 @@ export default function EventDetailPage() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
   const [showPostCard, setShowPostCard] = useState(false)
   const [postData, setPostData] = useState<Post | null>(null)
+  const [attendees, setAttendees] = useState<any[]>([])
+  const [buildings, setBuildings] = useState<any[]>([])
+  const [locationDisplay, setLocationDisplay] = useState<string>('')
 
   useEffect(() => {
     document.title = 'CNCT | Post Details'
@@ -69,6 +72,14 @@ export default function EventDetailPage() {
     try {
       setLoading(true)
       
+      // Fetch buildings for location formatting
+      const { data: buildingsData } = await supabase
+        .from('fiu_buildings')
+        .select('building_code, building_name')
+      if (buildingsData) {
+        setBuildings(buildingsData)
+      }
+      
       // Fetch post from posts table
       const { data: post, error: postError } = await supabase
         .from('posts')
@@ -90,6 +101,23 @@ export default function EventDetailPage() {
 
       if (postError) throw postError
       if (!post) throw new Error('Post not found')
+
+      // Format location with building name
+      let formattedLocation = 'Location TBD'
+      if (post.building && buildingsData) {
+        const match = post.building.match(/^([A-Z0-9]+)[\s-]*([\d]+)?$/i)
+        if (match) {
+          const buildingCode = match[1].toUpperCase()
+          const roomNumber = match[2]
+          const building = buildingsData.find(b => b.building_code === buildingCode)
+          const fullBuildingName = building ? `${buildingCode} - ${building.building_name}` : buildingCode
+          formattedLocation = roomNumber ? `${fullBuildingName}, Room ${roomNumber}` : fullBuildingName
+        } else {
+          const building = buildingsData.find(b => b.building_code === post.building?.toUpperCase())
+          formattedLocation = building ? `${building.building_code} - ${building.building_name}` : post.building
+        }
+      }
+      setLocationDisplay(formattedLocation)
 
       // Fetch organizer info
       const { data: organizer, error: organizerError } = await supabase
@@ -121,9 +149,18 @@ export default function EventDetailPage() {
         end_date: post.end_date,
         post_picture_url: post.post_picture_url,
         created_at: post.created_at,
-        is_private: post.is_private,
-        rsvps: post.rsvps || 0
+        is_private: post.is_private
       })
+      
+      // Fetch attendees with their user info
+      const { data: attendeesData } = await supabase
+        .from('attendees')
+        .select('user_id, users(id, first_name, last_name, profile_picture_url)')
+        .eq('posts_id', postId)
+      
+      if (attendeesData) {
+        setAttendees(attendeesData)
+      }
       
       // Check if current user has RSVP'd
       const { data: { session } } = await supabase.auth.getSession()
@@ -184,11 +221,18 @@ export default function EventDetailPage() {
         // Update UI based on action
         const newRsvpState = result.action === 'joined'
         setIsRsvpd(newRsvpState)
-        setRsvpCount(result.data.rsvpCount)
+        
+        // Fetch updated RSVP count from database
+        const { count } = await supabase
+          .from('attendees')
+          .select('*', { count: 'exact', head: true })
+          .eq('posts_id', postId)
+        
+        setRsvpCount(count || 0)
         
         // Also update the postData to keep it in sync
         if (postData) {
-          setPostData({ ...postData, rsvps: result.data.rsvpCount })
+          setPostData({ ...postData })
         }
       } else {
         alert(`Failed to update RSVP: ${result.error || 'Unknown error'}`)
@@ -355,21 +399,53 @@ export default function EventDetailPage() {
 
                   <div className="flex items-start gap-3">
                     <MapPin size={24} className="text-[var(--primary)] mt-1 flex-shrink-0" />
-                    <div>
+                    <div className="flex-1">
                       <p className="text-sm text-[var(--text-secondary)]">Location</p>
                       <p className="font-semibold text-[var(--text)]">
-                        {post.building || 'Location TBD'}
+                        {locationDisplay}
                       </p>
                     </div>
                   </div>
 
                   <div className="flex items-start gap-3">
                     <User size={24} className="text-[var(--primary)] mt-1 flex-shrink-0" />
-                    <div>
-                      <p className="text-sm text-[var(--text-secondary)]">Attendees</p>
-                      <p className="font-semibold text-[var(--text)]">
-                        {rsvpCount} {rsvpCount === 1 ? 'person' : 'people'} going
-                      </p>
+                    <div className="flex-1">
+                      <p className="text-sm text-[var(--text-secondary)]">Attendees ({rsvpCount})</p>
+                      {attendees.length > 0 ? (
+                        <div className="mt-2 space-y-2">
+                          {attendees.map((attendee, idx) => (
+                            <div
+                              key={attendee.user_id}
+                              className="flex items-center gap-2 p-2 rounded-lg bg-[var(--menucard)] hover:bg-[var(--border)] transition-colors cursor-pointer"
+                              onClick={() => navigate(`/profile/${attendee.user_id}`)}
+                            >
+                              <div className="w-8 h-8 rounded-full flex-shrink-0 bg-gradient-to-br from-[var(--primary)] to-[var(--tertiary)] flex items-center justify-center overflow-hidden">
+                                {attendee.users?.profile_picture_url ? (
+                                  <img 
+                                    src={attendee.users.profile_picture_url} 
+                                    alt={`${attendee.users.first_name} ${attendee.users.last_name}`}
+                                    className="w-full h-full object-cover" 
+                                  />
+                                ) : (
+                                  <span className="text-white font-bold text-xs">
+                                    {(attendee.users?.first_name?.[0] || 'U').toUpperCase()}
+                                  </span>
+                                )}
+                              </div>
+                              <span className="font-medium text-sm text-[var(--text)]">
+                                {attendee.users?.first_name && attendee.users?.last_name
+                                  ? `${attendee.users.first_name} ${attendee.users.last_name}`
+                                  : 'Unknown User'
+                                }
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-[var(--text-secondary)] mt-2">
+                          Be the first to RSVP!
+                        </p>
+                      )}
                     </div>
                   </div>
                 </div>
