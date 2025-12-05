@@ -44,7 +44,11 @@ export const supabase = createClient(
 
 // ==================== MIDDLEWARE ====================
 
-app.use(cors()); // Enable CORS for frontend requests (allows cross-origin API calls)
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production'
+    ? 'https://<your-vercel-domain>'
+    : '*',
+})); // Enable CORS for frontend requests (allows cross-origin API calls)
 app.use(express.json({ limit: '5mb' })); // Parse JSON request bodies with 5MB limit for image uploads
 app.use(express.urlencoded({ extended: true, limit: '5mb' })); // Parse URL-encoded form data with 5MB limit
 
