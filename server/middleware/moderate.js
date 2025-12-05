@@ -30,13 +30,11 @@ export async function moderateImage(url) {
 
         Object.keys(nudity_content).forEach(key => {
             if(!key.endsWith("none") && nudity_content[key] > 0.8) {
-                console.log(key);
                 return false;
             }
         })
 
-        if(content_data['gore'] > 0.8) {
-            console.log(content_data['gore']);
+        if(content_data['gore']['prob'] > 0.8) {
             return false;
         }
 
