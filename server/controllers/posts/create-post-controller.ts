@@ -81,7 +81,7 @@ export async function createPostController(req: Request, res: Response) {
                 console.log('❌ Image failed moderation check');
                 return res.status(400).json({
                     success: false,
-                    error: 'Image did not pass moderation. Please upload a different image.'
+                    error: 'MODERATION_FAILED: Image contains inappropriate content and was flagged by our moderation system. Please upload a different image.'
                 });
             }
             console.log('✅ Image passed moderation');

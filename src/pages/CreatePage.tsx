@@ -428,7 +428,16 @@ export default function UploadPage() {
       setCurrentImageIndex(0);
     } catch (error) {
       console.error('Submission Error:', error);
-      alert(`Error saving data. ${(error as Error).message}`);
+      const errorMessage = (error as Error).message;
+      
+      // Check if it's a moderation error
+      if (errorMessage?.toLowerCase().includes('inappropriate') || 
+          errorMessage?.toLowerCase().includes('flagged') ||
+          errorMessage?.toLowerCase().includes('moderation')) {
+        alert('❌ Image rejected: This image contains inappropriate content and violates our community guidelines. Please upload a different image.');
+      } else {
+        alert(`Error saving data. ${errorMessage}`);
+      }
     }
   }
 

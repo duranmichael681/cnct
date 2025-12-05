@@ -32,16 +32,41 @@ export async function moderateImage(url) {
       }
     });
     
-    console.log('📊 Moderation response:', data);
+    console.log('📊 Moderation response:', JSON.stringify(data, null, 2));
     
     // Check if the response indicates the image passed moderation
     if (data.status === 'success') {
-      // If any flagged content is detected, reject it
-      const hasFlags = data.nudity?.raw || data.weapon?.raw || data.recreational_drug?.raw || 
-                       data.medical?.raw || data.gore?.raw || data.violence?.raw || data['self-harm']?.raw;
-      
-      if (hasFlags) {
-        console.log('⚠️ Image flagged for inappropriate content');
+      // Check nudity subcategories (direct properties on nudity object)
+      if (data.nudity) {
+        const nudityCategories = ['sexual_activity', 'sexual_display', 'erotica', 'assault'];
+        for (const category of nudityCategories) {
+          const score = data.nudity[category];
+          if (typeof score === 'number' && score > threshold) {
+            console.log(`⚠️ Image flagged for nudity - ${category}: ${score}`);
+            return false;
+          }
+        }
+      }
+
+      // Check other flagged content (these use .prob property)
+      if (data.recreational_drug?.prob > threshold) {
+        console.log(`⚠️ Image flagged for recreational_drug: ${data.recreational_drug.prob}`);
+        return false;
+      }
+      if (data.medical?.prob > threshold) {
+        console.log(`⚠️ Image flagged for medical: ${data.medical.prob}`);
+        return false;
+      }
+      if (data.gore?.prob > threshold) {
+        console.log(`⚠️ Image flagged for gore: ${data.gore.prob}`);
+        return false;
+      }
+      if (data.violence?.prob > threshold) {
+        console.log(`⚠️ Image flagged for violence: ${data.violence.prob}`);
+        return false;
+      }
+      if (data['self-harm']?.prob > threshold) {
+        console.log(`⚠️ Image flagged for self-harm: ${data['self-harm'].prob}`);
         return false;
       }
       
