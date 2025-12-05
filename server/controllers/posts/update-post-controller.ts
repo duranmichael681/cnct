@@ -51,8 +51,17 @@ export async function updatePostController(req: Request, res: Response) {
             rsvp: req.body.rsvp
         }
 
-        if (postData.postPictureUrl && !moderateImage(postData.postPictureUrl)) {
-            throw Error("New image does not pass moderation.");
+        if (postData.postPictureUrl) {
+            console.log('🔍 Moderating image:', postData.postPictureUrl);
+            const isModerationPassed = await moderateImage(postData.postPictureUrl);
+            if (!isModerationPassed) {
+                console.log('❌ Image failed moderation check');
+                return res.status(400).json({
+                    success: false,
+                    error: 'Image did not pass moderation. Please upload a different image.'
+                });
+            }
+            console.log('✅ Image passed moderation');
         }
 
         const updatedPost = await updatePostService(postId, postData);

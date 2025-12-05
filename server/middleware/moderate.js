@@ -12,18 +12,51 @@ dotenv.config();
 
 export async function moderateImage(url) {
   try {
+    if (!process.env.SIGHTENGINE_USER || !process.env.SIGHTENGINE_SECRET) {
+      console.error('❌ SightEngine credentials missing. Check SIGHTENGINE_USER and SIGHTENGINE_SECRET in .env');
+      return false;
+    }
+
+    console.log('🔍 Calling SightEngine API for moderation...');
     const { data } = await axios.get('https://api.sightengine.com/1.0/check.json', {
       params: {
         url,
         models: 'nudity-2.1,weapon,recreational_drug,medical,gore-2.0,violence',
-        api_user: process.env.api_user,
-        api_secret: process.env.api_secret,
+        // Use the env vars defined in .env
+        api_user: process.env.SIGHTENGINE_USER,
+        api_secret: process.env.SIGHTENGINE_SECRET,
       }
     });
-    // You can inspect "data" here to decide pass/fail
-    return true;
+    
+    console.log('📊 Moderation response:', data);
+    
+    // Check if the response indicates the image passed moderation
+    if (data.status === 'success') {
+      // If any flagged content is detected, reject it
+      const hasFlags = data.nudity?.raw || data.weapon?.raw || data.recreational_drug?.raw || 
+                       data.medical?.raw || data.gore?.raw || data.violence?.raw;
+      
+      if (hasFlags) {
+        console.log('⚠️ Image flagged for inappropriate content');
+        return false;
+      }
+      
+      console.log('✅ Image passed moderation');
+      return true;
+    } else {
+      console.log('⚠️ Moderation check failed (status was not success)');
+      return false;
+    }
   } catch (error) {
-    console.log(error);
+    console.error('❌ Error during moderation:', {
+      message: error.message,
+      status: error.response?.status,
+      statusText: error.response?.statusText,
+      data: error.response?.data
+    });
+    
+    // If API fails, default to rejecting the image for safety
+    // Unless you want to allow it by default (less safe)
     return false;
   }
 }
